@@ -1,0 +1,7 @@
+{
+  "missingRuntime": "找不到 Node.js。請先安裝 Node.js 24 LTS，再開啟此程式。",
+  "missingBuild": "找不到建置檔案。請先執行 npm ci，再執行 npm run build。",
+  "startFailed": "無法啟動球棒體積，請查看 scripts/server.log。",
+  "noPort": "本機啟動連接埠目前都在使用中。",
+  "browserFailed": "請在瀏覽器開啟："
+}

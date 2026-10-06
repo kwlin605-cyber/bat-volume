@@ -1,0 +1,296 @@
+[
+  {
+    "file": "case-001.anc",
+    "lengthMm": 870.15,
+    "maximumDiameterMm": 58.18,
+    "minimumGripDiameterMm": 23.16,
+    "minimumGripY": 746.59
+  },
+  {
+    "file": "case-002.anc",
+    "lengthMm": 852.01,
+    "maximumDiameterMm": 64.28,
+    "minimumGripDiameterMm": 23,
+    "minimumGripY": 703.23
+  },
+  {
+    "file": "case-003.anc",
+    "lengthMm": 852.77,
+    "maximumDiameterMm": 63.06,
+    "minimumGripDiameterMm": 23.9,
+    "minimumGripY": 664.6
+  },
+  {
+    "file": "case-004.anc",
+    "lengthMm": 857.49,
+    "maximumDiameterMm": 63.74,
+    "minimumGripDiameterMm": 23.2,
+    "minimumGripY": 696.57
+  },
+  {
+    "file": "case-005.anc",
+    "lengthMm": 852.61,
+    "maximumDiameterMm": 63.76,
+    "minimumGripDiameterMm": 23.64,
+    "minimumGripY": 608.63
+  },
+  {
+    "file": "case-006.anc",
+    "lengthMm": 866.8,
+    "maximumDiameterMm": 56.64,
+    "minimumGripDiameterMm": 21.6,
+    "minimumGripY": 765.22
+  },
+  {
+    "file": "case-007.anc",
+    "lengthMm": 860.8399999999999,
+    "maximumDiameterMm": 65.08,
+    "minimumGripDiameterMm": 23.82,
+    "minimumGripY": 703.23
+  },
+  {
+    "file": "case-008.anc",
+    "lengthMm": 870.9200000000001,
+    "maximumDiameterMm": 64.68,
+    "minimumGripDiameterMm": 25.06,
+    "minimumGripY": 686.78
+  },
+  {
+    "file": "case-009.anc",
+    "lengthMm": 869.6899999999999,
+    "maximumDiameterMm": 63.62,
+    "minimumGripDiameterMm": 24.86,
+    "minimumGripY": 727.16
+  },
+  {
+    "file": "case-010.anc",
+    "lengthMm": 866.88,
+    "maximumDiameterMm": 56.2,
+    "minimumGripDiameterMm": 22.6,
+    "minimumGripY": 772.37
+  },
+  {
+    "file": "case-011.anc",
+    "lengthMm": 865.39,
+    "maximumDiameterMm": 65.58,
+    "minimumGripDiameterMm": 24.08,
+    "minimumGripY": 710.65
+  },
+  {
+    "file": "case-012.anc",
+    "lengthMm": 852.98,
+    "maximumDiameterMm": 63.02,
+    "minimumGripDiameterMm": 24.14,
+    "minimumGripY": 746.12
+  },
+  {
+    "file": "case-013.anc",
+    "lengthMm": 870.16,
+    "maximumDiameterMm": 57.48,
+    "minimumGripDiameterMm": 21.26,
+    "minimumGripY": 736.13
+  },
+  {
+    "file": "case-014.anc",
+    "lengthMm": 866.21,
+    "maximumDiameterMm": 56.02,
+    "minimumGripDiameterMm": 21.18,
+    "minimumGripY": 706.22
+  },
+  {
+    "file": "case-015.anc",
+    "lengthMm": 866.77,
+    "maximumDiameterMm": 53.68,
+    "minimumGripDiameterMm": 21.02,
+    "minimumGripY": 713.89
+  },
+  {
+    "file": "case-016.anc",
+    "lengthMm": 867.0500000000001,
+    "maximumDiameterMm": 57.92,
+    "minimumGripDiameterMm": 23.24,
+    "minimumGripY": 704.68
+  },
+  {
+    "file": "case-017.anc",
+    "lengthMm": 867.0500000000001,
+    "maximumDiameterMm": 57.22,
+    "minimumGripDiameterMm": 22.14,
+    "minimumGripY": 755.57
+  },
+  {
+    "file": "case-018.anc",
+    "lengthMm": 860.24,
+    "maximumDiameterMm": 63.94,
+    "minimumGripDiameterMm": 22.1,
+    "minimumGripY": 645.83
+  },
+  {
+    "file": "case-019.anc",
+    "lengthMm": 866.3599999999999,
+    "maximumDiameterMm": 54.2,
+    "minimumGripDiameterMm": 23.16,
+    "minimumGripY": 722.76
+  },
+  {
+    "file": "case-020.anc",
+    "lengthMm": 856.89,
+    "maximumDiameterMm": 53.94,
+    "minimumGripDiameterMm": 21.44,
+    "minimumGripY": 731.89
+  },
+  {
+    "file": "case-021.anc",
+    "lengthMm": 865.22,
+    "maximumDiameterMm": 65.74,
+    "minimumGripDiameterMm": 25.62,
+    "minimumGripY": 737.31
+  },
+  {
+    "file": "case-022.anc",
+    "lengthMm": 854.9699999999999,
+    "maximumDiameterMm": 62.28,
+    "minimumGripDiameterMm": 23.22,
+    "minimumGripY": 680.15
+  },
+  {
+    "file": "case-023.anc",
+    "lengthMm": 868,
+    "maximumDiameterMm": 56.72,
+    "minimumGripDiameterMm": 21.22,
+    "minimumGripY": 784.46
+  },
+  {
+    "file": "case-024.anc",
+    "lengthMm": 850.4,
+    "maximumDiameterMm": 64.16,
+    "minimumGripDiameterMm": 23.64,
+    "minimumGripY": 725.61
+  },
+  {
+    "file": "case-025.anc",
+    "lengthMm": 852.8599999999999,
+    "maximumDiameterMm": 62.72,
+    "minimumGripDiameterMm": 23.04,
+    "minimumGripY": 737.52
+  },
+  {
+    "file": "case-026.anc",
+    "lengthMm": 857.35,
+    "maximumDiameterMm": 63.26,
+    "minimumGripDiameterMm": 25.04,
+    "minimumGripY": 685.86
+  },
+  {
+    "file": "case-027.anc",
+    "lengthMm": 856.34,
+    "maximumDiameterMm": 63.26,
+    "minimumGripDiameterMm": 23.16,
+    "minimumGripY": 707.12
+  },
+  {
+    "file": "case-028.anc",
+    "lengthMm": 856.34,
+    "maximumDiameterMm": 62.86,
+    "minimumGripDiameterMm": 22.76,
+    "minimumGripY": 707.12
+  },
+  {
+    "file": "case-029.anc",
+    "lengthMm": 854.7900000000001,
+    "maximumDiameterMm": 63.98,
+    "minimumGripDiameterMm": 22.74,
+    "minimumGripY": 734.35
+  },
+  {
+    "file": "case-030.anc",
+    "lengthMm": 870.16,
+    "maximumDiameterMm": 58.18,
+    "minimumGripDiameterMm": 21.96,
+    "minimumGripY": 736.13
+  },
+  {
+    "file": "case-032.anc",
+    "lengthMm": 857.2199999999999,
+    "maximumDiameterMm": 62.84,
+    "minimumGripDiameterMm": 22.9,
+    "minimumGripY": 747.3
+  },
+  {
+    "file": "case-033.anc",
+    "lengthMm": 862.0600000000001,
+    "maximumDiameterMm": 55.24,
+    "minimumGripDiameterMm": 22.54,
+    "minimumGripY": 705.38
+  },
+  {
+    "file": "case-034.anc",
+    "lengthMm": 853.27,
+    "maximumDiameterMm": 65.2,
+    "minimumGripDiameterMm": 23.06,
+    "minimumGripY": 697.46
+  },
+  {
+    "file": "case-035.anc",
+    "lengthMm": 862.99,
+    "maximumDiameterMm": 65.78,
+    "minimumGripDiameterMm": 24.8,
+    "minimumGripY": 732.61
+  },
+  {
+    "file": "case-036.anc",
+    "lengthMm": 870.8599999999999,
+    "maximumDiameterMm": 64.06,
+    "minimumGripDiameterMm": 23.02,
+    "minimumGripY": 673.97
+  },
+  {
+    "file": "case-037.anc",
+    "lengthMm": 868.9,
+    "maximumDiameterMm": 64.84,
+    "minimumGripDiameterMm": 25,
+    "minimumGripY": 736.98
+  },
+  {
+    "file": "case-038.anc",
+    "lengthMm": 866.99,
+    "maximumDiameterMm": 64.92,
+    "minimumGripDiameterMm": 24.08,
+    "minimumGripY": 712.36
+  },
+  {
+    "file": "case-039.anc",
+    "lengthMm": 817.7700000000001,
+    "maximumDiameterMm": 64.48,
+    "minimumGripDiameterMm": 23.18,
+    "minimumGripY": 637.39
+  },
+  {
+    "file": "case-040.anc",
+    "lengthMm": 881.5799999999999,
+    "maximumDiameterMm": 63.62,
+    "minimumGripDiameterMm": 24.86,
+    "minimumGripY": 737.18
+  },
+  {
+    "file": "case-041.anc",
+    "lengthMm": 853.57,
+    "maximumDiameterMm": 63.08,
+    "minimumGripDiameterMm": 24.04,
+    "minimumGripY": 722.44
+  },
+  {
+    "file": "case-042.anc",
+    "lengthMm": 855.82,
+    "maximumDiameterMm": 63.9,
+    "minimumGripDiameterMm": 22.94,
+    "minimumGripY": 713.86
+  },
+  {
+    "file": "case-043.anc",
+    "lengthMm": 852.61,
+    "maximumDiameterMm": 63.24,
+    "minimumGripDiameterMm": 23.66,
+    "minimumGripY": 689.19
+  }
+]
