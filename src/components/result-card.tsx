@@ -1,5 +1,5 @@
 import { Check, ChevronDown, CircleAlert, FileCode2, LoaderCircle } from 'lucide-react'
-import type { UploadState } from '../hooks/use-analysis'
+import type { UploadState } from '../services/analysis-state'
 import { diagnosticText, text } from '../i18n/zh-TW'
 import { formatCoordinate, formatVolume } from '../lib/format'
 import { DimensionsSummary } from './dimensions-summary'
@@ -22,7 +22,6 @@ export function ResultCard({ state }: { state: Exclude<UploadState, { status: 'e
       <div className="volume-block">
         <h1 className="volume-label">{text.retainedVolume}</h1>
         <div className="volume-value"><span data-testid="volume-value">{formatVolume(result.volumeCm3)}</span><span className="volume-unit">{text.volumeUnit}</span></div>
-        <p className="volume-caption">{result.estimated ? text.estimateBasis : text.calculated}</p>
       </div>
       <DimensionsSummary dimensions={result.dimensions} />
       <details className="cut-details">
