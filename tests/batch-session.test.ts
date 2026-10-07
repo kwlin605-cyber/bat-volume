@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { appendSessionFiles, createBatchSession, removeSessionFile, restoreBatchSession, sessionFiles, type BatchSession } from '../src/services/batch-session'
 import { LatestSessionStorage, type SessionRepository } from '../src/services/latest-session-storage'
 import type { WeightRange } from '../src/domain/weight'
+import { createDefaultBatchDisplay, type BatchDisplaySettings } from '../src/domain/batch-display'
 
 const makeSession = () => createBatchSession([new File([new Uint8Array([0xa4, 0xa4, 0xff, 0])], '球棒.anc', { lastModified: 123 }), new File(['G1 Y0 Z2'], '球棒.anc', { lastModified: 456 })])
 const deferred = () => { let resolve!: () => void, reject!: (reason: unknown) => void; const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
@@ -21,10 +22,61 @@ class MemoryRepository implements SessionRepository {
     this.calls.push(`targets:${id}`)
     if (this.latest?.id === id) this.latest = { ...this.latest, requirements: values }
   }
+  async updateDisplay(id: string, value: BatchDisplaySettings) {
+    this.calls.push(`display:${id}`)
+    if (this.latest?.id === id) this.latest = { ...this.latest, display: value }
+  }
   async clear() { this.calls.push('clear'); this.latest = null }
 }
 
 describe('the latest saved ANC batch', () => {
+  it('restores display preferences with their files, and defaults old or foreign records', () => {
+    const session = makeSession(), stored = { version: 1, id: session.id, files: session.files }
+    const display: BatchDisplaySettings = { visible: ['volume', 'length'], sort: { key: 'batWeight', direction: 'desc' } }
+    expect(restoreBatchSession(stored, null, { version: 1, sessionId: session.id, value: display })!.display).toEqual(display)
+    expect(restoreBatchSession(stored, null)!.display).toEqual(createDefaultBatchDisplay())
+    expect(restoreBatchSession(stored, null, { version: 1, sessionId: 'other', value: display })!.display).toEqual(createDefaultBatchDisplay())
+    expect(restoreBatchSession(stored, null, { version: 99, sessionId: session.id, value: display })!.display).toEqual(createDefaultBatchDisplay())
+    const corrupt = restoreBatchSession(stored, null, { version: 1, sessionId: session.id, value: { visible: ['unknown'], sort: null } })!
+    expect(corrupt.files).toEqual(session.files)
+    expect(corrupt.display).toEqual(createDefaultBatchDisplay())
+  })
+  it('keeps display settings on additions and partial removal, but a new session starts at defaults', () => {
+    const session = makeSession()
+    session.display = { visible: ['length'], sort: { key: 'volume', direction: 'desc' } }
+    const added = appendSessionFiles(session, [new File(['new'], 'new.anc')])
+    expect(added.display).toEqual(session.display)
+    expect(removeSessionFile(added, session.files[0].id)!.display).toEqual(session.display)
+    expect(appendSessionFiles(null, [new File(['fresh'], 'fresh.anc')]).display).toEqual(createDefaultBatchDisplay())
+  })
+  it('saves display settings without rewriting files or targets, and clear removes settings too', async () => {
+    const repository = new MemoryRepository(), storage = new LatestSessionStorage(repository), session = makeSession()
+    await storage.replace(session)
+    const display: BatchDisplaySettings = { visible: [], sort: { key: 'materialWeight', direction: 'desc' } }
+    await storage.updateDisplay(session.id, display)
+    expect((await storage.read())!.display).toEqual(display)
+    expect(repository.latest!.files).toBe(session.files)
+    expect(repository.latest!.requirements).toBe(session.requirements)
+    expect(repository.calls.filter(call => call.startsWith('replace'))).toHaveLength(1)
+    await storage.updateDisplay('other-session', createDefaultBatchDisplay())
+    expect((await storage.read())!.display).toEqual(display)
+    await storage.clear()
+    expect(await storage.read()).toBeNull()
+    const fresh = makeSession()
+    await storage.replace(fresh)
+    expect((await storage.read())!.display).toEqual(createDefaultBatchDisplay())
+  })
+  it('orders slow preference saves before clearing so they cannot resurrect the old session', async () => {
+    const repository = new MemoryRepository(), gate = deferred(), storage = new LatestSessionStorage(repository), session = makeSession()
+    repository.gates.push(gate)
+    const save = storage.replace(session)
+    const changed = storage.updateDisplay(session.id, { visible: ['volume'], sort: { key: 'volume', direction: 'desc' } })
+    const clear = storage.clear()
+    gate.resolve()
+    await Promise.all([save, changed, clear])
+    expect(await storage.read()).toBeNull()
+    expect(repository.calls).toEqual([`replace:${session.id}`, `display:${session.id}`, 'clear'])
+  })
   it('adds duplicate names without changing existing identities, bytes or targets', async () => {
     const original = makeSession()
     original.requirements[original.files[0].id] = { min: 800, max: 850 }

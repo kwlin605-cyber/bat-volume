@@ -1,11 +1,13 @@
 import { sessionStorage } from '../config/session'
-import { restoreBatchSession, type BatchSession, type StoredFiles, type StoredRequirements } from './batch-session'
+import { restoreBatchSession, type BatchSession, type StoredDisplay, type StoredFiles, type StoredRequirements } from './batch-session'
 import type { WeightRange } from '../domain/weight'
+import type { BatchDisplaySettings } from '../domain/batch-display'
 
 export interface SessionRepository {
   read(): Promise<BatchSession | null>
   replace(session: BatchSession): Promise<void>
   updateRequirements(id: string, values: Record<string, WeightRange>): Promise<void>
+  updateDisplay(id: string, value: BatchDisplaySettings): Promise<void>
   clear(): Promise<void>
 }
 
@@ -16,6 +18,7 @@ export class LatestSessionStorage implements SessionRepository {
   read() { return this.pending.then(() => this.repository.read()) }
   replace(session: BatchSession) { return this.write(() => this.repository.replace(session)) }
   updateRequirements(id: string, values: Record<string, WeightRange>) { return this.write(() => this.repository.updateRequirements(id, values)) }
+  updateDisplay(id: string, value: BatchDisplaySettings) { return this.write(() => this.repository.updateDisplay(id, value)) }
   clear() { return this.write(() => this.repository.clear()) }
   private write(operation: () => Promise<void>) {
     const result = this.pending.then(operation)
@@ -47,8 +50,9 @@ class IndexedDbSessionRepository implements SessionRepository {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(sessionStorage.store, 'readonly'), store = tx.objectStore(sessionStorage.store)
       const files = store.get(sessionStorage.filesKey), requirements = store.get(sessionStorage.requirementsKey)
+      const display = store.get(sessionStorage.displayKey)
       tx.oncomplete = () => {
-        try { resolve(restoreBatchSession(files.result, requirements.result)) } catch (error) { reject(error) }
+        try { resolve(restoreBatchSession(files.result, requirements.result, display.result)) } catch (error) { reject(error) }
       }
       tx.onabort = () => reject(tx.error ?? new Error('Session read aborted'))
       tx.onerror = () => reject(tx.error)
@@ -61,15 +65,24 @@ class IndexedDbSessionRepository implements SessionRepository {
       const requirements: StoredRequirements = { sessionId: session.id, values: session.requirements }
       store.put(files, sessionStorage.filesKey)
       store.put(requirements, sessionStorage.requirementsKey)
+      store.put({ version: sessionStorage.formatVersion, sessionId: session.id, value: session.display } satisfies StoredDisplay, sessionStorage.displayKey)
     })
   }
 
   updateRequirements(id: string, values: Record<string, WeightRange>) {
+    return this.updateForSession(id, sessionStorage.requirementsKey, { sessionId: id, values } satisfies StoredRequirements)
+  }
+
+  updateDisplay(id: string, value: BatchDisplaySettings) {
+    return this.updateForSession(id, sessionStorage.displayKey, { version: sessionStorage.formatVersion, sessionId: id, value } satisfies StoredDisplay)
+  }
+
+  private updateForSession(id: string, key: string, value: StoredRequirements | StoredDisplay) {
     return this.mutate(store => {
       const request = store.get(sessionStorage.filesKey)
       request.onsuccess = () => {
-        // Another tab may have replaced the batch; never attach targets to its files.
-        if (request.result?.id === id) store.put({ sessionId: id, values } satisfies StoredRequirements, sessionStorage.requirementsKey)
+        // Another tab may have replaced the batch; never attach preferences to its files.
+        if (request.result?.id === id) store.put(value, key)
       }
     })
   }

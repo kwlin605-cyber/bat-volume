@@ -4,8 +4,8 @@ import type { AnalysisEntry } from '../../services/analysis-state'
 import { text } from '../../i18n/zh-TW'
 import { renderPngReport } from '../../reports/png-report'
 import { downloadReport } from '../../reports/download'
-import { defaultMetricIds, type MetricId } from './columns'
-import { buildBatchView, defaultSort, type BatchSort } from './view-model'
+import type { BatchDisplaySettings } from '../../domain/batch-display'
+import { buildBatchView } from './view-model'
 import { ResultDialog } from './result-dialog'
 import { useColumnLayout } from './use-column-layout'
 import { useMaterialSettings } from './use-material-settings'
@@ -17,13 +17,12 @@ import { BatchToolbar } from './batch-toolbar'
 import { RemoveFileButton } from '../../components/remove-file-button'
 import './batch.css'
 
-export default function BatchResults({ entries, requirements, removing, onRemove, onRequirementChange }: { entries: AnalysisEntry[]; requirements: Record<string, WeightRange>; removing: boolean; onRemove: (id: string) => void; onRequirementChange: (id: string, range: WeightRange | null) => void }) {
-  const [visible, setVisible] = useState<MetricId[]>(defaultMetricIds)
+export default function BatchResults({ entries, requirements, display, onDisplayChange, removing, onRemove, onRequirementChange }: { entries: AnalysisEntry[]; requirements: Record<string, WeightRange>; display: BatchDisplaySettings; onDisplayChange: (value: BatchDisplaySettings) => void; removing: boolean; onRemove: (id: string) => void; onRequirementChange: (id: string, range: WeightRange | null) => void }) {
+  const { visible, sort } = display
   const { material, applyMaterial, storageUnavailable } = useMaterialSettings()
   const { mode: weightUnit, selectMode, storageUnavailable: unitStorageUnavailable } = useWeightUnit()
   const [materialOpen, setMaterialOpen] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
-  const [sort, setSort] = useState<BatchSort>(defaultSort)
   const [selected, setSelected] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
@@ -40,7 +39,7 @@ export default function BatchResults({ entries, requirements, removing, onRemove
   function beginEditing(id: string) {
     if (removing) return
     if (editing === id) return
-    setVisible(current => current.includes('batWeight') ? current : [...current, 'batWeight'])
+    if (!visible.includes('batWeight')) onDisplayChange({ ...display, visible: [...visible, 'batWeight'] })
     setEditing(id)
   }
   function commitRequirement(id: string, range: WeightRange | null) {
@@ -64,7 +63,7 @@ export default function BatchResults({ entries, requirements, removing, onRemove
   return <section className="batch-results" aria-labelledby="batch-title">
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
       <BatchToolbar visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} pending={summary.pending > 0} exporting={exporting}
-        onVisibleChange={columns => { if (!columns.includes('batWeight')) setEditing(null); setVisible(columns) }} onSortChange={setSort} onUnitChange={selectMode}
+        onVisibleChange={columns => { if (!columns.includes('batWeight')) setEditing(null); onDisplayChange({ ...display, visible: columns }) }} onSortChange={next => onDisplayChange({ ...display, sort: next })} onUnitChange={selectMode}
         onMaterialOpen={() => { setEditing(null); setMaterialOpen(true) }} onExport={format => void exportReport(format)} />
     </div>
     {error && <p className="report-error" role="alert">{error}</p>}

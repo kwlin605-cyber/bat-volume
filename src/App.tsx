@@ -11,7 +11,7 @@ import { text } from './i18n/zh-TW'
 
 export default function App() {
   const input = useRef<HTMLInputElement>(null)
-  const { entries, requirements, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setRequirement } = useBatchSession()
+  const { entries, requirements, display, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setRequirement, updateDisplay } = useBatchSession()
   const desktop = useDesktop()
   const [dragging, setDragging] = useState(false)
   const [removing, setRemoving] = useState(false)
@@ -35,7 +35,7 @@ export default function App() {
         <h1>{text.emptyTitle}</h1>
         <p>{desktop ? text.desktopEmptyDescription : text.emptyDescription}</p>
         <Button onClick={choose}><Plus aria-hidden="true" />{text.upload}</Button>
-      </section> : desktop ? <BatchResults entries={entries} requirements={requirements} removing={removing} onRemove={remove} onRequirementChange={setRequirement} /> : <div className="mobile-results">{entries.map(entry => <div key={entry.id} className="mobile-result-item">
+      </section> : desktop ? <BatchResults entries={entries} requirements={requirements} display={display} onDisplayChange={updateDisplay} removing={removing} onRemove={remove} onRequirementChange={setRequirement} /> : <div className="mobile-results">{entries.map(entry => <div key={entry.id} className="mobile-result-item">
         {removing && <RemoveFileButton name={entry.source.name} onRemove={() => remove(entry.id)} />}
         <ResultView state={entry.state} preview={false} />
       </div>)}</div>}

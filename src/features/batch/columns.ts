@@ -3,6 +3,8 @@ import { text } from '../../i18n/zh-TW'
 import { formatDimension, formatVolume } from '../../lib/format'
 import type { WeightDisplayMode } from '../../domain/weight-unit'
 import { weightHeaderUnit, weightNumberFormat } from '../../lib/weight-display'
+import type { MetricId } from '../../domain/batch-display'
+export { defaultMetricIds, type MetricId } from '../../domain/batch-display'
 
 type Calculated = Extract<AnalysisResult, { status: 'calculated' }>
 export const geometryColumns = [
@@ -12,7 +14,6 @@ export const geometryColumns = [
   { id: 'gripDiameter', label: text.minimumGripDiameter, unit: text.lengthUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.grip.status === 'detected' ? r.dimensions.grip.diameterMm : null, format: formatDimension },
 ] as const
 export type GeometryMetricId = typeof geometryColumns[number]['id']
-export type MetricId = GeometryMetricId | 'batWeight' | 'materialWeight'
 export interface MetricColumn { id: MetricId; label: string; unit: string; numberFormat: string; prominent: boolean; editable?: boolean; weightMode?: WeightDisplayMode }
 const [volumeColumn, ...dimensionColumns] = geometryColumns
 export const metricColumns: readonly MetricColumn[] = [
@@ -23,7 +24,6 @@ export const metricColumns: readonly MetricColumn[] = [
 ]
 export const allMetricIds: MetricId[] = metricColumns.map(column => column.id)
 export const geometryMetricIds: MetricId[] = geometryColumns.map(column => column.id)
-export const defaultMetricIds: MetricId[] = ['volume', 'materialWeight', 'batWeight']
 export const columnsForWeightUnit = (mode: WeightDisplayMode): MetricColumn[] => metricColumns.map(column =>
   column.id === 'materialWeight'
     ? { ...column, unit: weightHeaderUnit(mode), numberFormat: weightNumberFormat(mode), weightMode: mode }

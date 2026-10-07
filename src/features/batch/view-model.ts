@@ -5,9 +5,9 @@ import { calculateMaterialWeight, estimateBatWeight, type MaterialSettings, type
 import { initialMaterialSettings } from '../../config/weight'
 import { weightDisplay } from '../../lib/weight-display'
 import { fromGrams, type WeightDisplayMode } from '../../domain/weight-unit'
+import type { BatchSort } from '../../domain/batch-display'
+export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
-export interface BatchSort { key: 'name' | MetricId; direction: 'asc' | 'desc' }
-export const defaultSort: BatchSort = { key: 'name', direction: 'asc' }
 export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string }
 export interface WeightContext { material: MaterialSettings; requirements: Readonly<Record<string, WeightRange>>; weightUnit?: WeightDisplayMode }
 const emptyWeightContext: WeightContext = { material: initialMaterialSettings, requirements: {} }

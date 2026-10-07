@@ -1,14 +1,16 @@
 import { validWeightRange, type WeightRange } from '../domain/weight'
 import { sessionStorage } from '../config/session'
+import { createDefaultBatchDisplay, normalizeBatchDisplay, type BatchDisplaySettings } from '../domain/batch-display'
 
 export interface SessionFile { id: string; name: string; lastModified: number; blob: Blob }
-export interface BatchSession { id: string; files: SessionFile[]; requirements: Record<string, WeightRange> }
+export interface BatchSession { id: string; files: SessionFile[]; requirements: Record<string, WeightRange>; display: BatchDisplaySettings }
 export interface StoredFiles { version: number; id: string; files: SessionFile[] }
 export interface StoredRequirements { sessionId: string; values: Record<string, WeightRange> }
+export interface StoredDisplay { version: number; sessionId: string; value: BatchDisplaySettings }
 
 export function createBatchSession(files: readonly File[]): BatchSession {
   const id = crypto.randomUUID()
-  return { id, files: files.map((file, index) => ({ id: `${id}:${index}`, name: file.name, lastModified: file.lastModified, blob: file })), requirements: {} }
+  return { id, files: files.map((file, index) => ({ id: `${id}:${index}`, name: file.name, lastModified: file.lastModified, blob: file })), requirements: {}, display: createDefaultBatchDisplay() }
 }
 
 /** Existing identities and committed targets survive additions, even for duplicate filenames. */
@@ -28,7 +30,7 @@ export function removeSessionFile(session: BatchSession, id: string): BatchSessi
 /** Rebuild actual File objects so decoding and geometry still use the normal analysis path. */
 export const sessionFiles = (session: BatchSession) => session.files.map(item => new File([item.blob], item.name, { type: item.blob.type, lastModified: item.lastModified }))
 
-export function restoreBatchSession(files: unknown, requirements: unknown): BatchSession | null {
+export function restoreBatchSession(files: unknown, requirements: unknown, display?: unknown): BatchSession | null {
   if (files === undefined) return null
   const stored = files as Partial<StoredFiles> | null
   if (!stored || stored.version !== sessionStorage.formatVersion || typeof stored.id !== 'string' || !stored.id || !Array.isArray(stored.files) || !stored.files.length) throw new Error('Invalid saved files')
@@ -44,5 +46,8 @@ export function restoreBatchSession(files: unknown, requirements: unknown): Batc
       if (ids.has(id) && range && validWeightRange(range)) values[id] = { min: range.min, max: range.max }
     }
   }
-  return { id: stored.id, files: stored.files, requirements: values }
+  const presentation = display as Partial<StoredDisplay> | null
+  const settings = presentation?.version === sessionStorage.formatVersion && presentation.sessionId === stored.id
+    ? normalizeBatchDisplay(presentation.value) : createDefaultBatchDisplay()
+  return { id: stored.id, files: stored.files, requirements: values, display: settings }
 }
