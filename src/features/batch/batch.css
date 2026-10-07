@@ -28,16 +28,30 @@
 .batch-table th small { display: inline-block; font-size: 11px; font-weight: 400; color: #737373; margin-left: 6px; }
 .batch-table td { padding: 22px 20px; font-size: 17px; font-weight: 500; color: var(--color-text); border-top: 1px solid #e6e6e6; vertical-align: middle; }
 .batch-table .numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.batch-table tbody tr:nth-child(even) { background: #fbfbfb; }
+.batch-table tbody tr:nth-child(even) { --row-surface: #fbfbfb; background: var(--row-surface); }
 .batch-table th.metric-primary { font-size: 14px; font-weight: 600; color: var(--color-ink); }
 .batch-table .metric-primary { background: var(--color-emphasis); }
 .batch-table td.metric-primary { font-size: 20px; font-weight: 600; color: var(--color-ink); letter-spacing: -.4px; }
 .batch-table tbody tr:nth-child(even) .metric-primary { background: var(--color-emphasisAlt); }
-.batch-table tbody tr:hover { background: #f6f6f6; }
+.batch-table tbody tr:hover { --row-surface: #f6f6f6; background: var(--row-surface); }
 .batch-table tbody tr:hover .metric-primary { background: var(--color-emphasisHover); }
 .batch-table tbody tr { cursor: pointer; }
 .batch-table tbody tr:focus-visible { outline: 2px solid #909090; outline-offset: -2px; }
 .batch-table tbody tr.row-editing td { background: #f2f2f2; }
+.batch-table-area.is-removing .batch-table-wrap { border: 0; border-radius: 0; }
+.batch-table-area.is-removing .batch-table { border-collapse: separate; border-spacing: 0; }
+.batch-table-area.is-removing tbody tr { background: transparent; cursor: default; }
+.batch-table-area.is-removing th:not(.remove-cell) { border-top: 1px solid #e4e4e4; }
+.batch-table-area.is-removing th:first-child { border-left: 1px solid #e4e4e4; border-top-left-radius: 15px; }
+.batch-table-area.is-removing th:nth-last-child(2) { border-right: 1px solid #e4e4e4; border-top-right-radius: 15px; }
+.batch-table-area.is-removing td:first-child { border-left: 1px solid #e4e4e4; }
+.batch-table-area.is-removing td:nth-last-child(2) { border-right: 1px solid #e4e4e4; }
+.batch-table-area.is-removing tbody tr:last-child td:not(.remove-cell) { border-bottom: 1px solid #e4e4e4; }
+.batch-table-area.is-removing tbody tr:last-child td:first-child { border-bottom-left-radius: 15px; }
+.batch-table-area.is-removing tbody tr:last-child td:nth-last-child(2) { border-bottom-right-radius: 15px; }
+.batch-table-area.is-removing tbody tr td:not(.metric-primary, .remove-cell) { background: var(--row-surface, transparent); }
+.batch-table-area.is-removing .batch-table .remove-cell { border: 0; padding: 0 0 0 16px; background: transparent; text-align: center; }
+.batch-table-area.is-removing .requirement-trigger:disabled { cursor: default; }
 .requirement-trigger { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: right; cursor: pointer; }
 .requirement-trigger:disabled { cursor: wait; }
 .weight-caption { display: block; margin-top: 6px; color: #7e7e7e; font-size: 11px; font-weight: 400; }

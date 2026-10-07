@@ -6,7 +6,7 @@ import type { BatchView } from './view-model'
 
 const fallbackMeasure: TextMeasure = (value, font) => textUnits(value) * font.size * 0.6
 
-export function useColumnLayout(view: BatchView) {
+export function useColumnLayout(view: BatchView, reservedWidth = 0) {
   const areaRef = useRef<HTMLDivElement>(null)
   const [availableWidth, setAvailableWidth] = useState(Infinity)
   const [measure, setMeasure] = useState<TextMeasure>(() => fallbackMeasure)
@@ -24,6 +24,6 @@ export function useColumnLayout(view: BatchView) {
     document.fonts.addEventListener('loadingdone', updateMeasure)
     return () => { active = false; observer.disconnect(); document.fonts.removeEventListener('loadingdone', updateMeasure) }
   }, [])
-  const layout = useMemo(() => buildColumnLayout(view, batchTableStyle, measure, availableWidth), [view, measure, availableWidth])
+  const layout = useMemo(() => buildColumnLayout(view, batchTableStyle, measure, Math.max(0, availableWidth - reservedWidth)), [view, measure, availableWidth, reservedWidth])
   return { areaRef, layout }
 }

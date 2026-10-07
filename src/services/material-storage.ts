@@ -5,16 +5,16 @@ export interface SettingsStorage { getItem(key: string): string | null; setItem(
 export function isMaterialSettings(value: unknown): value is MaterialSettings {
   if (!value || typeof value !== 'object') return false
   const input = value as Partial<MaterialSettings>
-  return positiveFinite(input.referenceDensity) && (input.volumeCm3 === null || positiveFinite(input.volumeCm3))
-    && (input.weightG === null || positiveFinite(input.weightG)) && validWeightError(input.weightErrorPercent)
+  return (input.referenceDensity === null || positiveFinite(input.referenceDensity)) && (input.volumeCm3 === null || positiveFinite(input.volumeCm3))
+    && (input.weightG === null || positiveFinite(input.weightG)) && (input.weightErrorPercent === null || validWeightError(input.weightErrorPercent))
 }
 export function readMaterialSettings(storage: SettingsStorage) {
   try {
     const raw = storage.getItem(materialStorage.key)
     if (!raw) return { settings: { ...initialMaterialSettings }, unavailable: false }
     const data = JSON.parse(raw)
-    const settings = data?.version === 1 ? { ...data.settings, weightErrorPercent: 0 } : data?.settings
-    const supported = data?.version === 1 || data?.version === materialStorage.version
+    const settings = data?.version === 1 ? { ...data.settings, weightErrorPercent: null } : data?.settings
+    const supported = data?.version === 1 || data?.version === 2 || data?.version === materialStorage.version
     return { settings: supported && isMaterialSettings(settings) ? settings : { ...initialMaterialSettings }, unavailable: false }
   } catch { return { settings: { ...initialMaterialSettings }, unavailable: true } }
 }

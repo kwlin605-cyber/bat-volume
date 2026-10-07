@@ -1,40 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
-import { analyzeBatch } from '../services/analyze-batch'
 import { batchExecution } from '../config/batch'
 import type { AnalysisEntry } from '../services/analysis-state'
 import { AnalysisWorkerPool } from '../services/analysis-worker-pool'
 import { analyzeFile } from '../services/analyze-file'
+import { IncrementalAnalysis } from '../services/incremental-analysis'
 
 export function useAnalysis() {
   const [entries, setEntries] = useState<AnalysisEntry[]>([])
-  const active = useRef<AbortController | null>(null)
-  const request = useRef(0)
-  const pool = useRef<AnalysisWorkerPool | null>(null)
-  function getPool() { return pool.current ??= new AnalysisWorkerPool(batchExecution.concurrency) }
+  const runtime = useRef<{ pool: AnalysisWorkerPool; queue: IncrementalAnalysis } | null>(null)
+  function getRuntime() {
+    if (!runtime.current) {
+      const pool = new AnalysisWorkerPool(batchExecution.concurrency)
+      const queue = new IncrementalAnalysis((file, signal) => analyzeFile(file, signal, pool), (id, result) => {
+        setEntries(current => current.map(entry => entry.id === id ? { ...entry, state: { status: 'result', result } } : entry))
+      }, batchExecution.concurrency)
+      runtime.current = { pool, queue }
+    }
+    return runtime.current
+  }
   useEffect(() => {
-    const session = getPool()
-    session.prewarm()
+    const session = getRuntime()
+    session.pool.prewarm()
     return () => {
-      ++request.current; active.current?.abort(); session.dispose()
-      if (pool.current === session) pool.current = null
+      session.queue.dispose(); session.pool.dispose()
+      if (runtime.current === session) runtime.current = null
     }
   }, [])
-
-  function loadFiles(files: File[]) {
+  function addFiles(files: File[], ids: readonly string[]) {
     if (!files.length) return
-    const token = ++request.current
-    active.current?.abort()
-    const controller = new AbortController()
-    active.current = controller
-    setEntries(files.map((file, index) => {
+    const added: AnalysisEntry[] = files.map((file, index) => {
       const source = { name: file.name, size: file.size }
-      return { id: `${token}:${index}`, source, state: { status: 'loading', source } }
-    }))
-    const session = getPool()
-    void analyzeBatch(files, controller.signal, (index, result) => {
-      if (request.current === token) setEntries(current => current.map((entry, position) =>
-        position === index ? { ...entry, state: { status: 'result', result } } : entry))
-    }, batchExecution.concurrency, (file, signal) => analyzeFile(file, signal, session))
+      return { id: ids[index], source, state: { status: 'loading', source } }
+    })
+    setEntries(current => [...current, ...added])
+    getRuntime().queue.add(files, ids)
   }
-  return { entries, loadFiles }
+  function clearFiles() { runtime.current?.queue.clear(); setEntries([]) }
+  function loadFiles(files: File[], ids: readonly string[]) { clearFiles(); addFiles(files, ids) }
+  function removeFile(id: string) {
+    runtime.current?.queue.remove(id)
+    setEntries(current => current.filter(entry => entry.id !== id))
+  }
+  return { entries, loadFiles, addFiles, removeFile, clearFiles }
 }

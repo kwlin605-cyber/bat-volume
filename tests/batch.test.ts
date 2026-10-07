@@ -23,7 +23,7 @@ const failed: AnalysisEntry = { id: 'failed', source: { name: 'failed.anc', size
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r }); return { promise, resolve } }
 
 describe('batch data shared by table and report', () => {
-  it('applies correction only to required material weights and keeps grams on bat targets', () => {
+  it('corrects estimates or raw requirements while keeping fixed bat targets in grams', () => {
     const view = buildBatchView([entry('fixed', 'fixed.anc', 1000), entry('reference', 'reference.anc', 1000)], defaultMetricIds, defaultSort, {
       material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: -3 },
       requirements: { fixed: { min: 800, max: 800 } }, weightUnit: 'both',
@@ -32,7 +32,7 @@ describe('batch data shared by table and report', () => {
     expect(view.rows[0].cells.materialWeight.value).toBeCloseTo(2400 / 0.97, 10)
     expect(view.rows[0].cells.materialWeight.display).toBe('2,474 g')
     expect(view.rows[0].cells.materialWeight.secondary).toBeDefined()
-    expect(view.rows[1].cells.batWeight.display).toBe('700')
+    expect(view.rows[1].cells.batWeight.display).toBe('679')
     expect(view.rows[1].cells.materialWeight.value).toBe(2100)
   })
   it('defaults to weight requirements, material weight and volume, with targets isolated by entry ID', () => {
@@ -51,15 +51,15 @@ describe('batch data shared by table and report', () => {
     })
     expect(view.rows.map(row => row.id)).toEqual(direction === 'asc' ? ['b', 'a', 'c', 'failed'] : ['c', 'a', 'b', 'failed'])
   })
-  it('shows a bat weight immediately with untouched default settings, and restores it when the target is cleared', () => {
+  it('does not invent default density, and restores a missing estimate when the target is cleared', () => {
     const entries = [entry('a', 'a.anc', 1129.9491175359196)]
     const original = buildBatchView(entries, defaultMetricIds, defaultSort)
-    expect(original.rows[0].cells.batWeight.value).toBe(1129.9491175359196 * 0.7)
-    expect(original.rows[0].cells.batWeight.display).toBe('791')
+    expect(original.rows[0].cells.batWeight.value).toBeNull()
+    expect(original.rows[0].cells.batWeight.display).toBe('—')
     expect(original.rows[0].cells.materialWeight.value).toBeNull()
     const overridden = buildBatchView(entries, defaultMetricIds, defaultSort, { material: { referenceDensity: 0.7, volumeCm3: null, weightG: null, weightErrorPercent: 0 }, requirements: { a: { min: 600, max: 650 } } })
     expect(overridden.rows[0].cells.batWeight.display).toBe('600 – 650')
-    const cleared = buildBatchView(entries, defaultMetricIds, defaultSort, { material: { referenceDensity: 0.7, volumeCm3: null, weightG: null, weightErrorPercent: 0 }, requirements: {} })
+    const cleared = buildBatchView(entries, defaultMetricIds, defaultSort)
     expect(cleared.rows[0].cells.batWeight).toEqual(original.rows[0].cells.batWeight)
   })
   it('sorts estimated single weights and requested ranges together by their displayed quantity', () => {

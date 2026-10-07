@@ -7,16 +7,16 @@ import { parseRequirement } from '../src/features/batch/weight-input'
 const material: MaterialSettings = { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }
 describe('estimated bat weight', () => {
   it('works without material volume or weight, and reflects the adjustable reference density', () => {
-    expect(estimateBatWeight(initialMaterialSettings, 1000)).toBe(700)
+    expect(estimateBatWeight(initialMaterialSettings, 1000)).toBeNull()
     expect(estimateBatWeight({ ...initialMaterialSettings, referenceDensity: 0.8 }, 1000)).toBe(800)
-    expect(estimateBatWeight({ ...initialMaterialSettings, weightG: 1800 }, 1000)).toBe(700)
+    expect(estimateBatWeight({ ...initialMaterialSettings, weightG: 1800 }, 1000)).toBeNull()
   })
   it('uses actual density only when both material measurements are present', () => {
     expect(estimateBatWeight(material, 1000)).toBe(700)
     expect(estimateBatWeight({ ...material, weightG: 1800 }, 1000)).toBe(600)
   })
   it('preserves precision and handles missing or invalid geometry without inventing a weight', () => {
-    expect(estimateBatWeight(initialMaterialSettings, 1129.9491175359196)).toBe(1129.9491175359196 * 0.7)
+    expect(estimateBatWeight(material, 1129.9491175359196)).toBe(1129.9491175359196 * 0.7)
     expect(estimateBatWeight(initialMaterialSettings, null)).toBeNull()
     expect(estimateBatWeight(initialMaterialSettings, -1)).toBeNull()
     expect(estimateBatWeight({ ...material, referenceDensity: 2 }, Number.MAX_VALUE)).toBeNull()
@@ -24,7 +24,7 @@ describe('estimated bat weight', () => {
 })
 describe('material weight calculations', () => {
   it('uses reference density until both material measurements are supplied', () => {
-    expect(materialDensity(initialMaterialSettings)).toBe(0.7)
+    expect(materialDensity(initialMaterialSettings)).toBeNull()
     expect(materialDensity(material)).toBe(0.7)
     expect(materialDensity({ ...material, volumeCm3: null, weightG: 1800 })).toBe(0.7)
     expect(materialDensity({ ...material, weightG: 1800 })).toBe(0.6)
@@ -50,12 +50,21 @@ describe('material weight calculations', () => {
     expect(value.range.max * (1000 / 3000) * factor).toBeCloseTo(target.max, 10)
     expect(target).toEqual({ min: 600.123, max: 650.789 })
   })
-  it('corrects equal targets while leaving density, unrequested estimates and actual material weights unchanged', () => {
+  it('corrects estimates and equal targets in opposite directions without changing actual raw measurements', () => {
     const settings = { ...material, weightG: 1800, weightErrorPercent: -3 }
     expect(materialDensity(settings)).toBe(0.6)
-    expect(estimateBatWeight(settings, 1000)).toBe(600)
+    expect(estimateBatWeight(settings, 1000)).toBe(582)
     expect(calculateMaterialWeight(settings, 1000, null)).toEqual({ kind: 'reference', weightG: 1800 })
     expect(calculateMaterialWeight(settings, 1000, { min: 800, max: 800 })).toEqual({ kind: 'recommended', range: { min: 800 * (3 / 0.97), max: 800 * (3 / 0.97) } })
+  })
+  it('treats blank correction as zero, requires density only for estimates, and allows targets without density', () => {
+    expect(estimateBatWeight({ ...material, weightErrorPercent: null }, 1000)).toBe(700)
+    expect(estimateBatWeight({ ...material, weightErrorPercent: 5 }, 1000)).toBe(735)
+    const noDensity = { ...initialMaterialSettings, volumeCm3: 3000 }
+    expect(calculateMaterialWeight(noDensity, 1000, null)).toEqual({ kind: 'unavailable', reason: 'invalidWeight' })
+    expect(calculateMaterialWeight(noDensity, 1000, { min: 800, max: 850 })).toEqual({ kind: 'recommended', range: { min: 2400, max: 2550 } })
+    expect(estimateBatWeight({ ...noDensity, weightG: 2400, weightErrorPercent: -3 }, 1000)).toBe(776)
+    expect(estimateBatWeight({ ...material, weightErrorPercent: -100 }, 1000)).toBeNull()
   })
   it.each([-100, -101, NaN, Infinity])('rejects an unusable error %s instead of producing invalid weight', error => {
     expect(calculateMaterialWeight({ ...material, weightErrorPercent: error }, 1000, { min: 600, max: 650 })).toEqual({ kind: 'unavailable', reason: 'invalidWeight' })
@@ -94,9 +103,10 @@ describe('versioned local material storage', () => {
     const values = new Map<string, string>(raw === null ? [] : [[materialStorage.key, raw]])
     return { getItem: key => values.get(key) ?? null, setItem: (key, value) => { values.set(key, value) } }
   }
-  it('defaults to empty material dimensions and density 0.7, and round-trips optional measurements', () => {
+  it('starts all four fields blank and round-trips optional measurements', () => {
     const storage = memory()
     expect(readMaterialSettings(storage)).toEqual({ settings: initialMaterialSettings, unavailable: false })
+    expect(initialMaterialSettings).toEqual({ referenceDensity: null, volumeCm3: null, weightG: null, weightErrorPercent: null })
     for (const settings of [material, { ...material, volumeCm3: null, weightG: 1800 }, { ...material, referenceDensity: 0.75, weightG: 1800 }]) {
       expect(saveMaterialSettings(storage, settings)).toBe(true)
       expect(readMaterialSettings(storage)).toEqual({ settings, unavailable: false })
@@ -110,11 +120,17 @@ describe('versioned local material storage', () => {
   it('preserves old material measurements and starts their new correction at zero', () => {
     const old = { referenceDensity: 0.82, volumeCm3: 2800, weightG: 2100 }
     const storage = memory(JSON.stringify({ version: 1, settings: old }))
-    expect(readMaterialSettings(storage).settings).toEqual({ ...old, weightErrorPercent: 0 })
+    expect(readMaterialSettings(storage).settings).toEqual({ ...old, weightErrorPercent: null })
     const updated = { ...readMaterialSettings(storage).settings, weightErrorPercent: -3 }
     expect(saveMaterialSettings(storage, updated)).toBe(true)
     expect(readMaterialSettings(storage).settings).toEqual(updated)
-    expect(JSON.parse(storage.getItem(materialStorage.key)!).version).toBe(2)
+    expect(JSON.parse(storage.getItem(materialStorage.key)!).version).toBe(3)
+  })
+  it('preserves previously saved settings and keeps cleared fields blank after reopening', () => {
+    const storage = memory(JSON.stringify({ version: 2, settings: material }))
+    expect(readMaterialSettings(storage).settings).toEqual(material)
+    expect(saveMaterialSettings(storage, initialMaterialSettings)).toBe(true)
+    expect(readMaterialSettings(storage).settings).toEqual(initialMaterialSettings)
   })
   it('does not store invalid correction values or discard valid negative and decimal percentages', () => {
     const storage = memory()

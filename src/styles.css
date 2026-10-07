@@ -6,13 +6,28 @@ body { margin: 0; min-width: 280px; }
 button, summary { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, summary:focus-visible { outline: 2px solid #a3a3a3; outline-offset: 4px; }
 .app-shell { min-height: 100dvh; display: flex; flex-direction: column; }
-.app-header { height: 82px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 40px; border-bottom: 1px solid #f1f1f1; }
-.app-header .replace-files-button { height: 36px; padding: 0 12px; gap: 7px; border: 1px solid var(--color-accent); border-radius: 9px; background: var(--color-accent); color: var(--color-white); font-size: 12px; font-weight: 500; cursor: pointer; }
-.app-header .replace-files-button:hover { background: var(--color-accentHover); border-color: var(--color-accentHover); }
-.brand { display: inline-flex; align-items: center; gap: 11px; color: #292929; text-decoration: none; font-size: 15px; font-weight: 600; letter-spacing: .015em; }
-.brand-mark { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 10px; background: #f3f3f3; color: #616161; }
+.file-actions { position: fixed; right: max(24px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; z-index: 20; }
+.file-actions button { height: 48px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--color-border); cursor: pointer; box-shadow: 0 4px 16px #00000012; font: inherit; }
+.file-actions .remove-mode-button { position: absolute; right: 0; bottom: 58px; width: 48px; border-radius: 50%; background: var(--color-white); color: var(--color-muted); transition: transform 200ms ease, background 150ms ease; }
+.file-actions .remove-mode-button:hover { background: var(--color-hover); color: var(--color-ink); }
+.file-actions.is-removing .remove-mode-button { transform: translateY(-58px); color: var(--color-ink); }
+.file-actions .file-action-button { min-width: 130px; padding: 0 19px; gap: 8px; border-radius: 24px; border-color: var(--color-accent); background: var(--color-accent); color: var(--color-white); font-size: 13px; font-weight: 500; }
+.file-actions .file-action-button:hover { background: var(--color-accentHover); border-color: var(--color-accentHover); }
+.remove-all-slot { height: 0; opacity: 0; visibility: hidden; overflow: hidden; transition: height 200ms ease, opacity 150ms ease, visibility 200ms; }
+.file-actions.is-removing .remove-all-slot { height: 58px; opacity: 1; visibility: visible; }
+.remove-file-button { width: 32px; height: 32px; display: inline-flex; justify-content: center; align-items: center; flex: none; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-white); color: var(--color-muted); cursor: pointer; animation: reveal-remove 180ms ease-out; }
+.remove-file-button:hover { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-white); }
+@keyframes reveal-remove { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .remove-all-slot, .file-actions .remove-mode-button { transition: none; } .remove-file-button { animation: none; } }
+.mobile-results { display: grid; gap: 24px; }
+.mobile-result-item { position: relative; }
+.mobile-result-item > .remove-file-button { position: absolute; top: -12px; right: -12px; z-index: 1; }
+.session-restoring { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--color-muted); }
+.session-storage-error { margin: 0; padding: 0 24px 12px; font-size: 12px; text-align: center; color: var(--color-muted); }
 .app-main { width: min(1340px,100%); margin: 0 auto; flex: 1; padding: 32px 48px; }
 .app-main.is-empty { display: flex; align-items: center; justify-content: center; padding-bottom: 120px; }
+.app-main.with-result { padding-bottom: 160px; }
+.app-main.with-result.is-removing { padding-bottom: 218px; }
 .empty-state { text-align: center; max-width: 430px; display: flex; flex-direction: column; align-items: center; }
 .upload-symbol { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 22px; background: #f6f6f6; color: #727272; margin-bottom: 28px; }
 .empty-state h1 { margin: 0 0 12px; font-size: 28px; font-weight: 500; letter-spacing: -.035em; }
@@ -71,9 +86,6 @@ button:focus-visible, summary:focus-visible { outline: 2px solid #a3a3a3; outlin
 @keyframes pulse { 50% { opacity: .45; } }
 @media (max-width:1023px) { .app-main { padding: 38px 28px; } }
 @media (max-width:600px) {
-  .app-header { height: 70px; padding: 0 20px; }
-  .brand { font-size: 14px; gap: 8px; }
-  .brand-mark { width: 30px; height: 30px; border-radius: 9px; }
   .app-main { padding: 32px 20px; }
   .app-main.is-empty { padding-bottom: 90px; }
   .empty-state h1 { font-size: 23px; }

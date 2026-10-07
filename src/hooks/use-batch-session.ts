@@ -1,0 +1,84 @@
+import { useEffect, useRef, useState } from 'react'
+import { useAnalysis } from './use-analysis'
+import { appendSessionFiles, removeSessionFile, sessionFiles, type BatchSession } from '../services/batch-session'
+import { LatestSessionStorage } from '../services/latest-session-storage'
+import { validWeightRange, type WeightRange } from '../domain/weight'
+
+/** Connect the latest saved batch to analysis. Browser storage never owns analysis or UI state. */
+export function useBatchSession() {
+  const analysis = useAnalysis()
+  const [storage] = useState(() => new LatestSessionStorage())
+  const current = useRef<BatchSession | null>(null)
+  const intent = useRef(0), saveIntent = useRef(0), mounted = useRef(false)
+  const [requirements, setRequirements] = useState<Record<string, WeightRange>>({})
+  const [restoring, setRestoring] = useState(true)
+  const [storageUnavailable, setStorageUnavailable] = useState(false)
+
+  useEffect(() => {
+    mounted.current = true
+    let alive = true
+    const token = intent.current
+    void storage.read().then(session => {
+      if (!alive || intent.current !== token) return
+      current.current = session
+      if (session) {
+        setRequirements(session.requirements)
+        analysis.loadFiles(sessionFiles(session), session.files.map(item => item.id))
+      }
+    }).catch(() => { if (alive && intent.current === token) setStorageUnavailable(true) })
+      .finally(() => { if (alive) setRestoring(false) })
+    return () => { alive = false; mounted.current = false }
+  }, [storage])
+
+  function persist(operation: Promise<void>) {
+    const token = ++saveIntent.current
+    void operation.then(() => {
+      if (mounted.current && saveIntent.current === token) setStorageUnavailable(false)
+    }).catch(() => {
+      if (mounted.current && saveIntent.current === token) setStorageUnavailable(true)
+    })
+  }
+
+  function addFiles(files: File[]) {
+    if (!files.length) return
+    ++intent.current
+    const previousCount = current.current?.files.length ?? 0
+    const session = appendSessionFiles(current.current, files)
+    current.current = session
+    setRequirements(session.requirements); setRestoring(false)
+    analysis.addFiles(files, session.files.slice(previousCount).map(item => item.id))
+    persist(storage.replace(session))
+  }
+
+  function removeFile(id: string) {
+    const session = current.current
+    if (!session?.files.some(file => file.id === id)) return
+    const remaining = removeSessionFile(session, id)
+    if (!remaining) { clearFiles(); return }
+    ++intent.current
+    current.current = remaining
+    setRequirements(remaining.requirements)
+    analysis.removeFile(id)
+    persist(storage.replace(remaining))
+  }
+
+  function clearFiles() {
+    ++intent.current
+    current.current = null
+    setRequirements({}); setRestoring(false)
+    analysis.clearFiles()
+    persist(storage.clear())
+  }
+
+  function setRequirement(id: string, range: WeightRange | null) {
+    const session = current.current
+    if (!session?.files.some(file => file.id === id) || (range && !validWeightRange(range))) return
+    const values = { ...session.requirements }
+    if (range) values[id] = { ...range }; else delete values[id]
+    current.current = { ...session, requirements: values }
+    setRequirements(values)
+    persist(storage.updateRequirements(session.id, values))
+  }
+
+  return { entries: analysis.entries, requirements, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setRequirement }
+}
