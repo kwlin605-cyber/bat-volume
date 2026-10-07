@@ -15,7 +15,7 @@ import type { AnalysisEntry } from '../src/services/analysis-state'
 const raw = readFileSync(new URL('./fixtures/case-001.anc', import.meta.url), 'utf8')
 const source = { name: 'sample.anc', size: raw.length }
 const sample: AnalysisEntry = { id: 'sample', source, state: { status: 'result', result: analyzeAnc(raw, source) } }
-const material = { referenceDensity: 0.7, volumeCm3: 3000, weightG: null }
+const material = { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }
 const makeView = (weightUnit: WeightDisplayMode, requirements = {}) => buildBatchView([sample], defaultMetricIds, defaultSort, { material, requirements, weightUnit })
 
 describe('weight units and canonical gram data', () => {
@@ -41,6 +41,9 @@ describe('weight units and canonical gram data', () => {
       const view = buildBatchView([second, sample], defaultMetricIds, { key: 'batWeight', direction: 'asc' }, { material, requirements, weightUnit: mode })
       expect(view.rows.map(row => row.id)).toEqual(['sample', 'second'])
       expect(view.rows[0].cells.batWeight.value).toBe(600.25)
+      expect(view.rows[0].cells.batWeight.display).toBe('600 – 651')
+      expect(view.rows[0].cells.batWeight.secondary).toBeUndefined()
+      expect(view.columns.find(column => column.id === 'batWeight')?.unit).toBe('g')
       expect(view.rows[0].cells.volume).toEqual(makeView('g').rows[0].cells.volume)
     }
     expect(requirements.sample).toEqual({ min: 600.25, max: 650.75 })
@@ -68,23 +71,27 @@ describe('reports with selected weight units', () => {
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(data)
     const sheet = workbook.worksheets[0]
-    const cell = sheet.getCell('D2'), weight = view.rows[0].cells.batWeight
+    const cell = sheet.getCell('C2'), weight = view.rows[0].cells.materialWeight
     if (mode === 'both') {
       expect(cell.text).toBe(`${weight.display}\n${weight.secondary}`)
-      expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 14, bold: true } }, { text: '\n' + weight.secondary, font: { size: 10 } }] })
-      expect(sheet.getCell('D1').text).toBe('預計重量 g / oz')
+      expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 10 } }, { text: '\n' + weight.secondary, font: { size: 10 } }] })
+      expect(sheet.getCell('C1').text).toBe('木料重量 g / oz')
     } else {
       expect(cell.value).toBe(fromGrams(weight.value!, mode))
       expect(cell.numFmt).toBe(mode === 'oz' ? '#,##0.0' : '#,##0')
     }
     expect(sheet.getCell('B2').value).toBe(view.rows[0].cells.volume.value)
+    expect(sheet.getCell('D2').value).toBe(view.rows[0].cells.batWeight.value)
+    expect(sheet.getCell('D2').numFmt).toBe('#,##0')
+    expect(sheet.getCell('D1').text).toBe('預計重量 g')
     expect(sheet.pageSetup).toMatchObject({ orientation: 'portrait', fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:1' })
     expect(sheet.getRow(2).height).toBeGreaterThanOrEqual(mode === 'both' ? 54 : 32)
     expect(sheet.getCell('D2').font.color?.argb).toBe('FF262626')
   })
-  it('preserves fixed numeric ounce requirements and dual-unit recommended ranges', async () => {
+  it('keeps fixed requirements in grams while converting material weights and dual-unit ranges', async () => {
     const fixed = makeView('oz', { sample: { min: 600.25, max: 600.25 } })
-    expect(createExcelReport(fixed).getWorksheet(1)!.getCell('D2').value).toBe(600.25 / gramsPerOunce)
+    expect(createExcelReport(fixed).getWorksheet(1)!.getCell('D2').value).toBe(600.25)
+    expect(createExcelReport(fixed).getWorksheet(1)!.getCell('C2').value).toBe(fixed.rows[0].cells.materialWeight.value! / gramsPerOunce)
     const dual = makeView('both', { sample: { min: 600, max: 650 } })
     const measure = (value: string, size: number) => [...value].length * size
     const layout = buildReportLayout(dual, measure)

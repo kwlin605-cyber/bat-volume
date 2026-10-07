@@ -21,8 +21,8 @@ export interface BatchView {
 }
 export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext): BatchView {
   const weightUnit = weights.weightUnit ?? 'g'
-  const weightCell = (value: number | null, maximum?: number): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
-    ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, weightUnit)) })
+  const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
+    ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
   const summary = { total: entries.length, calculated: 0, failed: 0, pending: 0 }
   const rows: BatchRow[] = entries.map(entry => {
     const result = entry.state.status === 'result' ? entry.state.result : null
@@ -42,9 +42,9 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
       : weightCell(estimatedWeight)
     const materialWeight = calculateMaterialWeight(weights.material, calculated?.volumeCm3 ?? null, required)
     cells.materialWeight = materialWeight.kind === 'reference'
-      ? weightCell(materialWeight.weightG)
+      ? weightCell(materialWeight.weightG, undefined, weightUnit)
       : materialWeight.kind === 'recommended'
-        ? weightCell(materialWeight.range.min, materialWeight.range.max)
+        ? weightCell(materialWeight.range.min, materialWeight.range.max, weightUnit)
         : { value: null, display: text.missingValue, ...(materialWeight.reason === 'materialTooSmall' ? { caption: text.materialTooSmall } : {}) }
     let status: BatchRow['status']
     if (pending) status = { label: text.loading, detail: '', kind: 'loading' }

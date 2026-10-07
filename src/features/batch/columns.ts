@@ -25,6 +25,6 @@ export const allMetricIds: MetricId[] = metricColumns.map(column => column.id)
 export const geometryMetricIds: MetricId[] = geometryColumns.map(column => column.id)
 export const defaultMetricIds: MetricId[] = ['volume', 'materialWeight', 'batWeight']
 export const columnsForWeightUnit = (mode: WeightDisplayMode): MetricColumn[] => metricColumns.map(column =>
-  column.id === 'batWeight' || column.id === 'materialWeight'
+  column.id === 'materialWeight'
     ? { ...column, unit: weightHeaderUnit(mode), numberFormat: weightNumberFormat(mode), weightMode: mode }
     : column)

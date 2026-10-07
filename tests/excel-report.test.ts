@@ -26,7 +26,7 @@ describe('Excel report saved-file behavior', () => {
     const sample = entries.find(entry => entry.state.status === 'result' && entry.state.result.status === 'calculated')!
     const second = { ...sample, id: 'reference', source: { ...sample.source, name: 'reference.anc' } }
     const view = buildBatchView([sample, second], defaultMetricIds, defaultSort, {
-      material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null }, requirements: { [sample.id]: { min: 600, max: 650 } },
+      material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { [sample.id]: { min: 600, max: 650 } },
     })
     const sheet = await reopen(createExcelReport(view))
     expect(sheet.pageSetup.printArea).toBe('A1:D3')
