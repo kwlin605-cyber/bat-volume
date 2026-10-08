@@ -27,6 +27,20 @@ export function removeSessionFile(session: BatchSession, id: string): BatchSessi
   return { ...session, files, requirements }
 }
 
+/** Apply one validated range to live file identities in a single immutable update. */
+export function updateSessionRequirements(session: BatchSession, ids: readonly string[], range: WeightRange | null): BatchSession {
+  if (range && !validWeightRange(range)) return session
+  const liveIds = new Set(session.files.map(file => file.id))
+  const selected = [...new Set(ids)].filter(id => liveIds.has(id))
+  if (!selected.length) return session
+  const requirements = { ...session.requirements }
+  for (const id of selected) {
+    if (range) requirements[id] = { ...range }
+    else delete requirements[id]
+  }
+  return { ...session, requirements }
+}
+
 /** Rebuild actual File objects so decoding and geometry still use the normal analysis path. */
 export const sessionFiles = (session: BatchSession) => session.files.map(item => new File([item.blob], item.name, { type: item.blob.type, lastModified: item.lastModified }))
 

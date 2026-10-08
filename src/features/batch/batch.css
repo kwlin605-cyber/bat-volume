@@ -37,7 +37,11 @@
 .batch-table tbody tr:hover .metric-primary { background: var(--color-emphasisHover); }
 .batch-table tbody tr { cursor: pointer; }
 .batch-table tbody tr:focus-visible { outline: 2px solid #909090; outline-offset: -2px; }
-.batch-table tbody tr.row-editing td { background: #f2f2f2; }
+.batch-table tbody tr.row-selected td { background: var(--selection-background); }
+.batch-table tbody tr.row-selected td.metric-primary { background: var(--selection-background); }
+.batch-table tbody tr.row-selected td:first-child { box-shadow: inset 3px 0 var(--selection-accent); }
+.batch-table.is-selecting { user-select: none; cursor: ns-resize; }
+.batch-table.is-selecting tbody tr, .batch-table.is-selecting button { cursor: ns-resize; }
 .batch-table-area.is-removing .batch-table-wrap { border: 0; border-radius: 0; }
 .batch-table-area.is-removing .batch-table { border-collapse: separate; border-spacing: 0; }
 .batch-table-area.is-removing tbody tr { background: transparent; cursor: default; }
@@ -56,6 +60,12 @@
 .requirement-trigger:disabled { cursor: wait; }
 .weight-caption { display: block; margin-top: 6px; color: #7e7e7e; font-size: 11px; font-weight: 400; }
 .weight-editor { white-space: normal; }
+.requirement-popover { position: fixed; z-index: 30; padding: 14px 16px 18px; background: var(--color-white); border: 1px solid var(--selection-border); border-radius: 12px; box-shadow: 0 8px 30px #00000018; }
+.requirement-popover-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--selection-accent); }
+.requirement-popover-heading .icon-button { width: 26px; height: 26px; }
+.requirement-popover .weight-editor input { border-color: var(--selection-border); outline-color: var(--selection-accent); height: 38px; }
+.requirement-popover .weight-editor input:focus { border-color: var(--selection-accent); }
+.requirement-popover .weight-editor-line { min-height: 38px; }
 .weight-editor-line { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 13px; }
 .weight-editor input { min-width: 42px; width: 70px; flex: 1; padding: 7px 4px; border: 1px solid #a3a3a3; border-radius: 6px; outline-color: #737373; color: #424242; background: var(--color-white); font: inherit; text-align: right; appearance: textfield; }
 .weight-editor input::-webkit-inner-spin-button, .weight-editor input::-webkit-outer-spin-button { appearance: none; margin: 0; }
@@ -115,6 +125,6 @@ body:has(.result-dialog[open], .material-dialog[open]) { overflow: hidden; }
 .dual-unit-value { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr 1fr; }
 .dual-unit-value > span { display: flex; align-items: center; justify-content: flex-end; padding: 8px 20px; font: inherit; }
 .dual-unit-value > span:last-child { background: var(--color-accent); color: var(--color-white); }
-.batch-table tbody tr:hover .dual-unit-value > span:last-child { background: var(--color-accentHover); }
+.batch-table tbody tr:hover:not(.row-selected) .dual-unit-value > span:last-child { background: var(--color-accentHover); }
 @media (min-width: 1024px) and (max-width: 1190px) { .dual-unit-value > span { padding-left: 14px; padding-right: 14px; } }
 .weight-input-unit { flex: none; color: var(--color-muted); font-size: 11px; font-weight: 400; }

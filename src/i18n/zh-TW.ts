@@ -43,6 +43,7 @@ export const text = {
   maximumWeight: '重量上限',
   clearRequirement: '清除要求重量',
   editRequirement: '編輯要求重量',
+  selectedBatCount: '已選 {count} 支',
   invalidPositiveNumber: '請輸入大於 0 的有效數字。',
   invalidWeightRange: '上限需大於或等於下限。',
   materialTooSmall: '木料體積不足',

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAnalysis } from './use-analysis'
-import { appendSessionFiles, removeSessionFile, sessionFiles, type BatchSession } from '../services/batch-session'
+import { appendSessionFiles, removeSessionFile, sessionFiles, updateSessionRequirements, type BatchSession } from '../services/batch-session'
 import { LatestSessionStorage } from '../services/latest-session-storage'
-import { validWeightRange, type WeightRange } from '../domain/weight'
+import type { WeightRange } from '../domain/weight'
 import { createDefaultBatchDisplay, normalizeBatchDisplay, type BatchDisplaySettings } from '../domain/batch-display'
 
 /** Connect the latest saved batch to analysis. Browser storage never owns analysis or UI state. */
@@ -73,14 +73,14 @@ export function useBatchSession() {
     persist(storage.clear())
   }
 
-  function setRequirement(id: string, range: WeightRange | null) {
+  function setFileRequirements(ids: readonly string[], range: WeightRange | null) {
     const session = current.current
-    if (!session?.files.some(file => file.id === id) || (range && !validWeightRange(range))) return
-    const values = { ...session.requirements }
-    if (range) values[id] = { ...range }; else delete values[id]
-    current.current = { ...session, requirements: values }
-    setRequirements(values)
-    persist(storage.updateRequirements(session.id, values))
+    if (!session) return
+    const next = updateSessionRequirements(session, ids, range)
+    if (next === session) return
+    current.current = next
+    setRequirements(next.requirements)
+    persist(storage.updateRequirements(next.id, next.requirements))
   }
 
   function updateDisplay(value: BatchDisplaySettings) {
@@ -92,5 +92,5 @@ export function useBatchSession() {
     persist(storage.updateDisplay(session.id, next))
   }
 
-  return { entries: analysis.entries, requirements, display, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setRequirement, updateDisplay }
+  return { entries: analysis.entries, requirements, display, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setFileRequirements, updateDisplay }
 }
