@@ -37,13 +37,9 @@ export default function BatchResults({ entries, requirements, display, onDisplay
   }, [selectionKey])
   useEffect(() => { if (removing) setSelected(null) }, [removing])
   const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit), [entries, visible, sort, material, requirements, weightUnit, lengthUnit])
-  const selection = useRowSelection(view.rows, removing)
   const { areaRef, layout } = useColumnLayout(view, removing ? 48 : 0)
+  const selection = useRowSelection(view.rows, removing, areaRef)
   const selectedEntry = entries.find(entry => entry.id === selected)
-  function beginEditing(id: string, element: HTMLElement) {
-    if (selection.suppressClick.current) return
-    selection.open(id, element)
-  }
   function commitRequirement(range: WeightRange | null) {
     if (selection.editing) onRequirementChange(selection.editing.ids, range)
     selection.cancel()
@@ -75,17 +71,17 @@ export default function BatchResults({ entries, requirements, display, onDisplay
       <table className={`batch-table ${selection.dragging ? 'is-selecting' : ''}`} style={{ width: layout.width + (removing ? 48 : 0) }}>
         <colgroup><col style={{ width: layout.filenameWidth }} />{layout.columns.map(({ column, width }) => <col key={column.id} style={{ width }} />)}{removing && <col style={{ width: 48 }} />}</colgroup>
         <thead><tr><th scope="col">{text.fileName}</th>{view.columns.map(column => <th scope="col" className={`numeric ${column.prominent ? 'metric-primary' : ''}`} key={column.id}>{column.label}<small>{column.unit}</small></th>)}{removing && <th className="remove-cell" scope="col"><span className="sr-only">{text.removeFiles}</span></th>}</tr></thead>
-        <tbody>{view.rows.map(row => <tr key={row.id} data-row-id={row.id} className={selection.ids.includes(row.id) ? 'row-selected' : ''} tabIndex={row.pending || removing ? -1 : 0} aria-label={`${text.editRequirement} ${row.name}`}
+        <tbody>{view.rows.map(row => <tr key={row.id} data-row-id={row.id} className={selection.ids.includes(row.id) ? 'row-selected' : ''} tabIndex={row.pending || removing ? -1 : 0} aria-label={`${text.selectBat} ${row.name}`} aria-describedby="row-selection-help"
           onPointerDown={event => selection.pointerDown(event, row.id)}
-          onClick={event => { if (!row.pending && !(event.target instanceof Element && event.target.closest('button, input'))) beginEditing(row.id, event.currentTarget) }}
-          onKeyDown={event => { if (event.target === event.currentTarget && !row.pending && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); beginEditing(row.id, event.currentTarget) } }}>
-          <td><button type="button" className="filename-button" disabled={row.pending} aria-label={`${text.previewFile} ${row.name}`} onClick={() => { selection.cancel(); setSelected(row.id) }}>{row.name}</button>
+          onClick={event => { if (!row.pending && !(event.target instanceof Element && event.target.closest('button:not(.requirement-trigger, .filename-button), input'))) selection.select(row.id, event, event.currentTarget) }}
+          onKeyDown={event => { if (event.target === event.currentTarget && !row.pending && event.key === ' ') { event.preventDefault(); selection.select(row.id, event, event.currentTarget) } }}>
+          <td><button type="button" className="filename-button" disabled={row.pending} aria-label={`${text.previewFile} ${row.name}`} onClick={event => { if (event.ctrlKey || event.shiftKey) return; event.stopPropagation(); selection.cancel(); setSelected(row.id) }}>{row.name}</button>
             {row.pending && <span className="row-loading"><LoaderCircle size={12} className="spin" aria-hidden="true" />{text.loading}</span>}
             {row.status.detail && <span className="row-diagnostic">{row.status.detail}</span>}
           </td>
           {view.columns.map(column => <td className={`numeric ${column.prominent ? 'metric-primary' : ''} ${column.splitUnits && row.cells[column.id].secondary ? 'metric-dual-value' : ''}`} key={column.id}>
             {column.id === 'batWeight'
-              ? <button type="button" className="requirement-trigger" disabled={row.pending || removing} aria-label={`${text.editRequirement} ${row.name}`} onClick={event => beginEditing(row.id, event.currentTarget)}><span>{row.cells[column.id].display}</span>{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}</button>
+              ? <button type="button" className="requirement-trigger" disabled={row.pending || removing} aria-label={`${text.selectBat} ${row.name}`}><span>{row.cells[column.id].display}</span>{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}</button>
               : column.splitUnits && row.cells[column.id].secondary
                 ? <div className="dual-unit-value"><span>{row.cells[column.id].display}</span><span>{row.cells[column.id].secondary}</span></div>
                 : <>{row.cells[column.id].display}{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}{row.cells[column.id].caption && <small className="weight-caption">{row.cells[column.id].caption}</small>}</>}
@@ -93,7 +89,13 @@ export default function BatchResults({ entries, requirements, display, onDisplay
           {removing && <td className="remove-cell"><RemoveFileButton name={row.name} onRemove={() => onRemove(row.id)} /></td>}
         </tr>)}</tbody>
       </table>
-    </div></div>
+    </div>
+      <p id="row-selection-help" className="sr-only">{text.selectionKeyboardHint}</p>
+      {selection.ids.length > 0 && !selection.editing && <div className="row-selection-actions" aria-live="polite">
+        <span>{text.selectedBatCount.replace('{count}', String(selection.ids.length))}</span>
+        <button type="button" onClick={selection.openEditor}>{text.editSelectedWeights}<kbd>{text.enterKeyLabel}</kbd></button>
+      </div>}
+    </div>
     {selection.editing && <RequirementPopover key={selection.editing.ids.join('|')} selection={selection.editing}
       value={selection.editing.ids.length === 1 ? requirements[selection.editing.ids[0]] ?? null : null}
       onCommit={commitRequirement} onCancel={selection.cancel} />}
