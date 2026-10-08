@@ -1,25 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultBatchDisplay, metricIds, normalizeBatchDisplay } from '../src/domain/batch-display'
+import { createDefaultBatchDisplay, createDefaultBatchSort, metricIds, normalizeBatchDisplay } from '../src/domain/batch-display'
 import { allMetricIds } from '../src/features/batch/columns'
 
 describe('batch display preferences', () => {
   it('uses the current table catalog and gives each new session independent defaults', () => {
     expect(metricIds).toEqual(allMetricIds)
     const defaults = createDefaultBatchDisplay()
-    expect(defaults).toEqual({ visible: ['volume', 'materialWeight', 'batWeight'], sort: { key: 'name', direction: 'asc' } })
-    defaults.visible.pop(); defaults.sort.direction = 'desc'
-    expect(createDefaultBatchDisplay().visible).toHaveLength(3)
-    expect(createDefaultBatchDisplay().sort.direction).toBe('asc')
+    expect(defaults).toEqual({ visible: [...metricIds] })
+    defaults.visible.pop()
+    expect(createDefaultBatchDisplay().visible).toHaveLength(6)
+    const sort = createDefaultBatchSort()
+    expect(sort).toEqual({ key: 'materialWeight', direction: 'asc' })
+    sort.direction = 'desc'
+    expect(createDefaultBatchSort().direction).toBe('asc')
   })
   it('retains empty selections, deduplicates known fields and tolerates future removed fields', () => {
     expect(normalizeBatchDisplay({ visible: [] }).visible).toEqual([])
     expect(normalizeBatchDisplay({ visible: ['volume', 'unknown', 'volume', 'length'] }).visible).toEqual(['volume', 'length'])
     expect(normalizeBatchDisplay({ visible: ['unknown'] }).visible).toEqual(createDefaultBatchDisplay().visible)
   })
-  it('recovers invalid fields independently and never includes material settings or units', () => {
+  it('keeps only visible columns and excludes transient sorting and unrelated settings', () => {
     expect(normalizeBatchDisplay(null)).toEqual(createDefaultBatchDisplay())
     expect(normalizeBatchDisplay({ visible: 'invalid', sort: { key: 'volume', direction: 'sideways' }, weightUnit: 'oz' }))
-      .toEqual({ visible: ['volume', 'materialWeight', 'batWeight'], sort: { key: 'volume', direction: 'asc' } })
-    expect(normalizeBatchDisplay({ sort: { key: 'removed-column', direction: 'desc' } }).sort).toEqual({ key: 'name', direction: 'desc' })
+      .toEqual(createDefaultBatchDisplay())
+    expect(normalizeBatchDisplay({ visible: ['length'], sort: { key: 'volume', direction: 'desc' } })).toEqual({ visible: ['length'] })
+    expect(normalizeBatchDisplay({ sort: { key: 'removed-column', direction: 'desc' } })).toEqual(createDefaultBatchDisplay())
   })
 })

@@ -3,7 +3,7 @@ import { useAnalysis } from './use-analysis'
 import { appendSessionFiles, removeSessionFile, sessionFiles, updateSessionRequirements, type BatchSession } from '../services/batch-session'
 import { LatestSessionStorage } from '../services/latest-session-storage'
 import type { WeightRange } from '../domain/weight'
-import { createDefaultBatchDisplay, normalizeBatchDisplay, type BatchDisplaySettings } from '../domain/batch-display'
+import { createDefaultBatchDisplay, createDefaultBatchSort, normalizeBatchDisplay, type BatchDisplaySettings, type BatchSort } from '../domain/batch-display'
 
 /** Connect the latest saved batch to analysis. Browser storage never owns analysis or UI state. */
 export function useBatchSession() {
@@ -13,6 +13,7 @@ export function useBatchSession() {
   const intent = useRef(0), saveIntent = useRef(0), mounted = useRef(false)
   const [requirements, setRequirements] = useState<Record<string, WeightRange>>({})
   const [display, setDisplay] = useState(createDefaultBatchDisplay)
+  const [sort, setSort] = useState(createDefaultBatchSort)
   const [restoring, setRestoring] = useState(true)
   const [storageUnavailable, setStorageUnavailable] = useState(false)
 
@@ -69,6 +70,7 @@ export function useBatchSession() {
     ++intent.current
     current.current = null
     setRequirements({}); setDisplay(createDefaultBatchDisplay()); setRestoring(false)
+    setSort(createDefaultBatchSort())
     analysis.clearFiles()
     persist(storage.clear())
   }
@@ -92,5 +94,8 @@ export function useBatchSession() {
     persist(storage.updateDisplay(session.id, next))
   }
 
-  return { entries: analysis.entries, requirements, display, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setFileRequirements, updateDisplay }
+  // Keep sort outside the persisted session so additions/removals retain it, but reopening resets it.
+  function updateSort(value: BatchSort) { setSort({ ...value }) }
+
+  return { entries: analysis.entries, requirements, display, sort, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setFileRequirements, updateDisplay, updateSort }
 }

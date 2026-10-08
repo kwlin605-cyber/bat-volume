@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { defaultBatGrouping, batGroupingStorage } from '../src/config/grouping'
 import { batGroupRank, classifyBat, normalizeBatGrouping } from '../src/domain/bat-grouping'
-import { createDefaultBatchDisplay } from '../src/domain/batch-display'
+import { createDefaultBatchDisplay, createDefaultBatchSort, metricIds } from '../src/domain/batch-display'
 import { analyzeAnc } from '../src/domain/analyze'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 import { readBatGrouping, saveBatGrouping } from '../src/services/bat-grouping-storage'
@@ -61,7 +61,7 @@ describe('grouping before shared batch sorting', () => {
     const view = buildBatchView(entries, ['volume'], sort, undefined, 'mm', { ...defaultBatGrouping, firstGroup: 'baseball' })
     expect(view.rows.map(row => row.id)).toEqual(['base-small', 'base-large', 'soft-small', 'soft-large', 'pending', 'failed'])
     expect(view.sort).toEqual(sort)
-    expect(createDefaultBatchDisplay().sort).toEqual({ key: 'name', direction: 'asc' })
+    expect(createDefaultBatchSort()).toEqual({ key: 'materialWeight', direction: 'asc' })
   })
   it('sorts names naturally within groups and never classifies by filename', () => {
     const view = buildBatchView([entry('a', 65, 100, '壘球2.anc'), entry('b', 58, 100, '棒球10.anc'), entry('c', 58, 100, '棒球2.anc')], [], { key: 'name', direction: 'desc' })
@@ -103,7 +103,7 @@ describe('grouping preference storage', () => {
     saveMaterialSettings(storage, { referenceDensity: 0.7, volumeCm3: 3000, weightG: 2100, weightErrorPercent: -3 })
     saveLengthUnit(storage, 'in'); saveWeightUnit(storage, 'both')
     const nextFiles = createDefaultBatchDisplay()
-    expect(nextFiles.sort.key).toBe('name')
+    expect(nextFiles.visible).toEqual(metricIds)
     expect(readBatGrouping(storage).settings).toEqual(settings)
     expect(readMaterialSettings(storage).settings.referenceDensity).toBe(0.7)
     expect(readLengthUnit(storage).mode).toBe('in')

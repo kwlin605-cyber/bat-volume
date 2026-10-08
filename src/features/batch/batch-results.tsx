@@ -4,7 +4,7 @@ import type { AnalysisEntry } from '../../services/analysis-state'
 import { text } from '../../i18n/zh-TW'
 import type { ReportFormat } from '../../reports/formats'
 import { downloadReport } from '../../reports/download'
-import type { BatchDisplaySettings } from '../../domain/batch-display'
+import type { BatchDisplaySettings, BatchSort } from '../../domain/batch-display'
 import { buildBatchView } from './view-model'
 import { ResultDialog } from './result-dialog'
 import { useColumnLayout } from './use-column-layout'
@@ -21,8 +21,8 @@ import { BatchToolbar } from './batch-toolbar'
 import { RemoveFileButton } from '../../components/remove-file-button'
 import './batch.css'
 
-export default function BatchResults({ entries, requirements, display, onDisplayChange, removing, onRemove, onRequirementChange }: { entries: AnalysisEntry[]; requirements: Record<string, WeightRange>; display: BatchDisplaySettings; onDisplayChange: (value: BatchDisplaySettings) => void; removing: boolean; onRemove: (id: string) => void; onRequirementChange: (ids: readonly string[], range: WeightRange | null) => void }) {
-  const { visible, sort } = display
+export default function BatchResults({ entries, requirements, display, onDisplayChange, sort, onSortChange, removing, onRemove, onRequirementChange }: { entries: AnalysisEntry[]; requirements: Record<string, WeightRange>; display: BatchDisplaySettings; onDisplayChange: (value: BatchDisplaySettings) => void; sort: BatchSort; onSortChange: (value: BatchSort) => void; removing: boolean; onRemove: (id: string) => void; onRequirementChange: (ids: readonly string[], range: WeightRange | null) => void }) {
+  const { visible } = display
   const { material, applyMaterial, storageUnavailable } = useMaterialSettings()
   const { mode: weightUnit, selectMode, storageUnavailable: unitStorageUnavailable } = useWeightUnit()
   const { mode: lengthUnit, selectMode: selectLengthUnit, storageUnavailable: lengthStorageUnavailable } = useLengthUnit()
@@ -65,7 +65,7 @@ export default function BatchResults({ entries, requirements, display, onDisplay
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
       <BatchToolbar visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0} exporting={exporting}
         grouping={grouping} onGroupingChange={next => { selection.cancel(); applyGrouping(next) }}
-        onVisibleChange={columns => { selection.cancel(); onDisplayChange({ ...display, visible: columns }) }} onSortChange={next => { selection.cancel(); onDisplayChange({ ...display, sort: next }) }} onUnitChange={selectMode}
+        onVisibleChange={columns => { selection.cancel(); onDisplayChange({ visible: columns }) }} onSortChange={next => { selection.cancel(); onSortChange(next) }} onUnitChange={selectMode}
         onMaterialOpen={() => { selection.cancel(); setMaterialOpen(true) }} onExport={format => void exportReport(format)} />
     </div>
     {error && <p className="report-error" role="alert">{error}</p>}

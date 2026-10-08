@@ -32,7 +32,7 @@ class MemoryRepository implements SessionRepository {
 describe('the latest saved ANC batch', () => {
   it('restores display preferences with their files, and defaults old or foreign records', () => {
     const session = makeSession(), stored = { version: 1, id: session.id, files: session.files }
-    const display: BatchDisplaySettings = { visible: ['volume', 'length'], sort: { key: 'batWeight', direction: 'desc' } }
+    const display: BatchDisplaySettings = { visible: ['volume', 'length'] }
     expect(restoreBatchSession(stored, null, { version: 1, sessionId: session.id, value: display })!.display).toEqual(display)
     expect(restoreBatchSession(stored, null)!.display).toEqual(createDefaultBatchDisplay())
     expect(restoreBatchSession(stored, null, { version: 1, sessionId: 'other', value: display })!.display).toEqual(createDefaultBatchDisplay())
@@ -43,7 +43,7 @@ describe('the latest saved ANC batch', () => {
   })
   it('keeps display settings on additions and partial removal, but a new session starts at defaults', () => {
     const session = makeSession()
-    session.display = { visible: ['length'], sort: { key: 'volume', direction: 'desc' } }
+    session.display = { visible: ['length'] }
     const added = appendSessionFiles(session, [new File(['new'], 'new.anc')])
     expect(added.display).toEqual(session.display)
     expect(removeSessionFile(added, session.files[0].id)!.display).toEqual(session.display)
@@ -52,7 +52,7 @@ describe('the latest saved ANC batch', () => {
   it('saves display settings without rewriting files or targets, and clear removes settings too', async () => {
     const repository = new MemoryRepository(), storage = new LatestSessionStorage(repository), session = makeSession()
     await storage.replace(session)
-    const display: BatchDisplaySettings = { visible: [], sort: { key: 'materialWeight', direction: 'desc' } }
+    const display: BatchDisplaySettings = { visible: [] }
     await storage.updateDisplay(session.id, display)
     expect((await storage.read())!.display).toEqual(display)
     expect(repository.latest!.files).toBe(session.files)
@@ -70,7 +70,7 @@ describe('the latest saved ANC batch', () => {
     const repository = new MemoryRepository(), gate = deferred(), storage = new LatestSessionStorage(repository), session = makeSession()
     repository.gates.push(gate)
     const save = storage.replace(session)
-    const changed = storage.updateDisplay(session.id, { visible: ['volume'], sort: { key: 'volume', direction: 'desc' } })
+    const changed = storage.updateDisplay(session.id, { visible: ['volume'] })
     const clear = storage.clear()
     gate.resolve()
     await Promise.all([save, changed, clear])

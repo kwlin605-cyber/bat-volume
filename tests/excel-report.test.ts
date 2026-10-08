@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { analyzeAnc } from '../src/domain/analyze'
 import { createExcelReport } from '../src/reports/excel-report'
 import { buildBatchView, defaultSort } from '../src/features/batch/view-model'
-import { geometryMetricIds as allMetricIds, defaultMetricIds } from '../src/features/batch/columns'
+import { geometryMetricIds as allMetricIds } from '../src/features/batch/columns'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 import corpus from './fixtures/corpus.json'
 import { text } from '../src/i18n/zh-TW'
@@ -25,7 +25,7 @@ describe('Excel report saved-file behavior', () => {
   it('exports reference and recommended weights, selected order and exact geometry values together', async () => {
     const sample = entries.find(entry => entry.state.status === 'result' && entry.state.result.status === 'calculated')!
     const second = { ...sample, id: 'reference', source: { ...sample.source, name: 'reference.anc' } }
-    const view = buildBatchView([sample, second], defaultMetricIds, defaultSort, {
+    const view = buildBatchView([sample, second], ['volume', 'materialWeight', 'batWeight'], defaultSort, {
       material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { [sample.id]: { min: 600, max: 650 } },
     })
     const sheet = await reopen(createExcelReport(view))

@@ -24,7 +24,7 @@ const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = n
 
 describe('batch data shared by table and report', () => {
   it('corrects estimates or raw requirements while keeping fixed bat targets in grams', () => {
-    const view = buildBatchView([entry('fixed', 'fixed.anc', 1000), entry('reference', 'reference.anc', 1000)], defaultMetricIds, defaultSort, {
+    const view = buildBatchView([entry('fixed', 'fixed.anc', 1000), entry('reference', 'reference.anc', 1000)], defaultMetricIds, { key: 'name', direction: 'asc' }, {
       material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: -3 },
       requirements: { fixed: { min: 800, max: 800 } }, weightUnit: 'both',
     })
@@ -35,11 +35,11 @@ describe('batch data shared by table and report', () => {
     expect(view.rows[1].cells.batWeight.display).toBe('679')
     expect(view.rows[1].cells.materialWeight.value).toBe(2100)
   })
-  it('defaults to weight requirements, material weight and volume, with targets isolated by entry ID', () => {
+  it('defaults to all metrics and material-weight order, with targets isolated by entry ID', () => {
     const view = buildBatchView([entry('a', 'same.anc', 1000), entry('b', 'same.anc', 2000)], defaultMetricIds, defaultSort, {
       material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { a: { min: 600, max: 650 } },
     })
-    expect(view.columns.map(column => column.id)).toEqual(['volume', 'materialWeight', 'batWeight'])
+    expect(view.columns.map(column => column.id)).toEqual(allMetricIds)
     expect(view.rows[0].cells.materialWeight).toEqual({ value: 1800, maximum: 1950, display: '1,800 – 1,950' })
     expect(view.rows[1].cells.batWeight.value).toBe(1400)
     expect(view.rows[1].cells.materialWeight).toEqual({ value: 2100, display: '2,100' })
@@ -69,6 +69,15 @@ describe('batch data shared by table and report', () => {
   it('sorts natural filenames and keeps duplicate names as separate entries', () => {
     const view = buildBatchView([entry('10', 'bat10.anc', 3), entry('2a', 'bat2.anc', 1), entry('2b', 'bat2.anc', 2)], allMetricIds, defaultSort)
     expect(view.rows.map(row => row.id)).toEqual(['2a', '2b', '10'])
+  })
+  it('falls back to natural filenames when all reference material weights are equal or missing', () => {
+    const data = [entry('10', 'bat10.anc', 1000), entry('2', 'bat2.anc', 2000)]
+    expect(buildBatchView(data, defaultMetricIds, defaultSort).rows.map(row => row.id)).toEqual(['2', '10'])
+    const reference = buildBatchView(data, defaultMetricIds, defaultSort, {
+      material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: {},
+    })
+    expect(reference.rows.map(row => row.id)).toEqual(['2', '10'])
+    expect(reference.rows.map(row => row.cells.materialWeight.value)).toEqual([2100, 2100])
   })
   it('sorts on full precision even when display values round to the same number', () => {
     const view = buildBatchView([entry('a', 'a.anc', 100.4), entry('b', 'b.anc', 100.1)], allMetricIds, { key: 'volume', direction: 'asc' })
