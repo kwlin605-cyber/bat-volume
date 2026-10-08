@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import type { AnalysisEntry } from '../../services/analysis-state'
 import { text } from '../../i18n/zh-TW'
-import { renderPngReport } from '../../reports/png-report'
+import type { ReportFormat } from '../../reports/formats'
 import { downloadReport } from '../../reports/download'
 import type { BatchDisplaySettings } from '../../domain/batch-display'
 import { buildBatchView } from './view-model'
@@ -48,17 +48,18 @@ export default function BatchResults({ entries, requirements, display, onDisplay
     onRequirementChange(id, range)
     setEditing(null)
   }
-  async function exportReport(format: 'png' | 'xlsx') {
+  async function exportReport(format: ReportFormat) {
     if (exporting || view.summary.pending) return
     const controller = new AbortController()
     activeReport.current = controller
     setExporting(true); setError('')
     try {
-      const blob = format === 'png' ? await renderPngReport(view, controller.signal)
-        : await (await import('../../reports/excel-report')).renderExcelReport(view, controller.signal)
+      const blob = format === 'xlsx'
+        ? await (await import('../../reports/excel-report')).renderExcelReport(view, controller.signal)
+        : await (await import('../../reports/pdf-report')).renderPdfReport(view, format === 'pdf-portrait' ? 'portrait' : 'landscape', controller.signal)
       if (!controller.signal.aborted) downloadReport(blob, format)
     } catch (reason) {
-      if (!controller.signal.aborted) setError(reason instanceof Error && reason.message === text.reportTooLarge ? text.reportTooLarge : text.reportFailed)
+      if (!controller.signal.aborted) setError(reason instanceof Error && reason.message === text.reportTooWide ? text.reportTooWide : text.reportFailed)
     } finally { if (!controller.signal.aborted) setExporting(false) }
   }
   const { summary } = view

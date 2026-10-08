@@ -6,7 +6,7 @@ import type { AnalysisEntry } from '../src/services/analysis-state'
 import { analyzeBatch } from '../src/services/analyze-batch'
 import { allMetricIds, defaultMetricIds } from '../src/features/batch/columns'
 import { buildBatchView, defaultSort } from '../src/features/batch/view-model'
-import { buildReportLayout, reportScale } from '../src/reports/png-layout'
+import { buildReportLayout } from '../src/reports/report-layout'
 import { reportStyle } from '../src/config/report'
 import { text } from '../src/i18n/zh-TW'
 import corpus from './fixtures/corpus.json'
@@ -92,7 +92,7 @@ describe('batch data shared by table and report', () => {
   })
 })
 
-describe('full-length PNG report layout', () => {
+describe('complete report layout', () => {
   it('includes every row with untruncated filenames, reasons and selected columns', () => {
     const longName = '很長的球棒檔名'.repeat(30) + '.anc'
     const entries = Array.from({ length: 43 }, (_, i) => entry(String(i), longName + i, i))
@@ -109,12 +109,7 @@ describe('full-length PNG report layout', () => {
     expect(layout.height).toBeGreaterThan(800)
     expect(layout.width).toBeLessThan(buildReportLayout(buildBatchView(entries, allMetricIds, defaultSort), value => value.length * 15).width)
   })
-  it('reduces resolution when necessary and rejects an image that cannot hold all rows', () => {
-    expect(reportScale(1400, 12000)).toBeGreaterThanOrEqual(1)
-    expect(reportScale(1400, 12000)).toBeLessThan(2)
-    expect(() => reportScale(1400, 20000)).toThrow(text.reportTooLarge)
-    expect(() => reportScale(16000, 16000)).toThrow(text.reportTooLarge)
-  })
+
 })
 
 describe('bounded batch execution', () => {

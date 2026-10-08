@@ -3,7 +3,7 @@ import { buildColumnLayout, textUnits, type TextMeasure } from '../src/features/
 import type { BatchView } from '../src/features/batch/view-model'
 import { geometryColumns as metricColumns } from '../src/features/batch/columns'
 import { batchTableStyle } from '../src/config/batch'
-import { buildReportLayout } from '../src/reports/png-layout'
+import { buildReportLayout } from '../src/reports/report-layout'
 
 const measure: TextMeasure = (value, font) => textUnits(value) * font.size * 0.6
 function view(name: string, display = '1,130', detail = ''): BatchView {
@@ -46,7 +46,7 @@ describe('content-based column sizing shared by table and exports', () => {
     expect(hidden.columns).toEqual([])
     expect(hidden.width).toBe(hidden.filenameWidth)
   })
-  it('makes PNG width respond to names and values, with complete wrapped filenames', () => {
+  it('makes report width respond to names and values, with complete wrapped filenames', () => {
     const short = buildReportLayout(view('a.anc'), (value, size) => measure(value, { size, weight: 400 }))
     const data = view('很長的球棒名稱'.repeat(80), '1,234,567,890')
     const long = buildReportLayout(data, (value, size) => measure(value, { size, weight: 400 }))

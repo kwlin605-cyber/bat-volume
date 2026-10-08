@@ -9,6 +9,7 @@ import { useDismissibleMenus } from './use-dismissible-menus'
 import { lengthDisplayModes, type LengthDisplayMode } from '../../domain/length-unit'
 import { lengthModeLabel } from '../../lib/length-display'
 import { UnitSelector } from './unit-selector'
+import { reportFormats, type ReportFormat } from '../../reports/formats'
 
 interface Props {
   visible: readonly MetricId[]; sort: BatchSort; sortLabel: string; weightUnit: WeightDisplayMode
@@ -16,7 +17,7 @@ interface Props {
   lengthUnit: LengthDisplayMode; onLengthUnitChange: (mode: LengthDisplayMode) => void
   onVisibleChange: (visible: MetricId[]) => void; onSortChange: (sort: BatchSort) => void
   onUnitChange: (mode: WeightDisplayMode) => void; onMaterialOpen: () => void
-  onExport: (format: 'png' | 'xlsx') => void
+  onExport: (format: ReportFormat) => void
 }
 
 /** Display controls own their menus; calculations and report generation stay with the results. */
@@ -26,7 +27,7 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
   const sortMenu = useRef<HTMLDetailsElement>(null)
   const downloadMenu = useRef<HTMLDetailsElement>(null)
   useDismissibleMenus(toolbar)
-  function download(format: 'png' | 'xlsx') {
+  function download(format: ReportFormat) {
     if (pending || exporting) return
     if (downloadMenu.current) downloadMenu.current.open = false
     onExport(format)
@@ -50,7 +51,7 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
     </div>
     <details className="download-menu" ref={downloadMenu}>
       <summary aria-disabled={pending || exporting} onClick={event => { if (pending || exporting) event.preventDefault() }}>{exporting ? <LoaderCircle className="spin" size={15} /> : <Download size={15} />}{exporting ? text.preparingReport : text.downloadReport}<ChevronDown size={13} /></summary>
-      <div className="download-popover"><button type="button" disabled={pending || exporting} onClick={() => download('xlsx')}>{text.excelDownload}</button><button type="button" disabled={pending || exporting} onClick={() => download('png')}>{text.pngDownload}</button></div>
+      <div className="download-popover">{reportFormats.map(format => <button key={format.id} type="button" disabled={pending || exporting} onClick={() => download(format.id)}>{format.label}</button>)}</div>
     </details>
   </div>
 }

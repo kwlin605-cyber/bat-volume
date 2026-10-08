@@ -8,7 +8,8 @@ import { saveWeightUnit, readWeightUnit } from '../src/services/weight-unit-stor
 import { analyzeAnc } from '../src/domain/analyze'
 import { buildBatchView } from '../src/features/batch/view-model'
 import { createExcelReport } from '../src/reports/excel-report'
-import { buildReportLayout } from '../src/reports/png-layout'
+import { reportStyle } from '../src/config/report'
+import { buildReportLayout } from '../src/reports/report-layout'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 
 const raw = readFileSync(new URL('./fixtures/case-001.anc', import.meta.url), 'utf8')
@@ -81,12 +82,12 @@ describe('length units in exported reports', () => {
     })
     expect(sheet.pageSetup).toMatchObject({ orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 })
   })
-  it('measures both length lines for image export and includes the half-inch secondary line', () => {
+  it('measures both length lines for PDF layout and includes the half-inch secondary line', () => {
     const current = view('both')
     const layout = buildReportLayout(current, (value, size) => value.length * size)
     const length = layout.columns.find(item => item.column.id === 'length')!
-    expect(length.width).toBeGreaterThan(current.rows[0].cells.length.display.length * 14)
+    expect(length.width).toBeGreaterThan(current.rows[0].cells.length.display.length * reportStyle.fonts.value.size)
     expect(layout.rows.every(row => row.row.cells.length.secondary?.endsWith(' in'))).toBe(true)
-    expect(layout.rows.every(row => row.height >= 76)).toBe(true)
+    expect(layout.rows.every(row => row.height >= reportStyle.minimumRowHeight)).toBe(true)
   })
 })

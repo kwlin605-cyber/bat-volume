@@ -1,24 +1,11 @@
 import { reportStyle as style } from '../config/report'
-import type { BatchView } from '../features/batch/view-model'
 import { text } from '../i18n/zh-TW'
-import { buildReportLayout, reportScale } from './png-layout'
+import type { ReportLayout } from './report-layout'
 import { palette } from '../config/theme'
 import { metricFonts } from '../features/batch/column-layout'
 
-export async function renderPngReport(view: BatchView, signal: AbortSignal): Promise<Blob> {
-  signal.throwIfAborted()
-  await document.fonts.ready
-  signal.throwIfAborted()
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error(text.reportFailed)
-  const layout = buildReportLayout(view, (value, size, weight) => { ctx.font = `${weight} ${size}px ${style.fontFamily}`; return ctx.measureText(value).width })
-  const scale = reportScale(layout.width, layout.height)
-  canvas.width = Math.floor(layout.width * scale)
-  canvas.height = Math.floor(layout.height * scale)
-  ctx.scale(scale, scale)
-  ctx.fillStyle = palette.white
-  ctx.fillRect(0, 0, layout.width, layout.height)
+/** Paint one already-paginated table in point coordinates. */
+export function paintReportPage(ctx: CanvasRenderingContext2D, layout: ReportLayout, signal: AbortSignal) {
   ctx.textBaseline = 'top'
   const write = (value: string, x: number, y: number, size = 15, color: string = palette.ink, align: CanvasTextAlign = 'left', weight = 400) => {
     ctx.font = `${weight} ${size}px ${style.fontFamily}`; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(value, x, y)
@@ -35,7 +22,8 @@ export async function renderPngReport(view: BatchView, signal: AbortSignal): Pro
     write(column.label, right - unitWidth, headerY, headerFont.size, column.prominent ? palette.ink : palette.text, 'right', headerFont.weight)
     write(column.unit, right, headerY + headerFont.size - style.fonts.unit.size, style.fonts.unit.size, palette.muted, 'right', style.fonts.unit.weight)
   })
-  for (const [index, item] of layout.rows.entries()) {
+  for (const item of layout.rows) {
+    const { index } = item
     signal.throwIfAborted()
     ctx.fillStyle = index % 2 ? palette.surface : palette.white
     ctx.fillRect(style.padding, item.y, layout.width - style.padding * 2, item.height)
@@ -68,7 +56,4 @@ export async function renderPngReport(view: BatchView, signal: AbortSignal): Pro
     ctx.strokeStyle = palette.line; ctx.lineWidth = 1
     ctx.beginPath(); ctx.moveTo(style.padding, item.y + item.height); ctx.lineTo(layout.width - style.padding, item.y + item.height); ctx.stroke()
   }
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error(text.reportFailed)), 'image/png'))
-  signal.throwIfAborted()
-  return blob
 }

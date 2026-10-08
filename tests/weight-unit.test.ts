@@ -9,7 +9,7 @@ import { analyzeAnc } from '../src/domain/analyze'
 import { buildBatchView, defaultSort } from '../src/features/batch/view-model'
 import { defaultMetricIds } from '../src/features/batch/columns'
 import { createExcelReport } from '../src/reports/excel-report'
-import { buildReportLayout } from '../src/reports/png-layout'
+import { buildReportLayout } from '../src/reports/report-layout'
 import { buildColumnLayout, metricFonts } from '../src/features/batch/column-layout'
 import { batchTableStyle } from '../src/config/batch'
 import { reportStyle } from '../src/config/report'
@@ -108,8 +108,8 @@ describe('reports with selected weight units', () => {
     const dual = makeView('both', { sample: { min: 600, max: 650 } })
     const measure = (value: string, size: number) => [...value].length * size
     const layout = buildReportLayout(dual, measure)
-    expect(layout.columns[1].width).toBeGreaterThanOrEqual(measure(dual.rows[0].cells.materialWeight.secondary!, 14) + 40)
-    expect(layout.rows[0].height).toBeGreaterThanOrEqual(76)
+    expect(layout.columns[1].width).toBeGreaterThanOrEqual(measure(dual.rows[0].cells.materialWeight.secondary!, reportStyle.fonts.value.size) + reportStyle.cellPadding * 2)
+    expect(layout.rows[0].height).toBeGreaterThanOrEqual(reportStyle.minimumRowHeight)
     const cell = createExcelReport(dual).getWorksheet(1)!.getCell('C2')
     expect(cell.text).toBe(`${dual.rows[0].cells.materialWeight.display}\n\n${dual.rows[0].cells.materialWeight.secondary}`)
   })
@@ -121,8 +121,8 @@ describe('reports with selected weight units', () => {
     const measure = (value: string, font: { size: number }) => value.length * font.size
     const width = buildColumnLayout(sized, batchTableStyle, measure).columns.find(item => item.column.id === 'materialWeight')!.width
     expect(width).toBeGreaterThanOrEqual(sized.rows[0].cells.materialWeight.secondary!.length * 17 + 40)
-    const png = buildReportLayout(view, (value, size) => value.length * size)
-    expect(png.rows[0].height / 2).toBeGreaterThanOrEqual(reportStyle.fonts.value.size + reportStyle.rowPadding)
+    const report = buildReportLayout(view, (value, size) => value.length * size)
+    expect(report.rows[0].height / 2).toBeGreaterThanOrEqual(reportStyle.fonts.value.size + reportStyle.rowPadding)
     const lengthView = buildBatchView([sample], ['length'], defaultSort, undefined, 'both')
     const length = lengthView.columns[0]
     expect(length.splitUnits).toBeUndefined()
