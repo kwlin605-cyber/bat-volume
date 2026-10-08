@@ -1,7 +1,8 @@
 import { initialMaterialSettings, materialStorage } from '../config/weight'
 import { positiveFinite, validWeightError, type MaterialSettings } from '../domain/weight'
+import type { SettingsStorage } from './settings-storage'
+export type { SettingsStorage } from './settings-storage'
 
-export interface SettingsStorage { getItem(key: string): string | null; setItem(key: string, value: string): void }
 export function isMaterialSettings(value: unknown): value is MaterialSettings {
   if (!value || typeof value !== 'object') return false
   const input = value as Partial<MaterialSettings>

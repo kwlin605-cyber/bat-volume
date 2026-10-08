@@ -10,6 +10,8 @@ import { lengthDisplayModes, type LengthDisplayMode } from '../../domain/length-
 import { lengthModeLabel } from '../../lib/length-display'
 import { UnitSelector } from './unit-selector'
 import { reportFormats, type ReportFormat } from '../../reports/formats'
+import type { BatGroupingSettings } from '../../domain/bat-grouping'
+import { GroupingControls } from './grouping-controls'
 
 interface Props {
   visible: readonly MetricId[]; sort: BatchSort; sortLabel: string; weightUnit: WeightDisplayMode
@@ -18,11 +20,12 @@ interface Props {
   onVisibleChange: (visible: MetricId[]) => void; onSortChange: (sort: BatchSort) => void
   onUnitChange: (mode: WeightDisplayMode) => void; onMaterialOpen: () => void
   onExport: (format: ReportFormat) => void
+  grouping: BatGroupingSettings; onGroupingChange: (value: BatGroupingSettings) => void
 }
 
 /** Display controls own their menus; calculations and report generation stay with the results. */
 export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending, exporting,
-  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport }: Props) {
+  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport, grouping, onGroupingChange }: Props) {
   const toolbar = useRef<HTMLDivElement>(null)
   const sortMenu = useRef<HTMLDetailsElement>(null)
   const downloadMenu = useRef<HTMLDetailsElement>(null)
@@ -46,7 +49,9 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
       </button>
       <details className="sort-menu" ref={sortMenu}>
         <summary aria-label={text.sortBy} title={text.sortBy}><ChevronDown size={13} /></summary>
-        <div className="sort-popover">{[{ id: 'name' as const, label: text.fileName }, ...metricColumns].map(column => <button key={column.id} type="button" aria-pressed={sort.key === column.id} onClick={() => { onSortChange({ ...sort, key: column.id }); if (sortMenu.current) sortMenu.current.open = false }}>{column.label}</button>)}</div>
+        <div className="sort-popover"><GroupingControls value={grouping} onChange={onGroupingChange} />
+          {[{ id: 'name' as const, label: text.fileName }, ...metricColumns].map(column => <button key={column.id} type="button" aria-pressed={sort.key === column.id} onClick={() => { onSortChange({ ...sort, key: column.id }); if (sortMenu.current) sortMenu.current.open = false }}>{column.label}</button>)}
+        </div>
       </details>
     </div>
     <details className="download-menu" ref={downloadMenu}>

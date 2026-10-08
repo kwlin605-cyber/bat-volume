@@ -16,6 +16,7 @@ import { rowSelectionSettings } from '../../config/selection'
 import type { WeightRange } from '../../domain/weight'
 import { useWeightUnit } from './use-weight-unit'
 import { useLengthUnit } from './use-length-unit'
+import { useBatGrouping } from './use-bat-grouping'
 import { BatchToolbar } from './batch-toolbar'
 import { RemoveFileButton } from '../../components/remove-file-button'
 import './batch.css'
@@ -25,6 +26,7 @@ export default function BatchResults({ entries, requirements, display, onDisplay
   const { material, applyMaterial, storageUnavailable } = useMaterialSettings()
   const { mode: weightUnit, selectMode, storageUnavailable: unitStorageUnavailable } = useWeightUnit()
   const { mode: lengthUnit, selectMode: selectLengthUnit, storageUnavailable: lengthStorageUnavailable } = useLengthUnit()
+  const { grouping, applyGrouping, storageUnavailable: groupingStorageUnavailable } = useBatGrouping()
   const [materialOpen, setMaterialOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -36,7 +38,7 @@ export default function BatchResults({ entries, requirements, display, onDisplay
     return () => activeReport.current?.abort()
   }, [selectionKey])
   useEffect(() => { if (removing) setSelected(null) }, [removing])
-  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit), [entries, visible, sort, material, requirements, weightUnit, lengthUnit])
+  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit, grouping), [entries, visible, sort, material, requirements, weightUnit, lengthUnit, grouping])
   const { areaRef, layout } = useColumnLayout(view, removing ? 48 : 0)
   const selection = useRowSelection(view.rows, removing, areaRef)
   const selectedEntry = entries.find(entry => entry.id === selected)
@@ -62,11 +64,12 @@ export default function BatchResults({ entries, requirements, display, onDisplay
   return <section className="batch-results" aria-labelledby="batch-title" style={{ '--selection-background': rowSelectionSettings.colors.background, '--selection-accent': rowSelectionSettings.colors.accent } as React.CSSProperties}>
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
       <BatchToolbar visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0} exporting={exporting}
+        grouping={grouping} onGroupingChange={next => { selection.cancel(); applyGrouping(next) }}
         onVisibleChange={columns => { selection.cancel(); onDisplayChange({ ...display, visible: columns }) }} onSortChange={next => { selection.cancel(); onDisplayChange({ ...display, sort: next }) }} onUnitChange={selectMode}
         onMaterialOpen={() => { selection.cancel(); setMaterialOpen(true) }} onExport={format => void exportReport(format)} />
     </div>
     {error && <p className="report-error" role="alert">{error}</p>}
-    {(storageUnavailable || unitStorageUnavailable || lengthStorageUnavailable) && <p className="report-error" role="alert">{text.storageUnavailable}</p>}
+    {(storageUnavailable || unitStorageUnavailable || lengthStorageUnavailable || groupingStorageUnavailable) && <p className="report-error" role="alert">{text.storageUnavailable}</p>}
     <div className={`batch-table-area ${removing ? 'is-removing' : ''}`} ref={areaRef}><div className="batch-table-wrap" style={{ width: layout.width + 2 + (removing ? 48 : 0) }}>
       <table className={`batch-table ${selection.dragging ? 'is-selecting' : ''}`} style={{ width: layout.width + (removing ? 48 : 0) }}>
         <colgroup><col style={{ width: layout.filenameWidth }} />{layout.columns.map(({ column, width }) => <col key={column.id} style={{ width }} />)}{removing && <col style={{ width: 48 }} />}</colgroup>

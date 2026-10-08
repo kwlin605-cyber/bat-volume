@@ -1,5 +1,5 @@
 import { isWeightDisplayMode, type WeightDisplayMode } from '../domain/weight-unit'
-import type { SettingsStorage } from './material-storage'
+import type { SettingsStorage } from './settings-storage'
 
 export const weightUnitStorageKey = 'bat-volume.weight-unit'
 export function readWeightUnit(storage: SettingsStorage) {

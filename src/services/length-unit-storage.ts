@@ -1,5 +1,5 @@
 import { isLengthDisplayMode, type LengthDisplayMode } from '../domain/length-unit'
-import type { SettingsStorage } from './material-storage'
+import type { SettingsStorage } from './settings-storage'
 
 export const lengthUnitStorageKey = 'bat-volume.length-unit'
 export function readLengthUnit(storage: SettingsStorage) {

@@ -8,6 +8,9 @@ import { fromGrams, type WeightDisplayMode } from '../../domain/weight-unit'
 import type { BatchSort } from '../../domain/batch-display'
 import type { LengthDisplayMode } from '../../domain/length-unit'
 import { halfInchValue, lengthDisplay, lengthNumberFormat } from '../../lib/length-display'
+import { defaultBatGrouping } from '../../config/grouping'
+import type { BatGroupingSettings } from '../../domain/bat-grouping'
+import { orderBatchRows } from './row-order'
 export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
 export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string }
@@ -21,7 +24,7 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'mm'): BatchView {
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'mm', grouping: BatGroupingSettings = defaultBatGrouping): BatchView {
   const weightUnit = weights.weightUnit ?? 'g'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
@@ -58,15 +61,7 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
     } else status = { label: text.failed, detail: result?.status === 'undetermined' ? diagnosticText[result.code] : '', kind: 'failed' }
     return { id: entry.id, name: entry.source.name, pending, cells, status }
   })
-  const collator = new Intl.Collator(text.locale, { numeric: true, sensitivity: 'base' })
-  const direction = sort.direction === 'asc' ? 1 : -1
-  rows.sort((a, b) => {
-    if (sort.key === 'name') return direction * collator.compare(a.name, b.name)
-    const av = a.cells[sort.key].value, bv = b.cells[sort.key].value
-    if (av === null || bv === null) return av === bv ? collator.compare(a.name, b.name) : av === null ? 1 : -1
-    return direction * (av - bv) || direction * ((a.cells[sort.key].maximum ?? av) - (b.cells[sort.key].maximum ?? bv)) || collator.compare(a.name, b.name)
-  })
-  return { rows, summary, columns: columnsForUnits(weightUnit, lengthUnit).filter(column => visible.includes(column.id)), sort,
+  return { rows: orderBatchRows(rows, sort, grouping), summary, columns: columnsForUnits(weightUnit, lengthUnit).filter(column => visible.includes(column.id)), sort,
     sortLabel: sort.key === 'name' ? text.fileName : metricColumns.find(column => column.id === sort.key)!.label }
 }
 
