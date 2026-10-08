@@ -13,6 +13,7 @@ import { MaterialDialog } from './material-dialog'
 import { WeightEditor } from './weight-editor'
 import type { WeightRange } from '../../domain/weight'
 import { useWeightUnit } from './use-weight-unit'
+import { useLengthUnit } from './use-length-unit'
 import { BatchToolbar } from './batch-toolbar'
 import { RemoveFileButton } from '../../components/remove-file-button'
 import './batch.css'
@@ -21,6 +22,7 @@ export default function BatchResults({ entries, requirements, display, onDisplay
   const { visible, sort } = display
   const { material, applyMaterial, storageUnavailable } = useMaterialSettings()
   const { mode: weightUnit, selectMode, storageUnavailable: unitStorageUnavailable } = useWeightUnit()
+  const { mode: lengthUnit, selectMode: selectLengthUnit, storageUnavailable: lengthStorageUnavailable } = useLengthUnit()
   const [materialOpen, setMaterialOpen] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
@@ -33,7 +35,7 @@ export default function BatchResults({ entries, requirements, display, onDisplay
     return () => activeReport.current?.abort()
   }, [selectionKey])
   useEffect(() => { if (removing) { setEditing(null); setSelected(null) } }, [removing])
-  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }), [entries, visible, sort, material, requirements, weightUnit])
+  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit), [entries, visible, sort, material, requirements, weightUnit, lengthUnit])
   const { areaRef, layout } = useColumnLayout(view, removing ? 48 : 0)
   const selectedEntry = entries.find(entry => entry.id === selected)
   function beginEditing(id: string) {
@@ -62,12 +64,12 @@ export default function BatchResults({ entries, requirements, display, onDisplay
   const { summary } = view
   return <section className="batch-results" aria-labelledby="batch-title">
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
-      <BatchToolbar visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} pending={summary.pending > 0} exporting={exporting}
+      <BatchToolbar visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0} exporting={exporting}
         onVisibleChange={columns => { if (!columns.includes('batWeight')) setEditing(null); onDisplayChange({ ...display, visible: columns }) }} onSortChange={next => onDisplayChange({ ...display, sort: next })} onUnitChange={selectMode}
         onMaterialOpen={() => { setEditing(null); setMaterialOpen(true) }} onExport={format => void exportReport(format)} />
     </div>
     {error && <p className="report-error" role="alert">{error}</p>}
-    {(storageUnavailable || unitStorageUnavailable) && <p className="report-error" role="alert">{text.storageUnavailable}</p>}
+    {(storageUnavailable || unitStorageUnavailable || lengthStorageUnavailable) && <p className="report-error" role="alert">{text.storageUnavailable}</p>}
     <div className={`batch-table-area ${removing ? 'is-removing' : ''}`} ref={areaRef}><div className="batch-table-wrap" style={{ width: layout.width + 2 + (removing ? 48 : 0) }}>
       <table className="batch-table" style={{ width: layout.width + (removing ? 48 : 0) }}>
         <colgroup><col style={{ width: layout.filenameWidth }} />{layout.columns.map(({ column, width }) => <col key={column.id} style={{ width }} />)}{removing && <col style={{ width: 48 }} />}</colgroup>

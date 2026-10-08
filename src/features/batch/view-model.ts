@@ -1,11 +1,13 @@
 import type { AnalysisEntry } from '../../services/analysis-state'
 import { diagnosticText, gripDiagnosticText, text } from '../../i18n/zh-TW'
-import { metricColumns, geometryColumns, columnsForWeightUnit, type MetricId, type MetricColumn } from './columns'
+import { metricColumns, geometryColumns, columnsForUnits, type MetricId, type MetricColumn } from './columns'
 import { calculateMaterialWeight, estimateBatWeight, type MaterialSettings, type WeightRange } from '../../domain/weight'
 import { initialMaterialSettings } from '../../config/weight'
 import { weightDisplay } from '../../lib/weight-display'
 import { fromGrams, type WeightDisplayMode } from '../../domain/weight-unit'
 import type { BatchSort } from '../../domain/batch-display'
+import type { LengthDisplayMode } from '../../domain/length-unit'
+import { halfInchValue, lengthDisplay, lengthNumberFormat } from '../../lib/length-display'
 export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
 export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string }
@@ -19,7 +21,7 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext): BatchView {
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'mm'): BatchView {
   const weightUnit = weights.weightUnit ?? 'g'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
@@ -33,7 +35,7 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
     else summary.failed++
     const cells = Object.fromEntries(geometryColumns.map(column => {
       const value = calculated ? column.value(calculated) : null
-      return [column.id, { value, display: value === null ? text.missingValue : column.format(value) }]
+      return [column.id, { value, ...(value === null ? { display: text.missingValue } : column.id === 'length' ? lengthDisplay(value, lengthUnit) : { display: column.format(value) }) }]
     })) as Record<MetricId, BatchCell>
     const required = weights.requirements[entry.id] ?? null
     const estimatedWeight = estimateBatWeight(weights.material, calculated?.volumeCm3 ?? null)
@@ -64,7 +66,7 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
     if (av === null || bv === null) return av === bv ? collator.compare(a.name, b.name) : av === null ? 1 : -1
     return direction * (av - bv) || direction * ((a.cells[sort.key].maximum ?? av) - (b.cells[sort.key].maximum ?? bv)) || collator.compare(a.name, b.name)
   })
-  return { rows, summary, columns: columnsForWeightUnit(weightUnit).filter(column => visible.includes(column.id)), sort,
+  return { rows, summary, columns: columnsForUnits(weightUnit, lengthUnit).filter(column => visible.includes(column.id)), sort,
     sortLabel: sort.key === 'name' ? text.fileName : metricColumns.find(column => column.id === sort.key)!.label }
 }
 
@@ -72,5 +74,9 @@ export function reportCellValue(cell: BatchCell, column?: MetricColumn): string 
   if (cell.caption) return `${cell.display}\n${cell.caption}`
   if (cell.secondary) return `${cell.display}\n${cell.secondary}`
   if (cell.maximum !== undefined && cell.maximum !== cell.value) return cell.display
-  return cell.value === null ? text.missingValue : column?.weightMode === 'oz' ? fromGrams(cell.value, 'oz') : cell.value
+  return cell.value === null ? text.missingValue : column?.weightMode === 'oz' ? fromGrams(cell.value, 'oz') : column?.lengthMode === 'in' ? halfInchValue(cell.value) : cell.value
+}
+
+export function reportCellNumberFormat(cell: BatchCell, column: MetricColumn) {
+  return column.lengthMode === 'in' && cell.value !== null ? lengthNumberFormat('in', cell.value) : column.numberFormat
 }

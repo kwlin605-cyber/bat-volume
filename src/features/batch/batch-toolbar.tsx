@@ -6,18 +6,22 @@ import { allMetricIds, metricColumns, type MetricId } from './columns'
 import type { BatchSort } from './view-model'
 import { WeightUnitSelector } from './weight-unit-selector'
 import { useDismissibleMenus } from './use-dismissible-menus'
+import { lengthDisplayModes, type LengthDisplayMode } from '../../domain/length-unit'
+import { lengthModeLabel } from '../../lib/length-display'
+import { UnitSelector } from './unit-selector'
 
 interface Props {
   visible: readonly MetricId[]; sort: BatchSort; sortLabel: string; weightUnit: WeightDisplayMode
   pending: boolean; exporting: boolean
+  lengthUnit: LengthDisplayMode; onLengthUnitChange: (mode: LengthDisplayMode) => void
   onVisibleChange: (visible: MetricId[]) => void; onSortChange: (sort: BatchSort) => void
   onUnitChange: (mode: WeightDisplayMode) => void; onMaterialOpen: () => void
   onExport: (format: 'png' | 'xlsx') => void
 }
 
 /** Display controls own their menus; calculations and report generation stay with the results. */
-export function BatchToolbar({ visible, sort, sortLabel, weightUnit, pending, exporting,
-  onVisibleChange, onSortChange, onUnitChange, onMaterialOpen, onExport }: Props) {
+export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending, exporting,
+  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport }: Props) {
   const toolbar = useRef<HTMLDivElement>(null)
   const sortMenu = useRef<HTMLDetailsElement>(null)
   const downloadMenu = useRef<HTMLDetailsElement>(null)
@@ -31,11 +35,12 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, pending, ex
     <button type="button" className="material-settings-button" onClick={onMaterialOpen}><Settings2 size={15} />{text.materialSettings}</button>
     <details className="column-menu"><summary><SlidersHorizontal size={15} />{text.visibleInformation}<ChevronDown size={13} /></summary><div className="column-popover">
       <WeightUnitSelector value={weightUnit} onChange={onUnitChange} />
+      <UnitSelector label={text.lengthDisplayUnit} modes={lengthDisplayModes} value={lengthUnit} modeLabel={lengthModeLabel} onChange={onLengthUnitChange} />
       <button type="button" onClick={() => onVisibleChange([...allMetricIds])}>{text.selectAllInformation}</button>
       {metricColumns.map(column => <label key={column.id}><input type="checkbox" checked={visible.includes(column.id)} onChange={event => onVisibleChange(event.target.checked ? [...visible, column.id] : visible.filter(id => id !== column.id))} />{column.label}</label>)}
     </div></details>
     <div className="batch-sort">
-      <button className="sort-direction" type="button" aria-label={sort.direction === 'asc' ? text.sortAscending : text.sortDescending} onClick={() => onSortChange({ ...sort, direction: sort.direction === 'asc' ? 'desc' : 'asc' })}>
+      <button className="sort-direction" type="button" title={sort.key === 'name' ? text.sortNameHint : text.sortNumericHint} aria-label={sort.direction === 'asc' ? text.sortAscending : text.sortDescending} onClick={() => onSortChange({ ...sort, direction: sort.direction === 'asc' ? 'desc' : 'asc' })}>
         {sortLabel}{sort.direction === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
       </button>
       <details className="sort-menu" ref={sortMenu}>

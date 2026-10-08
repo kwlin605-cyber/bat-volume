@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { reportCellValue, type BatchView } from '../features/batch/view-model'
+import { reportCellValue, reportCellNumberFormat, type BatchView } from '../features/batch/view-model'
 import { excelStyle as style } from '../config/excel'
 import { text } from '../i18n/zh-TW'
 import { buildColumnLayout, textUnits, type TextMeasure } from '../features/batch/column-layout'
@@ -50,7 +50,7 @@ export function createExcelReport(view: BatchView, date = new Date(), measure: T
         { text: value.display, font: { name: style.font, size: column.prominent ? style.primarySize : style.bodySize, bold: column.prominent, color: { argb: excelColor(column.prominent ? palette.ink : palette.text) } } },
         { text: '\n' + value.secondary, font: { name: style.font, size: style.bodySize, bold: false, color: { argb: excelColor(palette.muted) } } },
       ] } : reportCellValue(value, column)
-      cell.numFmt = column.numberFormat
+      cell.numFmt = reportCellNumberFormat(value, column)
       cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
     })
     for (let position = 1; position <= columnCount; position++) {

@@ -104,11 +104,11 @@ body:has(.result-dialog[open], .material-dialog[open]) { overflow: hidden; }
 .sort-popover button { display: block; width: 100%; padding: 11px 7px; border: 0; border-radius: 6px; background: transparent; color: var(--color-text); text-align: left; font: inherit; cursor: pointer; }
 .sort-popover button:hover { background: var(--color-hover); }
 .sort-popover button[aria-pressed=true] { background: var(--color-emphasisAlt); color: var(--color-ink); font-weight: 600; }
-.weight-unit-selector { border: 0; padding: 5px 4px 13px; margin: 0 0 5px; border-bottom: 1px solid var(--color-line); }
-.weight-unit-selector legend { padding: 0; color: var(--color-muted); font-size: 11px; }
-.weight-unit-selector > div { display: flex; gap: 3px; padding: 3px; margin-top: 6px; border-radius: 8px; background: var(--color-header); }
-.column-popover .weight-unit-selector button { width: auto; flex: 1; padding: 8px 6px; text-align: center; border: 0; border-radius: 6px; color: var(--color-text); font-size: 12px; }
-.column-popover .weight-unit-selector button:hover { background: var(--color-emphasisAlt); }
-.column-popover .weight-unit-selector button[aria-pressed=true] { background: var(--color-accent); color: var(--color-white); }
+.unit-selector { border: 0; padding: 5px 4px 13px; margin: 0 0 5px; border-bottom: 1px solid var(--color-line); }
+.unit-selector legend { padding: 0; color: var(--color-muted); font-size: 11px; }
+.unit-selector > div { display: flex; gap: 3px; padding: 3px; margin-top: 6px; border-radius: 8px; background: var(--color-header); }
+.column-popover .unit-selector button { width: auto; flex: 1; padding: 8px 6px; text-align: center; border: 0; border-radius: 6px; color: var(--color-text); font-size: 12px; }
+.column-popover .unit-selector button:hover { background: var(--color-emphasisAlt); }
+.column-popover .unit-selector button[aria-pressed=true] { background: var(--color-accent); color: var(--color-white); }
 .weight-secondary { display: block; margin-top: 6px; color: var(--color-muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 .weight-input-unit { flex: none; color: var(--color-muted); font-size: 11px; font-weight: 400; }
