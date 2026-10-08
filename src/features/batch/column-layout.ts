@@ -1,5 +1,6 @@
 import type { BatchView } from './view-model'
 import { text } from '../../i18n/zh-TW'
+import type { MetricColumn } from './columns'
 
 export interface TextStyle { size: number; weight: number; letterSpacing?: number; tabular?: boolean }
 export type TextMeasure = (value: string, font: TextStyle) => number
@@ -8,6 +9,12 @@ export interface ColumnLayoutStyle {
   minimumEditableWidth?: number
   fonts: { filename: TextStyle; detail: TextStyle; header: TextStyle; primaryHeader: TextStyle;
     unit: TextStyle; value: TextStyle; primaryValue: TextStyle }
+}
+
+/** Unit lines can share the value typography; explanatory lines keep the detail style. */
+export function metricFonts(column: MetricColumn, style: Pick<ColumnLayoutStyle, 'fonts'>) {
+  const value = column.prominent ? style.fonts.primaryValue : style.fonts.value
+  return { value, secondary: column.splitUnits ? value : style.fonts.detail }
 }
 
 /** Measure displayed content once per column; only the filename column may wrap. */
@@ -21,9 +28,9 @@ export function buildColumnLayout(view: BatchView, style: ColumnLayoutStyle, mea
   }
   const columns = view.columns.map(column => {
     const headerFont = column.prominent ? style.fonts.primaryHeader : style.fonts.header
-    const valueFont = column.prominent ? style.fonts.primaryValue : style.fonts.value
+    const { value: valueFont, secondary: secondaryFont } = metricFonts(column, style)
     let contentWidth = lineWidth(column.label, headerFont) + (column.unit ? style.headerUnitGap + lineWidth(column.unit, style.fonts.unit) : 0)
-    for (const row of view.rows) contentWidth = Math.max(contentWidth, lineWidth(row.cells[column.id].display, valueFont), lineWidth(row.cells[column.id].caption ?? '', style.fonts.detail), lineWidth(row.cells[column.id].secondary ?? '', style.fonts.detail))
+    for (const row of view.rows) contentWidth = Math.max(contentWidth, lineWidth(row.cells[column.id].display, valueFont), lineWidth(row.cells[column.id].caption ?? '', style.fonts.detail), lineWidth(row.cells[column.id].secondary ?? '', secondaryFont))
     return { column, width: Math.max(style.minimumMetricWidth, column.editable ? (style.minimumEditableWidth ?? 0) : 0, Math.ceil(contentWidth + padding)) }
   })
   const metricWidth = columns.reduce((sum, column) => sum + column.width, 0)

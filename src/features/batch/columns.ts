@@ -16,7 +16,7 @@ export const geometryColumns = [
   { id: 'gripDiameter', label: text.minimumGripDiameter, unit: text.lengthUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.grip.status === 'detected' ? r.dimensions.grip.diameterMm : null, format: formatDimension },
 ] as const
 export type GeometryMetricId = typeof geometryColumns[number]['id']
-export interface MetricColumn { id: MetricId; label: string; unit: string; numberFormat: string; prominent: boolean; editable?: boolean; weightMode?: WeightDisplayMode; lengthMode?: LengthDisplayMode }
+export interface MetricColumn { id: MetricId; label: string; unit: string; numberFormat: string; prominent: boolean; editable?: boolean; weightMode?: WeightDisplayMode; lengthMode?: LengthDisplayMode; splitUnits?: boolean }
 const [volumeColumn, ...dimensionColumns] = geometryColumns
 export const metricColumns: readonly MetricColumn[] = [
   volumeColumn,
@@ -28,7 +28,7 @@ export const allMetricIds: MetricId[] = metricColumns.map(column => column.id)
 export const geometryMetricIds: MetricId[] = geometryColumns.map(column => column.id)
 export const columnsForUnits = (mode: WeightDisplayMode, lengthMode: LengthDisplayMode = 'mm'): MetricColumn[] => metricColumns.map(column =>
   column.id === 'materialWeight'
-    ? { ...column, unit: weightHeaderUnit(mode), numberFormat: weightNumberFormat(mode), weightMode: mode }
+    ? { ...column, unit: weightHeaderUnit(mode), numberFormat: weightNumberFormat(mode), weightMode: mode, splitUnits: mode === 'both' }
     : column.id === 'length'
       ? { ...column, unit: lengthHeaderUnit(lengthMode), numberFormat: lengthNumberFormat(lengthMode), lengthMode }
       : column)

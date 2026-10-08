@@ -10,6 +10,9 @@ import { buildBatchView, defaultSort } from '../src/features/batch/view-model'
 import { defaultMetricIds } from '../src/features/batch/columns'
 import { createExcelReport } from '../src/reports/excel-report'
 import { buildReportLayout } from '../src/reports/png-layout'
+import { buildColumnLayout, metricFonts } from '../src/features/batch/column-layout'
+import { batchTableStyle } from '../src/config/batch'
+import { reportStyle } from '../src/config/report'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 
 const raw = readFileSync(new URL('./fixtures/case-001.anc', import.meta.url), 'utf8')
@@ -73,12 +76,22 @@ describe('reports with selected weight units', () => {
     const sheet = workbook.worksheets[0]
     const cell = sheet.getCell('C2'), weight = view.rows[0].cells.materialWeight
     if (mode === 'both') {
-      expect(cell.text).toBe(`${weight.display}\n${weight.secondary}`)
-      expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 10 } }, { text: '\n' + weight.secondary, font: { size: 10 } }] })
+      expect(cell.text).toBe(`${weight.display}\n\n${weight.secondary}`)
+      expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 10 } }, { text: '\n\n' + weight.secondary, font: { size: 10 } }] })
       expect(sheet.getCell('C1').text).toBe('木料重量 g / oz')
+      const rich = cell.value as ExcelJS.CellRichTextValue
+      expect(rich.richText[0].font?.color?.argb).toBe('FF404040')
+      expect(rich.richText[1].font?.color?.argb).toBe('FFFFFFFF')
+      expect(cell.fill).toMatchObject({ type: 'gradient', gradient: 'angle', degree: 90, stops: [
+        { position: 0, color: { argb: 'FFFFFFFF' } },
+        { position: 0.4999, color: { argb: 'FFFFFFFF' } },
+        { position: 0.5001, color: { argb: 'FF333333' } },
+        { position: 1, color: { argb: 'FF333333' } },
+      ] })
     } else {
       expect(cell.value).toBe(fromGrams(weight.value!, mode))
       expect(cell.numFmt).toBe(mode === 'oz' ? '#,##0.0' : '#,##0')
+      expect(cell.fill.type).toBe('pattern')
     }
     expect(sheet.getCell('B2').value).toBe(view.rows[0].cells.volume.value)
     expect(sheet.getCell('D2').value).toBe(view.rows[0].cells.batWeight.value)
@@ -98,6 +111,46 @@ describe('reports with selected weight units', () => {
     expect(layout.columns[1].width).toBeGreaterThanOrEqual(measure(dual.rows[0].cells.materialWeight.secondary!, 14) + 40)
     expect(layout.rows[0].height).toBeGreaterThanOrEqual(76)
     const cell = createExcelReport(dual).getWorksheet(1)!.getCell('C2')
-    expect(cell.text).toBe(`${dual.rows[0].cells.materialWeight.display}\n${dual.rows[0].cells.materialWeight.secondary}`)
+    expect(cell.text).toBe(`${dual.rows[0].cells.materialWeight.display}\n\n${dual.rows[0].cells.materialWeight.secondary}`)
+  })
+  it('gives both wood-weight lines the same typography and enough width and half-cell height', () => {
+    const view = makeView('both', { sample: { min: 600, max: 650 } })
+    const weight = view.columns.find(column => column.id === 'materialWeight')!
+    expect(metricFonts(weight, batchTableStyle).secondary).toEqual(metricFonts(weight, batchTableStyle).value)
+    const sized = { ...view, rows: view.rows.map(row => ({ ...row, cells: { ...row.cells, materialWeight: { ...row.cells.materialWeight, secondary: '123,456,789.0 – 987,654,321.0 oz' } } })) }
+    const measure = (value: string, font: { size: number }) => value.length * font.size
+    const width = buildColumnLayout(sized, batchTableStyle, measure).columns.find(item => item.column.id === 'materialWeight')!.width
+    expect(width).toBeGreaterThanOrEqual(sized.rows[0].cells.materialWeight.secondary!.length * 17 + 40)
+    const png = buildReportLayout(view, (value, size) => value.length * size)
+    expect(png.rows[0].height / 2).toBeGreaterThanOrEqual(reportStyle.fonts.value.size + reportStyle.rowPadding)
+    const lengthView = buildBatchView([sample], ['length'], defaultSort, undefined, 'both')
+    const length = lengthView.columns[0]
+    expect(length.splitUnits).toBeUndefined()
+    expect(metricFonts(length, batchTableStyle).secondary).toEqual(batchTableStyle.fonts.detail)
+  })
+  it('preserves one physical row per bat, stripes, missing weights and length styling after saving', async () => {
+    const long = { ...sample, id: 'long', source: { ...source, name: '長名稱'.repeat(30) + '.anc' } }
+    const pending = { ...sample, id: 'pending', source: { ...source, name: 'zzz.anc' }, state: { status: 'loading' as const, source } }
+    const view = buildBatchView([sample, long, pending], ['materialWeight', 'length'], defaultSort,
+      { material, requirements: { pending: { min: 600, max: 650 } }, weightUnit: 'both' }, 'both')
+    const saved = await createExcelReport(view).xlsx.writeBuffer()
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(saved)
+    const sheet = workbook.worksheets[0]
+    expect(sheet.rowCount).toBe(4)
+    expect(sheet.pageSetup.printArea).toBe('A1:C4')
+    expect(sheet.getCell('B3').fill).toMatchObject({ type: 'gradient', stops: [
+      { position: 0, color: { argb: 'FFFAFAFA' } },
+      { position: 0.4999, color: { argb: 'FFFAFAFA' } },
+      { position: 0.5001, color: { argb: 'FF333333' } },
+      { position: 1, color: { argb: 'FF333333' } },
+    ] })
+    const longIndex = view.rows.findIndex(row => row.id === 'long') + 2
+    const rich = sheet.getCell(longIndex, 2).value as ExcelJS.CellRichTextValue
+    expect(rich.richText[1].text.match(/^\n+/)![0].length).toBeGreaterThan(2)
+    expect(sheet.getCell('B4').value).toBe('—')
+    expect(sheet.getCell('B4').fill.type).toBe('pattern')
+    expect(sheet.getCell('C2').fill.type).toBe('pattern')
+    expect(sheet.getCell('C2').text).toBe(`${view.rows[0].cells.length.display}\n${view.rows[0].cells.length.secondary}`)
   })
 })

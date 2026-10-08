@@ -12,6 +12,16 @@ function wrappedLineCount(value: string, width: number, measure: TextMeasure) {
   }, 0)
 }
 
+/** A narrow transition keeps both unit backgrounds in one printable cell. */
+function splitUnitFill(upperColor: string): ExcelJS.Fill {
+  return { type: 'gradient', gradient: 'angle', degree: style.splitFill.degree, stops: [
+    { position: 0, color: { argb: excelColor(upperColor) } },
+    { position: style.splitFill.upperEnd, color: { argb: excelColor(upperColor) } },
+    { position: style.splitFill.lowerStart, color: { argb: excelColor(palette.accent) } },
+    { position: 1, color: { argb: excelColor(palette.accent) } },
+  ] }
+}
+
 export function createExcelReport(view: BatchView, date = new Date(), measure: TextMeasure = (value, font) => textUnits(value) * font.size / style.bodySize) {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = text.appName; workbook.created = date; workbook.modified = date
@@ -46,19 +56,25 @@ export function createExcelReport(view: BatchView, date = new Date(), measure: T
     view.columns.forEach((column, position) => {
       const cell = row.getCell(position + 2)
       const value = item.cells[column.id]
+      const splitUnits = column.splitUnits && !!value.secondary
+      const separator = '\n'.repeat(splitUnits ? Math.max(2, Math.round(row.height! / (2 * style.lineHeight))) : 1)
       cell.value = value.secondary ? { richText: [
         { text: value.display, font: { name: style.font, size: column.prominent ? style.primarySize : style.bodySize, bold: column.prominent, color: { argb: excelColor(column.prominent ? palette.ink : palette.text) } } },
-        { text: '\n' + value.secondary, font: { name: style.font, size: style.bodySize, bold: false, color: { argb: excelColor(palette.muted) } } },
+        { text: separator + value.secondary, font: { name: style.font, size: style.bodySize, bold: false, color: { argb: excelColor(splitUnits ? palette.white : palette.muted) } } },
       ] } : reportCellValue(value, column)
       cell.numFmt = reportCellNumberFormat(value, column)
       cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
     })
     for (let position = 1; position <= columnCount; position++) {
       const cell = row.getCell(position)
-      const prominent = position > 1 && view.columns[position - 2].prominent
+      const column = position > 1 ? view.columns[position - 2] : undefined
+      const prominent = column?.prominent
+      const splitUnits = column?.splitUnits && !!item.cells[column.id].secondary
       cell.font = { name: style.font, size: prominent ? style.primarySize : style.bodySize, bold: prominent,
         color: { argb: excelColor(prominent ? palette.ink : palette.text) } }
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: excelColor(prominent ? (index % 2 ? palette.emphasisAlt : palette.emphasis) : (index % 2 ? palette.surface : palette.white)) } }
+      const background = prominent ? (index % 2 ? palette.emphasisAlt : palette.emphasis) : (index % 2 ? palette.surface : palette.white)
+      cell.fill = splitUnits ? splitUnitFill(background)
+        : { type: 'pattern', pattern: 'solid', fgColor: { argb: excelColor(background) } }
       cell.border = { bottom: { style: 'hair', color: { argb: excelColor(palette.line) } } }
     }
   })

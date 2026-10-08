@@ -1,7 +1,7 @@
 import { reportStyle as style } from '../config/report'
 import { text } from '../i18n/zh-TW'
 import type { BatchRow, BatchView } from '../features/batch/view-model'
-import { buildColumnLayout } from '../features/batch/column-layout'
+import { buildColumnLayout, metricFonts } from '../features/batch/column-layout'
 
 export function wrapText(value: string, width: number, measure: (value: string) => number): string[] {
   if (!value) return []
@@ -32,7 +32,11 @@ export function buildReportLayout(view: BatchView, measure: (value: string, size
     const nameLines = wrapText(row.name, contentWidth, value => measure(value, style.fonts.filename.size, style.fonts.filename.weight))
     const detailLines = wrapText(row.status.detail, contentWidth, value => measure(value, style.fonts.detail.size, style.fonts.detail.weight))
     const detailHeight = detailLines.length ? style.detailGap + detailLines.length * style.detailLineHeight : 0
-    const metricHeight = Math.max(0, ...view.columns.map(column => (column.prominent ? style.fonts.primaryValue : style.fonts.value).size + (row.cells[column.id].secondary ? style.detailGap + style.fonts.detail.size : 0) + (row.cells[column.id].caption ? style.detailGap + style.fonts.detail.size : 0)))
+    const metricHeight = Math.max(0, ...view.columns.map(column => {
+      const fonts = metricFonts(column, style)
+      if (column.splitUnits && row.cells[column.id].secondary) return 2 * fonts.value.size + style.rowPadding * 2
+      return fonts.value.size + (row.cells[column.id].secondary ? style.detailGap + fonts.secondary.size : 0) + (row.cells[column.id].caption ? style.detailGap + style.fonts.detail.size : 0)
+    }))
     const height = Math.max(style.minimumRowHeight, Math.max(metricHeight, nameLines.length * style.filenameLineHeight + detailHeight) + style.rowPadding * 2)
     const layout = { row, y, height, nameLines, detailLines }
     y += height

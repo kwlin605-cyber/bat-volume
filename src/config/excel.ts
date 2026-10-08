@@ -7,6 +7,7 @@ export const excelStyle = {
     unit: { size: 10, weight: 700 }, value: { size: 10, weight: 400 }, primaryValue: { size: 14, weight: 700 },
   },
   headerRow: 1, lineHeight: 14, rowPadding: 12,
+  splitFill: { degree: 90, upperEnd: 0.4999, lowerStart: 0.5001 },
   paperSize: 9, orientation: 'portrait',
   margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
 } as const

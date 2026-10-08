@@ -3,6 +3,7 @@ import type { BatchView } from '../features/batch/view-model'
 import { text } from '../i18n/zh-TW'
 import { buildReportLayout, reportScale } from './png-layout'
 import { palette } from '../config/theme'
+import { metricFonts } from '../features/batch/column-layout'
 
 export async function renderPngReport(view: BatchView, signal: AbortSignal): Promise<Blob> {
   signal.throwIfAborted()
@@ -44,14 +45,23 @@ export async function renderPngReport(view: BatchView, signal: AbortSignal): Pro
     const top = item.y + style.rowPadding
     item.nameLines.forEach((line, i) => write(line, style.padding + style.cellPadding, top + i * style.filenameLineHeight, style.fonts.filename.size, palette.muted, 'left', style.fonts.filename.weight))
     layout.columns.forEach(({ column, x, width }) => {
-      const font = column.prominent ? style.fonts.primaryValue : style.fonts.value
+      const { value: font, secondary: secondaryFont } = metricFonts(column, style)
       const cell = item.row.cells[column.id]
-      const blockHeight = font.size + (cell.secondary ? style.detailGap + style.fonts.detail.size : 0) + (cell.caption ? style.detailGap + style.fonts.detail.size : 0)
+      if (column.splitUnits && cell.secondary) {
+        const halfHeight = item.height / 2
+        const right = x + width - style.cellPadding
+        ctx.fillStyle = palette.accent
+        ctx.fillRect(x, item.y + halfHeight, width, halfHeight)
+        write(cell.display, right, item.y + (halfHeight - font.size) / 2, font.size, palette.text, 'right', font.weight)
+        write(cell.secondary, right, item.y + halfHeight + (halfHeight - secondaryFont.size) / 2, secondaryFont.size, palette.white, 'right', secondaryFont.weight)
+        return
+      }
+      const blockHeight = font.size + (cell.secondary ? style.detailGap + secondaryFont.size : 0) + (cell.caption ? style.detailGap + style.fonts.detail.size : 0)
       const valueY = item.y + (item.height - blockHeight) / 2
       const right = x + width - style.cellPadding
       write(cell.display, right, valueY, font.size, column.prominent ? palette.ink : palette.text, 'right', font.weight)
-      if (cell.secondary) write(cell.secondary, right, valueY + font.size + style.detailGap, style.fonts.detail.size, palette.muted, 'right', style.fonts.detail.weight)
-      if (cell.caption) write(cell.caption, right, valueY + font.size + style.detailGap + (cell.secondary ? style.detailGap + style.fonts.detail.size : 0), style.fonts.detail.size, palette.muted, 'right', style.fonts.detail.weight)
+      if (cell.secondary) write(cell.secondary, right, valueY + font.size + style.detailGap, secondaryFont.size, column.splitUnits ? palette.text : palette.muted, 'right', secondaryFont.weight)
+      if (cell.caption) write(cell.caption, right, valueY + font.size + style.detailGap + (cell.secondary ? style.detailGap + secondaryFont.size : 0), style.fonts.detail.size, palette.muted, 'right', style.fonts.detail.weight)
     })
     const detailY = top + item.nameLines.length * style.filenameLineHeight + style.detailGap
     item.detailLines.forEach((line, i) => write(line, style.padding + style.cellPadding, detailY + i * style.detailLineHeight, style.fonts.detail.size, palette.muted, 'left', style.fonts.detail.weight))

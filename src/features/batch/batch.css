@@ -111,4 +111,10 @@ body:has(.result-dialog[open], .material-dialog[open]) { overflow: hidden; }
 .column-popover .unit-selector button:hover { background: var(--color-emphasisAlt); }
 .column-popover .unit-selector button[aria-pressed=true] { background: var(--color-accent); color: var(--color-white); }
 .weight-secondary { display: block; margin-top: 6px; color: var(--color-muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.batch-table td.metric-dual-value { position: relative; padding: 0; height: 96px; }
+.dual-unit-value { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr 1fr; }
+.dual-unit-value > span { display: flex; align-items: center; justify-content: flex-end; padding: 8px 20px; font: inherit; }
+.dual-unit-value > span:last-child { background: var(--color-accent); color: var(--color-white); }
+.batch-table tbody tr:hover .dual-unit-value > span:last-child { background: var(--color-accentHover); }
+@media (min-width: 1024px) and (max-width: 1190px) { .dual-unit-value > span { padding-left: 14px; padding-right: 14px; } }
 .weight-input-unit { flex: none; color: var(--color-muted); font-size: 11px; font-weight: 400; }

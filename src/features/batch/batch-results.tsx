@@ -81,11 +81,13 @@ export default function BatchResults({ entries, requirements, display, onDisplay
             {row.pending && <span className="row-loading"><LoaderCircle size={12} className="spin" aria-hidden="true" />{text.loading}</span>}
             {row.status.detail && <span className="row-diagnostic">{row.status.detail}</span>}
           </td>
-          {view.columns.map(column => <td className={`numeric ${column.prominent ? 'metric-primary' : ''}`} key={column.id}>
+          {view.columns.map(column => <td className={`numeric ${column.prominent ? 'metric-primary' : ''} ${column.splitUnits && row.cells[column.id].secondary ? 'metric-dual-value' : ''}`} key={column.id}>
             {column.id === 'batWeight' ? editing === row.id
               ? <WeightEditor key={row.id} value={requirements[row.id] ?? null} onCommit={range => commitRequirement(row.id, range)} onCancel={() => setEditing(null)} />
               : <button type="button" className="requirement-trigger" disabled={row.pending || removing} aria-label={`${text.editRequirement} ${row.name}`} onClick={() => beginEditing(row.id)}><span>{row.cells[column.id].display}</span>{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}</button>
-              : <>{row.cells[column.id].display}{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}{row.cells[column.id].caption && <small className="weight-caption">{row.cells[column.id].caption}</small>}</>}
+              : column.splitUnits && row.cells[column.id].secondary
+                ? <div className="dual-unit-value"><span>{row.cells[column.id].display}</span><span>{row.cells[column.id].secondary}</span></div>
+                : <>{row.cells[column.id].display}{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}{row.cells[column.id].caption && <small className="weight-caption">{row.cells[column.id].caption}</small>}</>}
           </td>)}
           {removing && <td className="remove-cell"><RemoveFileButton name={row.name} onRemove={() => onRemove(row.id)} /></td>}
         </tr>)}</tbody>
