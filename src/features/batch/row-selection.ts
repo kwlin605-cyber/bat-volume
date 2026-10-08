@@ -2,6 +2,11 @@ export interface SelectableRow { id: string; pending: boolean }
 export interface RowSelection { ids: string[]; anchor: string | null }
 export interface SelectionModifiers { ctrlKey: boolean; shiftKey: boolean }
 
+/** Canonical visual order makes draft identity independent of pointer position. */
+export function sameSelectedRows(first: readonly string[], second: readonly string[]): boolean {
+  return first.length === second.length && first.every((id, index) => id === second[index])
+}
+
 export function mergeRowSelection(rows: readonly SelectableRow[], ...groups: readonly string[][]): string[] {
   const ids = new Set(groups.flat())
   return rows.filter(row => !row.pending && ids.has(row.id)).map(row => row.id)

@@ -42,10 +42,6 @@
 .batch-table tbody tr.row-selected td:first-child { box-shadow: inset 3px 0 var(--selection-accent); }
 .batch-table.is-selecting { user-select: none; cursor: ns-resize; }
 .batch-table.is-selecting tbody tr, .batch-table.is-selecting button { cursor: ns-resize; }
-.row-selection-actions { position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; font-size: 12px; white-space: nowrap; color: var(--selection-accent); }
-.row-selection-actions button { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--selection-accent); border-radius: 8px; padding: 7px 10px; background: var(--color-white); color: inherit; font: inherit; cursor: pointer; }
-.row-selection-actions button:hover { background: var(--selection-background); }
-.row-selection-actions kbd { font: inherit; font-size: 10px; opacity: .7; }
 .batch-table-area.is-removing .batch-table-wrap { border: 0; border-radius: 0; }
 .batch-table-area.is-removing .batch-table { border-collapse: separate; border-spacing: 0; }
 .batch-table-area.is-removing tbody tr { background: transparent; cursor: default; }

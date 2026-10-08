@@ -74,7 +74,7 @@ export default function BatchResults({ entries, requirements, display, onDisplay
         <tbody>{view.rows.map(row => <tr key={row.id} data-row-id={row.id} className={selection.ids.includes(row.id) ? 'row-selected' : ''} tabIndex={row.pending || removing ? -1 : 0} aria-label={`${text.selectBat} ${row.name}`} aria-describedby="row-selection-help"
           onPointerDown={event => selection.pointerDown(event, row.id)}
           onClick={event => { if (!row.pending && !(event.target instanceof Element && event.target.closest('button:not(.requirement-trigger, .filename-button), input'))) selection.select(row.id, event, event.currentTarget) }}
-          onKeyDown={event => { if (event.target === event.currentTarget && !row.pending && event.key === ' ') { event.preventDefault(); selection.select(row.id, event, event.currentTarget) } }}>
+          onKeyDown={event => { if (event.target === event.currentTarget && !row.pending && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selection.select(row.id, event, event.currentTarget) } }}>
           <td><button type="button" className="filename-button" disabled={row.pending} aria-label={`${text.previewFile} ${row.name}`} onClick={event => { if (event.ctrlKey || event.shiftKey) return; event.stopPropagation(); selection.cancel(); setSelected(row.id) }}>{row.name}</button>
             {row.pending && <span className="row-loading"><LoaderCircle size={12} className="spin" aria-hidden="true" />{text.loading}</span>}
             {row.status.detail && <span className="row-diagnostic">{row.status.detail}</span>}
@@ -91,12 +91,8 @@ export default function BatchResults({ entries, requirements, display, onDisplay
       </table>
     </div>
       <p id="row-selection-help" className="sr-only">{text.selectionKeyboardHint}</p>
-      {selection.ids.length > 0 && !selection.editing && <div className="row-selection-actions" aria-live="polite">
-        <span>{text.selectedBatCount.replace('{count}', String(selection.ids.length))}</span>
-        <button type="button" onClick={selection.openEditor}>{text.editSelectedWeights}<kbd>{text.enterKeyLabel}</kbd></button>
-      </div>}
     </div>
-    {selection.editing && <RequirementPopover key={selection.editing.ids.join('|')} selection={selection.editing}
+    {selection.editing && <RequirementPopover key={selection.editing.ids.join('|')} selection={selection.editing} hidden={selection.dragging}
       value={selection.editing.ids.length === 1 ? requirements[selection.editing.ids[0]] ?? null : null}
       onCommit={commitRequirement} onCancel={selection.cancel} />}
     {selectedEntry && <ResultDialog key={selectedEntry.id} entry={selectedEntry} onDismiss={() => setSelected(null)} />}

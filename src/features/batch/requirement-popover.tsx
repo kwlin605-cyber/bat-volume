@@ -8,8 +8,9 @@ import { WeightEditor } from './weight-editor'
 import type { EditSelection } from './use-row-selection'
 
 /** Single and multiple selections share one editor without changing table geometry. */
-export function RequirementPopover({ selection, value, onCommit, onCancel }: {
+export function RequirementPopover({ selection, value, hidden = false, onCommit, onCancel }: {
   selection: EditSelection; value: WeightRange | null
+  hidden?: boolean
   onCommit: (value: WeightRange | null) => void; onCancel: () => void
 }) {
   const root = useRef<HTMLDivElement>(null)
@@ -23,18 +24,12 @@ export function RequirementPopover({ selection, value, onCommit, onCancel }: {
     })
   }, [selection])
   useEffect(() => {
-    const outside = (event: PointerEvent) => { if (event.target instanceof Node && !root.current?.contains(event.target)) onCancel() }
-    const keyboard = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); onCancel() } }
-    const focus = (event: FocusEvent) => { if (event.target instanceof Node && !root.current?.contains(event.target)) onCancel() }
-    document.addEventListener('pointerdown', outside); document.addEventListener('keydown', keyboard); document.addEventListener('focusin', focus)
     window.addEventListener('resize', onCancel)
-    return () => {
-      document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', keyboard); document.removeEventListener('focusin', focus)
-      window.removeEventListener('resize', onCancel)
-    }
+    return () => window.removeEventListener('resize', onCancel)
   }, [onCancel])
+  useEffect(() => { if (!hidden) root.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }) }, [hidden, selection])
   return createPortal(<div ref={root} className="requirement-popover" role="dialog" aria-label={text.editRequirement}
-    style={{ ...position, width: settings.popoverWidth,
+    aria-hidden={hidden || undefined} style={{ ...position, width: settings.popoverWidth, visibility: hidden ? 'hidden' : undefined,
       '--selection-background': settings.colors.background, '--selection-accent': settings.colors.accent, '--selection-border': settings.colors.border } as React.CSSProperties}>
     <div className="requirement-popover-heading"><span>{selection.ids.length > 1 ? text.selectedBatCount.replace('{count}', String(selection.ids.length)) : text.batWeight}</span>
       <button type="button" className="icon-button" aria-label={text.cancel} onClick={onCancel}><X size={15} /></button></div>

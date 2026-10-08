@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { rowSelectionSettings as settings } from '../../config/selection'
-import { clickRowSelection, mergeRowSelection, selectRowRange, type RowSelection, type SelectableRow, type SelectionModifiers } from './row-selection'
+import { clickRowSelection, mergeRowSelection, sameSelectedRows, selectRowRange, type RowSelection, type SelectableRow, type SelectionModifiers } from './row-selection'
 
 export interface EditSelection { ids: string[]; anchor: { x: number; y: number } }
 
-/** Own temporary selection and pointer lifecycle; Enter opens the shared weight editor. */
+/** Own selection, dismissal and pointer lifecycle; completed selections open the shared editor. */
 export function useRowSelection(rows: readonly SelectableRow[], disabled: boolean, surface: RefObject<HTMLDivElement | null>) {
   const [selection, setSelection] = useState<RowSelection>({ ids: [], anchor: null })
   const current = useRef(selection)
@@ -13,7 +13,6 @@ export function useRowSelection(rows: readonly SelectableRow[], disabled: boolea
   const cleanup = useRef<(() => void) | null>(null)
   const cleanupClick = useRef<(() => void) | null>(null)
   const suppressClick = useRef(false)
-  const position = useRef({ x: 0, y: 0 })
   const orderKey = rows.map(row => row.id).join('|')
   const update = useCallback((next: RowSelection) => { current.current = next; setSelection(next) }, [])
   const cancel = useCallback(() => {
@@ -38,30 +37,28 @@ export function useRowSelection(rows: readonly SelectableRow[], disabled: boolea
     if (disabled || suppressClick.current) return
     const next = clickRowSelection(rows, current.current, id, modifiers)
     if (next === current.current) return
-    update(next); setEditing(null)
+    update(next)
     const rect = element.getBoundingClientRect()
-    position.current = { x: rect.right, y: rect.bottom }
-    element.closest<HTMLElement>('[data-row-id]')?.focus({ preventScroll: true })
+    showEditor(next.ids, { x: rect.right, y: rect.bottom })
   }
-  function openEditor() {
-    if (disabled || dragging || editing || cleanup.current) return
-    const ids = mergeRowSelection(rows, current.current.ids)
-    if (ids.length) setEditing({ ids, anchor: position.current })
+  function showEditor(ids: string[], anchor: EditSelection['anchor']) {
+    if (!ids.length) { setEditing(null); return }
+    setEditing(previous => previous && sameSelectedRows(previous.ids, ids) ? { ...previous, anchor } : { ids, anchor })
   }
   useEffect(() => {
-    const outside = (event: PointerEvent) => {
+    // One owner for dismissal keeps modifier clicks from clearing the range anchor.
+    const outside = (event: PointerEvent | FocusEvent) => {
       if (!(event.target instanceof Element) || event.target.closest('.requirement-popover')) return
-      if (!surface.current?.contains(event.target) || !event.target.closest('[data-row-id], .row-selection-actions')) cancel()
+      if (!surface.current?.contains(event.target) || !event.target.closest('[data-row-id]')) cancel()
     }
+    const focus = (event: FocusEvent) => { if (!cleanup.current) outside(event) }
     const key = (event: KeyboardEvent) => {
-      if (editing || disabled || !current.current.ids.length || dragging || cleanup.current) return
+      if (disabled || !current.current.ids.length || cleanup.current) return
       if (event.key === 'Escape') { event.preventDefault(); cancel(); return }
-      if (event.key !== 'Enter' || event.target instanceof Element && event.target.closest('input, textarea, select, .filename-button')) return
-      if (event.target instanceof Node && surface.current?.contains(event.target)) { event.preventDefault(); openEditor() }
     }
-    document.addEventListener('pointerdown', outside); document.addEventListener('keydown', key)
-    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', key) }
-  }, [cancel, disabled, dragging, editing, rows, surface])
+    document.addEventListener('pointerdown', outside); document.addEventListener('focusin', focus); document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('focusin', focus); document.removeEventListener('keydown', key) }
+  }, [cancel, disabled, surface])
   function pointerDown(event: ReactPointerEvent<HTMLTableRowElement>, id: string) {
     if (disabled || event.button !== 0 || event.pointerType !== 'mouse' || !rows.some(row => row.id === id && !row.pending)) return
     const target = event.target
@@ -69,7 +66,7 @@ export function useRowSelection(rows: readonly SelectableRow[], disabled: boolea
     if (!(target instanceof Element) || target.closest('input, a, button:not(.requirement-trigger, .filename-button)') || !modified && target.closest('.filename-button')) return
     event.preventDefault()
     cleanup.current?.(); cleanup.current = null
-    setEditing(null); suppressClick.current = false
+    suppressClick.current = false
     const table = event.currentTarget.closest('table')!
     const base = current.current, additive = event.ctrlKey
     const anchor = event.shiftKey && base.anchor && rows.some(row => row.id === base.anchor && !row.pending) ? base.anchor : id
@@ -111,9 +108,7 @@ export function useRowSelection(rows: readonly SelectableRow[], disabled: boolea
       setDragging(false)
       if (!moved) return
       suppressReleaseClick()
-      position.current = { x: e.clientX, y: e.clientY }
-      const focused = [...table.querySelectorAll<HTMLTableRowElement>('[data-row-id]')].find(row => row.dataset.rowId === selected.at(-1))
-      focused?.focus({ preventScroll: true })
+      showEditor(selected, { x: e.clientX, y: e.clientY })
     }
     function abort() { suppressReleaseClick(); cancel() }
     function key(e: KeyboardEvent) { if (e.key === 'Escape') { e.preventDefault(); abort() } }
@@ -128,5 +123,5 @@ export function useRowSelection(rows: readonly SelectableRow[], disabled: boolea
       window.removeEventListener('blur', abort)
     }
   }
-  return { ids: selection.ids, editing, dragging, cancel, select, openEditor, pointerDown, suppressClick }
+  return { ids: selection.ids, editing, dragging, cancel, select, pointerDown, suppressClick }
 }

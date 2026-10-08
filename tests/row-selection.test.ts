@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clickRowSelection, selectRowRange } from '../src/features/batch/row-selection'
+import { clickRowSelection, sameSelectedRows, selectRowRange } from '../src/features/batch/row-selection'
 import { createBatchSession, updateSessionRequirements } from '../src/services/batch-session'
 import { LatestSessionStorage, type SessionRepository } from '../src/services/latest-session-storage'
 
@@ -36,6 +36,12 @@ describe('row range selection and atomic requirements', () => {
     const selected = { ids: ['z', 'duplicate-name'], anchor: 'duplicate-name' }
     expect(clickRowSelection(rows, selected, 'a', { ctrlKey: true, shiftKey: true })).toEqual({ ids: ['z', 'a', 'duplicate-name'], anchor: 'duplicate-name' })
     expect(clickRowSelection(rows, selected, 'a', { ctrlKey: false, shiftKey: true })).toEqual({ ids: ['a', 'duplicate-name'], anchor: 'duplicate-name' })
+  })
+  it('keeps a draft only when the selected file identities stay the same', () => {
+    expect(sameSelectedRows(['z', 'a'], ['z', 'a'])).toBe(true)
+    expect(sameSelectedRows(['z', 'a'], ['z'])).toBe(false)
+    expect(sameSelectedRows(['z', 'a'], ['z', 'duplicate-name'])).toBe(false)
+    expect(sameSelectedRows([], [])).toBe(true)
   })
   it('updates only selected live files, preserving unrelated targets, ANC bytes and display', () => {
     const session = createBatchSession([new File(['one'], 'same.anc'), new File(['two'], 'same.anc'), new File(['three'], 'other.anc')])
