@@ -35,7 +35,7 @@ describe('weight units and canonical gram data', () => {
   it('formats grams as integers and ounces as one decimal including both range endpoints', () => {
     expect(weightDisplay(gramsPerOunce * 28, undefined, 'oz')).toEqual({ display: '28.0' })
     expect(weightDisplay(600.4, 650.4, 'g')).toEqual({ display: '600 – 650' })
-    expect(weightDisplay(gramsPerOunce * 28, gramsPerOunce * 30, 'both')).toEqual({ display: '794 – 850 g', secondary: '28.0 – 30.0 oz' })
+    expect(weightDisplay(gramsPerOunce * 28, gramsPerOunce * 30, 'both')).toEqual({ display: '794 – 850', secondary: '28.0 – 30.0' })
   })
   it('changes presentation without mutating geometry, canonical weights or sorting order', () => {
     const second = { ...sample, id: 'second', source: { ...source, name: 'second.anc' } }
@@ -75,6 +75,7 @@ describe('reports with selected weight units', () => {
     await workbook.xlsx.load(data)
     const sheet = workbook.worksheets[0]
     const cell = sheet.getCell('C2'), weight = view.rows[0].cells.materialWeight
+    expect(cell.alignment).toMatchObject({ horizontal: 'center', vertical: 'middle' })
     if (mode === 'both') {
       expect(cell.text).toBe(`${weight.display}\n\n${weight.secondary}`)
       expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 10 } }, { text: '\n\n' + weight.secondary, font: { size: 10 } }] })
@@ -117,7 +118,7 @@ describe('reports with selected weight units', () => {
     const view = makeView('both', { sample: { min: 600, max: 650 } })
     const weight = view.columns.find(column => column.id === 'materialWeight')!
     expect(metricFonts(weight, batchTableStyle).secondary).toEqual(metricFonts(weight, batchTableStyle).value)
-    const sized = { ...view, rows: view.rows.map(row => ({ ...row, cells: { ...row.cells, materialWeight: { ...row.cells.materialWeight, secondary: '123,456,789.0 – 987,654,321.0 oz' } } })) }
+    const sized = { ...view, rows: view.rows.map(row => ({ ...row, cells: { ...row.cells, materialWeight: { ...row.cells.materialWeight, secondary: '123,456,789.0 – 987,654,321.0' } } })) }
     const measure = (value: string, font: { size: number }) => value.length * font.size
     const width = buildColumnLayout(sized, batchTableStyle, measure).columns.find(item => item.column.id === 'materialWeight')!.width
     expect(width).toBeGreaterThanOrEqual(sized.rows[0].cells.materialWeight.secondary!.length * 17 + 40)

@@ -31,7 +31,11 @@ describe('Excel report saved-file behavior', () => {
     const sheet = await reopen(createExcelReport(view))
     expect(sheet.pageSetup.printArea).toBe('A1:D3')
     expect(sheet.getRow(1).values).toEqual([undefined, text.fileName, `${text.retainedVolume} cm³`, `${text.materialWeight} g`, `${text.batWeight} g`])
+    expect(sheet.getCell('A1').alignment).toMatchObject({ horizontal: 'left', vertical: 'middle' })
+    for (let column = 2; column <= 4; column++) expect(sheet.getCell(1, column).alignment).toMatchObject({ horizontal: 'center', vertical: 'middle' })
     for (const [i, row] of view.rows.entries()) {
+      expect(sheet.getCell(i + 2, 1).alignment).toMatchObject({ horizontal: 'left', vertical: 'middle' })
+      for (let column = 2; column <= 4; column++) expect(sheet.getCell(i + 2, column).alignment).toMatchObject({ horizontal: 'center', vertical: 'middle' })
       const recommended = row.id === sample.id
       expect(sheet.getCell(i + 2, 4).value).toBe(recommended ? row.cells.batWeight.display : row.cells.batWeight.value)
       expect(sheet.getCell(i + 2, 3).value).toBe(recommended ? row.cells.materialWeight.display : row.cells.materialWeight.value)

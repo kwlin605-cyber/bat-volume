@@ -15,7 +15,7 @@ export function weightDisplay(grams: number, maximum: number | undefined, mode: 
     ? `${formatWeightInUnit(grams, unit)}${text.weightRangeSeparator}${formatWeightInUnit(maximum, unit)}`
     : formatWeightInUnit(grams, unit)
   return mode === 'both'
-    ? { display: `${range('g')} ${text.weightUnit}`, secondary: `${range('oz')} ${text.ounceUnit}` }
+    ? { display: range('g'), secondary: range('oz') }
     : { display: range(mode) }
 }
 /** Editable text may be concise; unchanged inputs reuse the original gram value. */

@@ -30,7 +30,7 @@ describe('batch data shared by table and report', () => {
     })
     expect(view.rows[0].cells.batWeight).toEqual({ value: 800, maximum: 800, display: '800' })
     expect(view.rows[0].cells.materialWeight.value).toBeCloseTo(2400 / 0.97, 10)
-    expect(view.rows[0].cells.materialWeight.display).toBe('2,474 g')
+    expect(view.rows[0].cells.materialWeight.display).toBe('2,474')
     expect(view.rows[0].cells.materialWeight.secondary).toBeDefined()
     expect(view.rows[1].cells.batWeight.display).toBe('679')
     expect(view.rows[1].cells.materialWeight.value).toBe(2100)

@@ -43,7 +43,7 @@ export function createExcelReport(view: BatchView, date = new Date(), measure: T
     const prominent = index > 1 && view.columns[index - 2].prominent
     cell.font = { name: style.font, size: style.bodySize, bold: true, color: { argb: excelColor(palette.text) } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: excelColor(prominent ? palette.emphasisAlt : palette.header) } }
-    cell.alignment = { horizontal: index === 1 ? 'left' : 'right', vertical: 'middle', wrapText: false }
+    cell.alignment = { horizontal: index === 1 ? 'left' : 'center', vertical: 'middle', wrapText: false }
   })
   view.rows.forEach((item, index) => {
     const row = sheet.getRow(style.headerRow + index + 1)
@@ -63,7 +63,7 @@ export function createExcelReport(view: BatchView, date = new Date(), measure: T
         { text: separator + value.secondary, font: { name: style.font, size: style.bodySize, bold: false, color: { argb: excelColor(splitUnits ? palette.white : palette.muted) } } },
       ] } : reportCellValue(value, column)
       cell.numFmt = reportCellNumberFormat(value, column)
-      cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true }
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
     })
     for (let position = 1; position <= columnCount; position++) {
       const cell = row.getCell(position)

@@ -27,7 +27,7 @@
 .batch-table th { background: var(--color-header); color: #5c5c5c; font-size: 14px; font-weight: 500; height: 68px; padding: 14px 20px; text-align: left; white-space: nowrap; }
 .batch-table th small { display: inline-block; font-size: 11px; font-weight: 400; color: #737373; margin-left: 6px; }
 .batch-table td { padding: 22px 20px; font-size: 17px; font-weight: 500; color: var(--color-text); border-top: 1px solid #e6e6e6; vertical-align: middle; }
-.batch-table .numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.batch-table .numeric { text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .batch-table tbody tr:nth-child(even) { --row-surface: #fbfbfb; background: var(--row-surface); }
 .batch-table th.metric-primary { font-size: 14px; font-weight: 600; color: var(--color-ink); }
 .batch-table .metric-primary { background: var(--color-emphasis); }
@@ -56,7 +56,7 @@
 .batch-table-area.is-removing tbody tr td:not(.metric-primary, .remove-cell) { background: var(--row-surface, transparent); }
 .batch-table-area.is-removing .batch-table .remove-cell { border: 0; padding: 0 0 0 16px; background: transparent; text-align: center; }
 .batch-table-area.is-removing .requirement-trigger:disabled { cursor: default; }
-.requirement-trigger { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: right; cursor: pointer; }
+.requirement-trigger { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: inherit; cursor: pointer; }
 .requirement-trigger:disabled { cursor: wait; }
 .weight-caption { display: block; margin-top: 6px; color: #7e7e7e; font-size: 11px; font-weight: 400; }
 .weight-editor { white-space: normal; }
@@ -130,7 +130,7 @@ body:has(.result-dialog[open], .material-dialog[open]) { overflow: hidden; }
 .weight-secondary { display: block; margin-top: 6px; color: var(--color-muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 .batch-table td.metric-dual-value { position: relative; padding: 0; height: 96px; }
 .dual-unit-value { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr 1fr; }
-.dual-unit-value > span { display: flex; align-items: center; justify-content: flex-end; padding: 8px 20px; font: inherit; }
+.dual-unit-value > span { display: flex; align-items: center; justify-content: center; padding: 8px 20px; font: inherit; }
 .dual-unit-value > span:last-child { background: var(--color-accent); color: var(--color-white); }
 .batch-table tbody tr:hover:not(.row-selected) .dual-unit-value > span:last-child { background: var(--color-accentHover); }
 @media (min-width: 1024px) and (max-width: 1190px) { .dual-unit-value > span { padding-left: 14px; padding-right: 14px; } }
