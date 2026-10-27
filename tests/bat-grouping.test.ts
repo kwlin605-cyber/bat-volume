@@ -58,7 +58,7 @@ describe('grouping before shared batch sorting', () => {
   })
   it('swaps group priority without reversing either group or changing default session preferences', () => {
     const sort = { key: 'volume', direction: 'asc' } as const
-    const view = buildBatchView(entries, ['volume'], sort, undefined, 'mm', { ...defaultBatGrouping, firstGroup: 'baseball' })
+    const view = buildBatchView(entries, ['volume'], sort, undefined, 'cm', { ...defaultBatGrouping, firstGroup: 'baseball' })
     expect(view.rows.map(row => row.id)).toEqual(['base-small', 'base-large', 'soft-small', 'soft-large', 'pending', 'failed'])
     expect(view.sort).toEqual(sort)
     expect(createDefaultBatchSort()).toEqual({ key: 'materialWeight', direction: 'asc' })
@@ -85,10 +85,10 @@ describe('grouping before shared batch sorting', () => {
     expect(view.rows.map(row => row.id)).toEqual(['tie2', 'tie10', 'wide', 'base'])
   })
   it('uses exactly the same grouping order in Excel and PDF layout, including hidden classification data', () => {
-    const view = buildBatchView(entries, ['volume'], { key: 'volume', direction: 'desc' }, undefined, 'mm', { ...defaultBatGrouping, firstGroup: 'baseball' })
+    const view = buildBatchView(entries, ['volume'], { key: 'volume', direction: 'desc' }, undefined, 'cm', { ...defaultBatGrouping, firstGroup: 'baseball' })
     const sheet = createExcelReport(view).worksheets[0]
     const layout = buildReportLayout(view, value => value.length * 10)
-    view.rows.forEach((row, index) => expect(sheet.getCell(index + 2, 1).text).toContain(row.name))
+    view.rows.forEach((row, index) => expect(sheet.getCell(index + 2, 1).text).toContain(row.name.replace(/\.anc$/i, '')))
     expect(layout.rows.map(row => row.row.id)).toEqual(view.rows.map(row => row.id))
   })
 })

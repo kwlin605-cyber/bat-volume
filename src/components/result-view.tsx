@@ -6,10 +6,10 @@ import type { ActiveUploadState } from '../services/analysis-state'
 import { text } from '../i18n/zh-TW'
 
 const BatPreview = lazy(() => import('./bat-preview'))
-export function ResultView({ state, preview }: { state: ActiveUploadState; preview: boolean }) {
+export function ResultView({ state, preview, diameterAllowanceMm }: { state: ActiveUploadState; preview: boolean; diameterAllowanceMm?: number }) {
   const result = state.status === 'result' ? state.result : null
   return <div className={`result-layout ${preview && result?.profile ? 'with-preview' : ''}`}>
-    <ResultCard state={state} />
+    <ResultCard diameterAllowanceMm={diameterAllowanceMm} state={state} />
     {preview && result?.profile && <PreviewBoundary><Suspense fallback={<div className="preview-fallback"><LoaderCircle className="spin" size={18} />{text.previewLoading}</div>}><BatPreview result={result} /></Suspense></PreviewBoundary>}
   </div>
 }

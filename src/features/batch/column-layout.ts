@@ -1,6 +1,7 @@
 import type { BatchView } from './view-model'
 import { text } from '../../i18n/zh-TW'
 import type { MetricColumn } from './columns'
+import { displayFileName } from '../../lib/file-name'
 
 export interface TextStyle { size: number; weight: number; letterSpacing?: number; tabular?: boolean }
 export type TextMeasure = (value: string, font: TextStyle) => number
@@ -23,7 +24,7 @@ export function buildColumnLayout(view: BatchView, style: ColumnLayoutStyle, mea
   const padding = style.cellPadding * 2
   let filenameContent = lineWidth(text.fileName, style.fonts.header)
   for (const row of view.rows) {
-    filenameContent = Math.max(filenameContent, lineWidth(row.name, style.fonts.filename),
+    filenameContent = Math.max(filenameContent, lineWidth(displayFileName(row.name), style.fonts.filename),
       lineWidth(row.status.detail, style.fonts.detail), row.pending ? lineWidth(text.loading, style.fonts.detail) : 0)
   }
   const columns = view.columns.map(column => {

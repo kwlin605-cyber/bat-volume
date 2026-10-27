@@ -1,12 +1,34 @@
+import { palette } from './theme'
+
 export const reportStyle = {
+  rowLineColor: palette.border,
   // Print dimensions and font sizes are in points, independent of screen pixels.
-  padding: 28, minimumFilenameWidth: 72, maximumFilenameWidth: 240, minimumMetricWidth: 36, cellPadding: 7,
-  filenameLineHeight: 14, detailLineHeight: 12, detailGap: 4,
-  rowPadding: 10, minimumRowHeight: 44, headingHeight: 34, headerUnitGap: 3,
+  padding: 5 * 72 / 25.4, minimumFilenameWidth: 86.4, maximumFilenameWidth: 288, minimumMetricWidth: 43.2, cellPadding: 8.4,
+  filenameLineHeight: 16.8, detailLineHeight: 14.4, detailGap: 4.8,
+  rowPadding: 12, minimumRowHeight: 52.8, headingHeight: 40.8, headerUnitGap: 3.6,
   fontFamily: '"Segoe UI", "Microsoft JhengHei", sans-serif',
   fonts: {
-    filename: { size: 10, weight: 700 }, detail: { size: 8, weight: 400 },
-    header: { size: 9, weight: 500 }, primaryHeader: { size: 9, weight: 600 },
-    unit: { size: 7, weight: 400 }, value: { size: 10, weight: 500 }, primaryValue: { size: 12, weight: 600 },
+    filename: { size: 12, weight: 700 }, detail: { size: 9.6, weight: 400 },
+    header: { size: 10.8, weight: 500 }, primaryHeader: { size: 10.8, weight: 600 },
+    unit: { size: 8.4, weight: 400 }, value: { size: 12, weight: 500 }, primaryValue: { size: 14, weight: 600 },
   },
 } as const
+
+export const printScaleSettings = { initial: 100, minimum: 25, maximum: 200, step: 5 } as const
+export const validPrintScale = (value: number) => Number.isInteger(value) && value >= printScaleSettings.minimum && value <= printScaleSettings.maximum
+
+/** Scale table dimensions, never paper margins. Both preview and output read this style. */
+export function scaledReportStyle(percent = printScaleSettings.initial as number) {
+  if (!validPrintScale(percent)) throw new RangeError('Invalid print scale')
+  const factor = percent / 100
+  return {
+    ...reportStyle,
+    minimumFilenameWidth: reportStyle.minimumFilenameWidth * factor, maximumFilenameWidth: reportStyle.maximumFilenameWidth * factor,
+    minimumMetricWidth: reportStyle.minimumMetricWidth * factor, cellPadding: reportStyle.cellPadding * factor,
+    filenameLineHeight: reportStyle.filenameLineHeight * factor, detailLineHeight: reportStyle.detailLineHeight * factor,
+    detailGap: reportStyle.detailGap * factor, rowPadding: reportStyle.rowPadding * factor,
+    minimumRowHeight: reportStyle.minimumRowHeight * factor, headingHeight: reportStyle.headingHeight * factor,
+    headerUnitGap: reportStyle.headerUnitGap * factor,
+    fonts: Object.fromEntries(Object.entries(reportStyle.fonts).map(([key, font]) => [key, { ...font, size: font.size * factor }])) as Record<keyof typeof reportStyle.fonts, { size: number; weight: number }>,
+  }
+}

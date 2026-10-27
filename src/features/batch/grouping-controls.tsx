@@ -25,7 +25,7 @@ export function GroupingControls({ value, onChange }: { value: BatGroupingSettin
         <input type="number" step="any" aria-label={text.diameterThreshold} aria-invalid={invalid || undefined} aria-describedby={invalid ? 'grouping-threshold-error' : undefined}
           value={draft} onChange={event => { cancelled.current = false; setDraft(event.target.value); setInvalid(false) }} onBlur={commit}
           onKeyDown={event => { if (event.key === 'Escape') { cancelled.current = true; setDraft(String(value.diameterThresholdMm)); setInvalid(false) } }} />
-        <small>{text.lengthUnit}</small>
+        <small>{text.millimetreUnit}</small>
       </span></label>
       {invalid && <p id="grouping-threshold-error" className="grouping-error" role="alert">{text.invalidPositiveNumber}</p>}
     </form>

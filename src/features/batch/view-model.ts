@@ -6,17 +6,20 @@ import { initialMaterialSettings } from '../../config/weight'
 import { weightDisplay } from '../../lib/weight-display'
 import { fromGrams, type WeightDisplayMode } from '../../domain/weight-unit'
 import type { BatchSort } from '../../domain/batch-display'
-import type { LengthDisplayMode } from '../../domain/length-unit'
-import { halfInchValue, lengthDisplay, lengthNumberFormat } from '../../lib/length-display'
+import { fromMillimetres, type LengthDisplayMode } from '../../domain/length-unit'
+import { quarterInchValue, lengthDisplay, lengthNumberFormat } from '../../lib/length-display'
 import { defaultBatGrouping } from '../../config/grouping'
-import type { BatGroupingSettings } from '../../domain/bat-grouping'
+import { classifyBat, type BatGroup, type BatGroupingSettings } from '../../domain/bat-grouping'
 import { orderBatchRows } from './row-order'
+import { defaultDiameterAllowanceMm, finishedDiameter } from '../../domain/diameter-allowance'
 export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
 export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string }
 export interface WeightContext { material: MaterialSettings; requirements: Readonly<Record<string, WeightRange>>; weightUnit?: WeightDisplayMode }
 const emptyWeightContext: WeightContext = { material: initialMaterialSettings, requirements: {} }
 export interface BatchRow {
+  group?: BatGroup
+  rawMaximumDiameterMm?: number | null
   id: string; name: string; pending: boolean; cells: Record<MetricId, BatchCell>
   status: { label: string; detail: string; kind: 'loading' | 'complete' | 'partial' | 'failed' }
 }
@@ -24,7 +27,7 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'mm', grouping: BatGroupingSettings = defaultBatGrouping): BatchView {
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'cm', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm): BatchView {
   const weightUnit = weights.weightUnit ?? 'g'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
@@ -37,7 +40,8 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
     else if (calculated) summary.calculated++
     else summary.failed++
     const cells = Object.fromEntries(geometryColumns.map(column => {
-      const value = calculated ? column.value(calculated) : null
+      const rawValue = calculated ? column.value(calculated) : null
+      const value = column.id === 'maximumDiameter' || column.id === 'gripDiameter' ? finishedDiameter(rawValue, diameterAllowanceMm) : rawValue
       return [column.id, { value, ...(value === null ? { display: text.missingValue } : column.id === 'length' ? lengthDisplay(value, lengthUnit) : { display: column.format(value) }) }]
     })) as Record<MetricId, BatchCell>
     const required = weights.requirements[entry.id] ?? null
@@ -59,7 +63,8 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
         ? { label: text.partialInformation, detail: gripDiagnosticText[grip.code], kind: 'partial' }
         : { label: calculated.estimated ? text.estimated : text.calculated, detail: '', kind: 'complete' }
     } else status = { label: text.failed, detail: result?.status === 'undetermined' ? diagnosticText[result.code] : '', kind: 'failed' }
-    return { id: entry.id, name: entry.source.name, pending, cells, status }
+    const rawMaximumDiameterMm = calculated?.dimensions.maximumDiameterMm ?? null
+    return { id: entry.id, name: entry.source.name, pending, cells, status, rawMaximumDiameterMm, group: classifyBat(rawMaximumDiameterMm, grouping) }
   })
   return { rows: orderBatchRows(rows, sort, grouping), summary, columns: columnsForUnits(weightUnit, lengthUnit).filter(column => visible.includes(column.id)), sort,
     sortLabel: sort.key === 'name' ? text.fileName : metricColumns.find(column => column.id === sort.key)!.label }
@@ -69,7 +74,7 @@ export function reportCellValue(cell: BatchCell, column?: MetricColumn): string 
   if (cell.caption) return `${cell.display}\n${cell.caption}`
   if (cell.secondary) return `${cell.display}\n${cell.secondary}`
   if (cell.maximum !== undefined && cell.maximum !== cell.value) return cell.display
-  return cell.value === null ? text.missingValue : column?.weightMode === 'oz' ? fromGrams(cell.value, 'oz') : column?.lengthMode === 'in' ? halfInchValue(cell.value) : cell.value
+  return cell.value === null ? text.missingValue : column?.weightMode === 'oz' ? fromGrams(cell.value, 'oz') : column?.lengthMode === 'in' ? quarterInchValue(cell.value) : column?.lengthMode === 'cm' ? fromMillimetres(cell.value, 'cm') : cell.value
 }
 
 export function reportCellNumberFormat(cell: BatchCell, column: MetricColumn) {

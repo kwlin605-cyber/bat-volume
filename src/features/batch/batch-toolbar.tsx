@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { ArrowDown, ArrowUp, ChevronDown, Download, LoaderCircle, SlidersHorizontal, Settings2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronDown, Download, SlidersHorizontal, Settings2 } from 'lucide-react'
 import type { WeightDisplayMode } from '../../domain/weight-unit'
 import { text } from '../../i18n/zh-TW'
 import { allMetricIds, metricColumns, type MetricId } from './columns'
@@ -12,10 +12,12 @@ import { UnitSelector } from './unit-selector'
 import { reportFormats, type ReportFormat } from '../../reports/formats'
 import type { BatGroupingSettings } from '../../domain/bat-grouping'
 import { GroupingControls } from './grouping-controls'
+import { DiameterAllowanceControl } from './diameter-allowance-control'
 
 interface Props {
+  diameterAllowanceMm: number; onDiameterAllowanceChange: (value: number) => void
   visible: readonly MetricId[]; sort: BatchSort; sortLabel: string; weightUnit: WeightDisplayMode
-  pending: boolean; exporting: boolean
+  pending: boolean
   lengthUnit: LengthDisplayMode; onLengthUnitChange: (mode: LengthDisplayMode) => void
   onVisibleChange: (visible: MetricId[]) => void; onSortChange: (sort: BatchSort) => void
   onUnitChange: (mode: WeightDisplayMode) => void; onMaterialOpen: () => void
@@ -24,14 +26,14 @@ interface Props {
 }
 
 /** Display controls own their menus; calculations and report generation stay with the results. */
-export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending, exporting,
-  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport, grouping, onGroupingChange }: Props) {
+export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending,
+  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport, grouping, onGroupingChange, diameterAllowanceMm, onDiameterAllowanceChange }: Props) {
   const toolbar = useRef<HTMLDivElement>(null)
   const sortMenu = useRef<HTMLDetailsElement>(null)
   const downloadMenu = useRef<HTMLDetailsElement>(null)
   useDismissibleMenus(toolbar)
   function download(format: ReportFormat) {
-    if (pending || exporting) return
+    if (pending) return
     if (downloadMenu.current) downloadMenu.current.open = false
     onExport(format)
   }
@@ -40,6 +42,7 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
     <details className="column-menu"><summary><SlidersHorizontal size={15} />{text.visibleInformation}<ChevronDown size={13} /></summary><div className="column-popover">
       <WeightUnitSelector value={weightUnit} onChange={onUnitChange} />
       <UnitSelector label={text.lengthDisplayUnit} modes={lengthDisplayModes} value={lengthUnit} modeLabel={lengthModeLabel} onChange={onLengthUnitChange} />
+      <DiameterAllowanceControl value={diameterAllowanceMm} onChange={onDiameterAllowanceChange} />
       <button type="button" onClick={() => onVisibleChange([...allMetricIds])}>{text.selectAllInformation}</button>
       {metricColumns.map(column => <label key={column.id}><input type="checkbox" checked={visible.includes(column.id)} onChange={event => onVisibleChange(event.target.checked ? [...visible, column.id] : visible.filter(id => id !== column.id))} />{column.label}</label>)}
     </div></details>
@@ -55,8 +58,8 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
       </details>
     </div>
     <details className="download-menu" ref={downloadMenu}>
-      <summary aria-disabled={pending || exporting} onClick={event => { if (pending || exporting) event.preventDefault() }}>{exporting ? <LoaderCircle className="spin" size={15} /> : <Download size={15} />}{exporting ? text.preparingReport : text.downloadReport}<ChevronDown size={13} /></summary>
-      <div className="download-popover">{reportFormats.map(format => <button key={format.id} type="button" disabled={pending || exporting} onClick={() => download(format.id)}>{format.label}</button>)}</div>
+      <summary aria-disabled={pending} onClick={event => { if (pending) event.preventDefault() }}><Download size={15} />{text.downloadReport}<ChevronDown size={13} /></summary>
+      <div className="download-popover">{reportFormats.map(format => <button key={format.id} type="button" disabled={pending} onClick={() => download(format.id)}>{format.label}</button>)}</div>
     </details>
   </div>
 }

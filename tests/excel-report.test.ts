@@ -2,11 +2,13 @@ import ExcelJS from 'exceljs'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { analyzeAnc } from '../src/domain/analyze'
-import { createExcelReport } from '../src/reports/excel-report'
+import { pointsToExcelWidth, createExcelReport } from '../src/reports/excel-report'
 import { buildBatchView, defaultSort } from '../src/features/batch/view-model'
 import { geometryMetricIds as allMetricIds } from '../src/features/batch/columns'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 import corpus from './fixtures/corpus.json'
+import { displayFileName } from '../src/lib/file-name'
+import { reportStyle } from '../src/config/report'
 import { text } from '../src/i18n/zh-TW'
 
 const entries: AnalysisEntry[] = corpus.map((sample, index) => {
@@ -30,7 +32,7 @@ describe('Excel report saved-file behavior', () => {
     })
     const sheet = await reopen(createExcelReport(view))
     expect(sheet.pageSetup.printArea).toBe('A1:D3')
-    expect(sheet.getRow(1).values).toEqual([undefined, text.fileName, `${text.retainedVolume} cm³`, `${text.materialWeight} g`, `${text.batWeight} g`])
+    expect([1, 2, 3, 4].map(column => sheet.getCell(1, column).text)).toEqual([ text.fileName, `${text.retainedVolume} cm³`, `${text.materialWeight} g`, `${text.batWeight} g`])
     expect(sheet.getCell('A1').alignment).toMatchObject({ horizontal: 'left', vertical: 'middle' })
     for (let column = 2; column <= 4; column++) expect(sheet.getCell(1, column).alignment).toMatchObject({ horizontal: 'center', vertical: 'middle' })
     for (const [i, row] of view.rows.entries()) {
@@ -48,21 +50,21 @@ describe('Excel report saved-file behavior', () => {
   it('preserves A4 portrait pagination, repeated headers, print area and every supplied file after saving', async () => {
     const view = buildBatchView(entries, allMetricIds, defaultSort)
     const sheet = await reopen(createExcelReport(view))
-    expect(sheet.pageSetup).toMatchObject({ paperSize: 9, orientation: 'portrait', fitToPage: true,
-      fitToWidth: 1, fitToHeight: 0, horizontalCentered: true, printTitlesRow: '1:1', printArea: 'A1:E44' })
+    expect(sheet.pageSetup).toMatchObject({ paperSize: 9, orientation: 'portrait', fitToPage: false,
+      scale: 100, horizontalCentered: true, verticalCentered: true, printTitlesRow: '1:1', printArea: 'A1:E44' })
     expect(sheet.rowCount).toBe(44)
     const frozen = sheet.views[0]
     if (frozen.state !== 'frozen') throw new Error('Expected frozen headings')
     expect(frozen.ySplit).toBe(1)
-    expect(sheet.getCell('A1').value).toBe(text.fileName)
-    expect(sheet.getCell('B1').value).toBe(`${text.retainedVolume} ${text.volumeUnit}`)
+    expect(sheet.getCell('A1').text).toBe(text.fileName)
+    expect(sheet.getCell('B1').text).toBe(`${text.retainedVolume} ${text.volumeUnit}`)
     const totalBodyHeight = view.rows.reduce((sum, _, index) => sum + sheet.getRow(2 + index).height!, 0)
     expect(totalBodyHeight).toBeGreaterThan(842)
     for (const [index, item] of view.rows.entries()) {
-      expect(sheet.getCell(index + 2, 1).text).toBe(item.name + (item.status.detail ? '\n' + item.status.detail : ''))
+      expect(sheet.getCell(index + 2, 1).text).toBe(displayFileName(item.name) + (item.status.detail ? '\n' + item.status.detail : ''))
       view.columns.forEach((column, position) => {
         const cell = sheet.getCell(index + 2, position + 2)
-        expect(cell.value).toBe(item.cells[column.id].value ?? text.missingValue)
+        expect(cell.value).toBe(item.cells[column.id].value === null ? text.missingValue : column.id === 'length' ? item.cells.length.value! / 10 : item.cells[column.id].value)
         expect(cell.numFmt).toBe(column.numberFormat)
       })
     }
@@ -81,10 +83,10 @@ describe('Excel report saved-file behavior', () => {
     const filename = '=SUM(A1:A2).anc'
     const entry: AnalysisEntry = { ...entries[0], source: { name: filename, size: 1 } }
     const sheet = await reopen(createExcelReport(buildBatchView([entry], [], defaultSort)))
-    expect(sheet.getCell('A2').value).toBe(filename)
+    expect(sheet.getCell('A2').value).toBe(displayFileName(filename))
     expect(sheet.getCell('A2').formula).toBeUndefined()
     expect(sheet.pageSetup.printArea).toBe('A1:A2')
-    expect(sheet.getColumn(1).width).toBe(18)
+    expect(sheet.getColumn(1).width).toBeGreaterThanOrEqual(pointsToExcelWidth(reportStyle.minimumFilenameWidth))
   })
   it('sizes saved columns from displayed content and keeps long names within the print width', async () => {
     const sample = entries.find(entry => entry.state.status === 'result' && entry.state.result.status === 'calculated')!
@@ -93,8 +95,8 @@ describe('Excel report saved-file behavior', () => {
     const shortSheet = await reopen(createExcelReport(buildBatchView([short], allMetricIds, defaultSort)))
     const longSheet = await reopen(createExcelReport(buildBatchView([long], allMetricIds, defaultSort)))
     expect(shortSheet.getColumn(1).width).toBeLessThan(longSheet.getColumn(1).width!)
-    const width = longSheet.columns.reduce((sum, column) => sum + column.width!, 0)
-    expect(width).toBeLessThanOrEqual(88)
+    const widthPoints = longSheet.columns.reduce((sum, column) => sum + ((column.width ?? longSheet.properties.defaultColWidth!) * 7 + 5) * 72 / 96, 0)
+    expect(widthPoints).toBeLessThanOrEqual(595.28 - reportStyle.padding * 2)
     expect(longSheet.getRow(2).height).toBeGreaterThan(shortSheet.getRow(2).height!)
     const result = sample.state.status === 'result' ? sample.state.result : null
     if (result?.status !== 'calculated') throw new Error('Expected calculated fixture')

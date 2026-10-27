@@ -1,39 +1,33 @@
 import { PDFDocument, PrintScaling } from 'pdf-lib'
 import type { BatchView } from '../features/batch/view-model'
 import { pdfSettings, type PdfOrientation } from '../config/pdf'
-import { reportStyle as style } from '../config/report'
-import { palette } from '../config/theme'
+import { createReportMeasure, renderReportPage } from './report-rendering'
 import { text } from '../i18n/zh-TW'
-import { buildPdfLayout } from './pdf-layout'
-import { paintReportPage } from './report-canvas'
+import { buildPdfLayout, type PrintLayout } from './pdf-layout'
+
 
 /** One fixed-size lossless canvas per A4 page avoids giant batch screenshots. */
-export async function renderPdfReport(view: BatchView, orientation: PdfOrientation, signal: AbortSignal): Promise<Blob> {
+export async function renderPdfReport(view: BatchView, orientation: PdfOrientation, signal: AbortSignal, percent = 100): Promise<Blob> {
   signal.throwIfAborted()
   await document.fonts.ready
   signal.throwIfAborted()
+  const layout = buildPdfLayout(view, orientation, createReportMeasure(), percent)
+  return renderPreparedPdf(layout, signal)
+}
+
+export async function renderPreparedPdf(layout: PrintLayout, signal: AbortSignal): Promise<Blob> {
+  signal.throwIfAborted()
+  if (layout.widthOverflow) throw new Error(text.reportTooWide)
   const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error(text.reportFailed)
-  const layout = buildPdfLayout(view, orientation, (value, size, weight) => {
-    ctx.font = `${weight} ${size}px ${style.fontFamily}`
-    return ctx.measureText(value).width
-  })
   const pdf = await PDFDocument.create()
   pdf.catalog.getOrCreateViewerPreferences().setPrintScaling(PrintScaling.None)
   const scale = pdfSettings.pixelsPerPoint
   canvas.width = Math.ceil(layout.width * scale)
   canvas.height = Math.ceil(layout.height * scale)
   try {
-    for (const page of layout.pages) {
+    for (let pageIndex = 0; pageIndex < layout.pages.length; pageIndex++) {
       signal.throwIfAborted()
-      ctx.setTransform(scale, 0, 0, scale, 0, 0)
-      ctx.fillStyle = palette.white
-      ctx.fillRect(0, 0, layout.width, layout.height)
-      ctx.save()
-      ctx.translate(layout.tableOffsetX, 0)
-      paintReportPage(ctx, page, signal)
-      ctx.restore()
+      renderReportPage(canvas, layout, pageIndex, scale, signal)
       const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error(text.reportFailed)), 'image/png'))
       signal.throwIfAborted()
       const image = await pdf.embedPng(await blob.arrayBuffer())

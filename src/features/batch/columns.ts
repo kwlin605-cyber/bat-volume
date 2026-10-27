@@ -5,15 +5,15 @@ import type { WeightDisplayMode } from '../../domain/weight-unit'
 import { weightHeaderUnit, weightNumberFormat } from '../../lib/weight-display'
 import type { MetricId } from '../../domain/batch-display'
 import type { LengthDisplayMode } from '../../domain/length-unit'
-import { lengthHeaderUnit, lengthNumberFormat } from '../../lib/length-display'
+import { lengthDisplay, lengthHeaderUnit, lengthNumberFormat } from '../../lib/length-display'
 export { defaultMetricIds, type MetricId } from '../../domain/batch-display'
 
 type Calculated = Extract<AnalysisResult, { status: 'calculated' }>
 export const geometryColumns = [
   { id: 'volume', label: text.retainedVolume, unit: text.volumeUnit, numberFormat: '#,##0', prominent: false, value: (r: Calculated) => r.volumeCm3, format: formatVolume },
-  { id: 'length', label: text.retainedLength, unit: text.lengthUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.lengthMm, format: formatDimension },
-  { id: 'maximumDiameter', label: text.maximumDiameter, unit: text.lengthUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.maximumDiameterMm, format: formatDimension },
-  { id: 'gripDiameter', label: text.minimumGripDiameter, unit: text.lengthUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.grip.status === 'detected' ? r.dimensions.grip.diameterMm : null, format: formatDimension },
+  { id: 'length', label: text.retainedLength, unit: text.centimetreUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.lengthMm, format: (mm: number) => lengthDisplay(mm, 'cm').display },
+  { id: 'maximumDiameter', label: text.maximumDiameter, unit: text.millimetreUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.maximumDiameterMm, format: formatDimension },
+  { id: 'gripDiameter', label: text.minimumGripDiameter, unit: text.millimetreUnit, numberFormat: '#,##0.0', prominent: false, value: (r: Calculated) => r.dimensions.grip.status === 'detected' ? r.dimensions.grip.diameterMm : null, format: formatDimension },
 ] as const
 export type GeometryMetricId = typeof geometryColumns[number]['id']
 export interface MetricColumn { id: MetricId; label: string; unit: string; numberFormat: string; prominent: boolean; editable?: boolean; weightMode?: WeightDisplayMode; lengthMode?: LengthDisplayMode; splitUnits?: boolean }
@@ -26,7 +26,7 @@ export const metricColumns: readonly MetricColumn[] = [
 ]
 export const allMetricIds: MetricId[] = metricColumns.map(column => column.id)
 export const geometryMetricIds: MetricId[] = geometryColumns.map(column => column.id)
-export const columnsForUnits = (mode: WeightDisplayMode, lengthMode: LengthDisplayMode = 'mm'): MetricColumn[] => metricColumns.map(column =>
+export const columnsForUnits = (mode: WeightDisplayMode, lengthMode: LengthDisplayMode = 'cm'): MetricColumn[] => metricColumns.map(column =>
   column.id === 'materialWeight'
     ? { ...column, unit: weightHeaderUnit(mode), numberFormat: weightNumberFormat(mode), weightMode: mode, splitUnits: mode === 'both' }
     : column.id === 'length'

@@ -6,12 +6,14 @@ import BatchResults from './features/batch/batch-results'
 import { useBatchSession } from './hooks/use-batch-session'
 import { FileActions } from './components/file-actions'
 import { RemoveFileButton } from './components/remove-file-button'
+import { useDiameterAllowance } from './hooks/use-diameter-allowance'
 import { useDesktop } from './hooks/use-desktop'
 import { text } from './i18n/zh-TW'
 
 export default function App() {
   const input = useRef<HTMLInputElement>(null)
   const { entries, requirements, display, sort, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setFileRequirements, updateDisplay, updateSort } = useBatchSession()
+  const diameter = useDiameterAllowance()
   const desktop = useDesktop()
   const [dragging, setDragging] = useState(false)
   const [removing, setRemoving] = useState(false)
@@ -35,12 +37,13 @@ export default function App() {
         <h1>{text.emptyTitle}</h1>
         <p>{desktop ? text.desktopEmptyDescription : text.emptyDescription}</p>
         <Button onClick={choose}><Plus aria-hidden="true" />{text.upload}</Button>
-      </section> : desktop ? <BatchResults entries={entries} requirements={requirements} display={display} onDisplayChange={updateDisplay} sort={sort} onSortChange={updateSort} removing={removing} onRemove={remove} onRequirementChange={setFileRequirements} /> : <div className="mobile-results">{entries.map(entry => <div key={entry.id} className="mobile-result-item">
+      </section> : desktop ? <BatchResults diameterAllowanceMm={diameter.allowanceMm} onDiameterAllowanceChange={diameter.applyAllowance} entries={entries} requirements={requirements} display={display} onDisplayChange={updateDisplay} sort={sort} onSortChange={updateSort} removing={removing} onRemove={remove} onRequirementChange={setFileRequirements} /> : <div className="mobile-results">{entries.map(entry => <div key={entry.id} className="mobile-result-item">
         {removing && <RemoveFileButton name={entry.source.name} onRemove={() => remove(entry.id)} />}
-        <ResultView state={entry.state} preview={false} />
+        <ResultView diameterAllowanceMm={diameter.allowanceMm} state={entry.state} preview={false} />
       </div>)}</div>}
     </main>
     {storageUnavailable && <p className="session-storage-error" role="alert">{text.sessionStorageUnavailable}</p>}
+    {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
     {hasFile && <FileActions removing={removing} onAdd={choose} onToggleRemoving={() => setRemoving(value => !value)} onClear={clear} />}
     <footer className="app-footer"><ShieldCheck size={13} aria-hidden="true" /><span>{text.privacy}</span></footer>
     {dragging && <div className="drop-overlay"><FileUp size={32} aria-hidden="true" /><span>{text.drop}</span></div>}

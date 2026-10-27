@@ -1,4 +1,5 @@
-import { reportStyle as style } from '../config/report'
+import { scaledReportStyle } from '../config/report'
+import { displayFileName } from '../lib/file-name'
 import type { BatchRow, BatchView } from '../features/batch/view-model'
 import { buildColumnLayout, metricFonts } from '../features/batch/column-layout'
 
@@ -16,7 +17,7 @@ export function wrapText(value: string, width: number, measure: (value: string) 
 }
 export interface ReportRow { row: BatchRow; index: number; y: number; height: number; nameLines: string[]; detailLines: string[] }
 export type ReportLayout = ReturnType<typeof buildReportLayout>
-export function reportRowHeight(view: BatchView, row: BatchRow, nameLines: string[], detailLines: string[]) {
+export function reportRowHeight(view: BatchView, row: BatchRow, nameLines: string[], detailLines: string[], style = scaledReportStyle()) {
   const detailHeight = detailLines.length ? style.detailGap + detailLines.length * style.detailLineHeight : 0
   const metricHeight = Math.max(0, ...view.columns.map(column => {
     const fonts = metricFonts(column, style)
@@ -26,7 +27,9 @@ export function reportRowHeight(view: BatchView, row: BatchRow, nameLines: strin
   }))
   return Math.max(style.minimumRowHeight, Math.max(metricHeight, nameLines.length * style.filenameLineHeight + detailHeight) + style.rowPadding * 2)
 }
-export function buildReportLayout(view: BatchView, measure: (value: string, size: number, weight: number) => number, availableWidth = Infinity) {
+export type ReportMeasure = (value: string, size: number, weight: number) => number
+export function buildReportLayout(view: BatchView, measure: ReportMeasure, availableWidth = Infinity, percent = 100) {
+  const style = scaledReportStyle(percent)
   const sizing = buildColumnLayout(view, style, (value, font) => measure(value, font.size, font.weight), availableWidth - style.padding * 2)
   let columnX = style.padding + sizing.filenameWidth
   const columns = sizing.columns.map(({ column, width }) => {
@@ -39,12 +42,12 @@ export function buildReportLayout(view: BatchView, measure: (value: string, size
   let y = tableY + style.headingHeight
   const rows: ReportRow[] = view.rows.map((row, index) => {
     const contentWidth = sizing.filenameWidth - style.cellPadding * 2
-    const nameLines = wrapText(row.name, contentWidth, value => measure(value, style.fonts.filename.size, style.fonts.filename.weight))
+    const nameLines = wrapText(displayFileName(row.name), contentWidth, value => measure(value, style.fonts.filename.size, style.fonts.filename.weight))
     const detailLines = wrapText(row.status.detail, contentWidth, value => measure(value, style.fonts.detail.size, style.fonts.detail.weight))
-    const height = reportRowHeight(view, row, nameLines, detailLines)
+    const height = reportRowHeight(view, row, nameLines, detailLines, style)
     const layout = { row, index, y, height, nameLines, detailLines }
     y += height
     return layout
   })
-  return { width, height: y + style.padding, tableY, rows, columns, filenameWidth: sizing.filenameWidth }
+  return { width, height: y + style.padding, tableY, rows, columns, filenameWidth: sizing.filenameWidth, style, percent }
 }

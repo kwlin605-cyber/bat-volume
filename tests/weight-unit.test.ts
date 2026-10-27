@@ -13,6 +13,8 @@ import { buildReportLayout } from '../src/reports/report-layout'
 import { buildColumnLayout, metricFonts } from '../src/features/batch/column-layout'
 import { batchTableStyle } from '../src/config/batch'
 import { reportStyle } from '../src/config/report'
+import { paintReportPage } from '../src/reports/report-canvas'
+import { palette } from '../src/config/theme'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 
 const raw = readFileSync(new URL('./fixtures/case-001.anc', import.meta.url), 'utf8')
@@ -35,7 +37,7 @@ describe('weight units and canonical gram data', () => {
   it('formats grams as integers and ounces as one decimal including both range endpoints', () => {
     expect(weightDisplay(gramsPerOunce * 28, undefined, 'oz')).toEqual({ display: '28.0' })
     expect(weightDisplay(600.4, 650.4, 'g')).toEqual({ display: '600 – 650' })
-    expect(weightDisplay(gramsPerOunce * 28, gramsPerOunce * 30, 'both')).toEqual({ display: '794 – 850', secondary: '28.0 – 30.0' })
+    expect(weightDisplay(gramsPerOunce * 28, gramsPerOunce * 30, 'both')).toEqual({ display: '28.0 – 30.0', secondary: '794 – 850' })
   })
   it('changes presentation without mutating geometry, canonical weights or sorting order', () => {
     const second = { ...sample, id: 'second', source: { ...source, name: 'second.anc' } }
@@ -68,6 +70,37 @@ describe('weight units and canonical gram data', () => {
 })
 
 describe('reports with selected weight units', () => {
+  it('paints oz in white on the upper dark half and grams below, with stronger report separators', () => {
+    const view = makeView('both')
+    const layout = buildReportLayout(view, (value, size) => value.length * size)
+    const column = layout.columns.find(item => item.column.id === 'materialWeight')!
+    const row = layout.rows[0]
+    const words: { text: string; x: number; y: number; color: string }[] = []
+    const fills: { x: number; y: number; height: number; color: string }[] = []
+    const strokes: { color: string; width: number }[] = []
+    const ctx = {
+      fillStyle: '', strokeStyle: '', lineWidth: 0,
+      measureText: (value: string) => ({ width: value.length * 6 }),
+      fillText(value: string, x: number, y: number) { words.push({ text: value, x, y, color: this.fillStyle }) },
+      fillRect(x: number, y: number, _width: number, height: number) { fills.push({ x, y, height, color: this.fillStyle }) },
+      beginPath() {}, moveTo() {}, lineTo() {},
+      stroke() { strokes.push({ color: this.strokeStyle, width: this.lineWidth }) },
+    }
+    paintReportPage(ctx as unknown as CanvasRenderingContext2D, layout, new AbortController().signal)
+    const center = column.x + column.width / 2
+    const values = words.filter(word => word.x === center && word.y >= row.y)
+    const grams = view.rows[0].cells.materialWeight.value!
+    expect(values.map(word => word.text)).toEqual([(grams / gramsPerOunce).toFixed(1), new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 }).format(grams)])
+    expect(values[0].color).toBe(palette.white)
+    expect(values[0].y).toBeLessThan(row.y + row.height / 2)
+    expect(values[1].color).toBe(palette.text)
+    expect(values[1].y).toBeGreaterThan(row.y + row.height / 2)
+    expect(fills.filter(fill => fill.color === palette.accent)).toEqual([{ x: column.x, y: row.y, height: row.height / 2, color: palette.accent }])
+    expect(strokes).toEqual([])
+    const second = { ...row, index: 1, y: row.y + row.height }
+    paintReportPage(ctx as unknown as CanvasRenderingContext2D, { ...layout, rows: [row, second] }, new AbortController().signal)
+    expect(strokes).toEqual([{ color: '#c8c8c8', width: 1 }])
+  })
   it.each(['g', 'oz', 'both'] as const)('saves %s with the correct headings, precision and A4 setup', async mode => {
     const view = makeView(mode)
     const data = await createExcelReport(view).xlsx.writeBuffer()
@@ -75,19 +108,20 @@ describe('reports with selected weight units', () => {
     await workbook.xlsx.load(data)
     const sheet = workbook.worksheets[0]
     const cell = sheet.getCell('C2'), weight = view.rows[0].cells.materialWeight
+    expect(cell.border.bottom).toEqual({ style: 'hair', color: { argb: 'FFE5E5E5' } })
     expect(cell.alignment).toMatchObject({ horizontal: 'center', vertical: 'middle' })
     if (mode === 'both') {
       expect(cell.text).toBe(`${weight.display}\n\n${weight.secondary}`)
-      expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 10 } }, { text: '\n\n' + weight.secondary, font: { size: 10 } }] })
-      expect(sheet.getCell('C1').text).toBe('木料重量 g / oz')
+      expect(cell.value).toMatchObject({ richText: [{ text: weight.display, font: { size: 12 } }, { text: '\n\n' + weight.secondary, font: { size: 12 } }] })
+      expect(sheet.getCell('C1').text).toBe('木料重量 oz / g')
       const rich = cell.value as ExcelJS.CellRichTextValue
-      expect(rich.richText[0].font?.color?.argb).toBe('FF404040')
-      expect(rich.richText[1].font?.color?.argb).toBe('FFFFFFFF')
+      expect(rich.richText[0].font?.color?.argb).toBe('FFFFFFFF')
+      expect(rich.richText[1].font?.color?.argb).toBe('FF404040')
       expect(cell.fill).toMatchObject({ type: 'gradient', gradient: 'angle', degree: 90, stops: [
-        { position: 0, color: { argb: 'FFFFFFFF' } },
-        { position: 0.4999, color: { argb: 'FFFFFFFF' } },
-        { position: 0.5001, color: { argb: 'FF333333' } },
-        { position: 1, color: { argb: 'FF333333' } },
+        { position: 0, color: { argb: 'FF333333' } },
+        { position: 0.4999, color: { argb: 'FF333333' } },
+        { position: 0.5001, color: { argb: 'FFFFFFFF' } },
+        { position: 1, color: { argb: 'FFFFFFFF' } },
       ] })
     } else {
       expect(cell.value).toBe(fromGrams(weight.value!, mode))
@@ -98,8 +132,8 @@ describe('reports with selected weight units', () => {
     expect(sheet.getCell('D2').value).toBe(view.rows[0].cells.batWeight.value)
     expect(sheet.getCell('D2').numFmt).toBe('#,##0')
     expect(sheet.getCell('D1').text).toBe('預計重量 g')
-    expect(sheet.pageSetup).toMatchObject({ orientation: 'portrait', fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:1' })
-    expect(sheet.getRow(2).height).toBeGreaterThanOrEqual(mode === 'both' ? 54 : 32)
+    expect(sheet.pageSetup).toMatchObject({ orientation: 'portrait', fitToPage: false, scale: 100, printTitlesRow: '1:1' })
+    expect(sheet.getRow(2).height).toBeGreaterThanOrEqual(reportStyle.minimumRowHeight)
     expect(sheet.getCell('D2').font.color?.argb).toBe('FF262626')
   })
   it('keeps fixed requirements in grams while converting material weights and dual-unit ranges', async () => {
@@ -141,10 +175,10 @@ describe('reports with selected weight units', () => {
     expect(sheet.rowCount).toBe(4)
     expect(sheet.pageSetup.printArea).toBe('A1:C4')
     expect(sheet.getCell('B3').fill).toMatchObject({ type: 'gradient', stops: [
-      { position: 0, color: { argb: 'FFFAFAFA' } },
-      { position: 0.4999, color: { argb: 'FFFAFAFA' } },
-      { position: 0.5001, color: { argb: 'FF333333' } },
-      { position: 1, color: { argb: 'FF333333' } },
+      { position: 0, color: { argb: 'FF333333' } },
+      { position: 0.4999, color: { argb: 'FF333333' } },
+      { position: 0.5001, color: { argb: 'FFFAFAFA' } },
+      { position: 1, color: { argb: 'FFFAFAFA' } },
     ] })
     const longIndex = view.rows.findIndex(row => row.id === 'long') + 2
     const rich = sheet.getCell(longIndex, 2).value as ExcelJS.CellRichTextValue

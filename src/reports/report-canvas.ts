@@ -1,4 +1,3 @@
-import { reportStyle as style } from '../config/report'
 import { text } from '../i18n/zh-TW'
 import type { ReportLayout } from './report-layout'
 import { palette } from '../config/theme'
@@ -6,6 +5,7 @@ import { metricFonts } from '../features/batch/column-layout'
 
 /** Paint one already-paginated table in point coordinates. */
 export function paintReportPage(ctx: CanvasRenderingContext2D, layout: ReportLayout, signal: AbortSignal) {
+  const { style } = layout
   ctx.textBaseline = 'top'
   const write = (value: string, x: number, y: number, size = 15, color: string = palette.ink, align: CanvasTextAlign = 'left', weight = 400) => {
     ctx.font = `${weight} ${size}px ${style.fontFamily}`; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(value, x, y)
@@ -42,9 +42,9 @@ export function paintReportPage(ctx: CanvasRenderingContext2D, layout: ReportLay
       if (column.splitUnits && cell.secondary) {
         const halfHeight = item.height / 2
         ctx.fillStyle = palette.accent
-        ctx.fillRect(x, item.y + halfHeight, width, halfHeight)
-        write(cell.display, center, item.y + (halfHeight - font.size) / 2, font.size, palette.text, 'center', font.weight)
-        write(cell.secondary, center, item.y + halfHeight + (halfHeight - secondaryFont.size) / 2, secondaryFont.size, palette.white, 'center', secondaryFont.weight)
+        ctx.fillRect(x, item.y, width, halfHeight)
+        write(cell.display, center, item.y + (halfHeight - font.size) / 2, font.size, palette.white, 'center', font.weight)
+        write(cell.secondary, center, item.y + halfHeight + (halfHeight - secondaryFont.size) / 2, secondaryFont.size, palette.text, 'center', secondaryFont.weight)
         return
       }
       const blockHeight = font.size + (cell.secondary ? style.detailGap + secondaryFont.size : 0) + (cell.caption ? style.detailGap + style.fonts.detail.size : 0)
@@ -55,7 +55,9 @@ export function paintReportPage(ctx: CanvasRenderingContext2D, layout: ReportLay
     })
     const detailY = top + item.nameLines.length * style.filenameLineHeight + style.detailGap
     item.detailLines.forEach((line, i) => write(line, style.padding + style.cellPadding, detailY + i * style.detailLineHeight, style.fonts.detail.size, palette.muted, 'left', style.fonts.detail.weight))
-    ctx.strokeStyle = palette.line; ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(style.padding, item.y + item.height); ctx.lineTo(layout.width - style.padding, item.y + item.height); ctx.stroke()
+    if (item !== layout.rows.at(-1)) {
+      ctx.strokeStyle = style.rowLineColor; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(style.padding, item.y + item.height); ctx.lineTo(layout.width - style.padding, item.y + item.height); ctx.stroke()
+    }
   }
 }

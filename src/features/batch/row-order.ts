@@ -1,8 +1,10 @@
 import type { BatchSort, MetricId } from '../../domain/batch-display'
-import { batGroupRank, classifyBat, type BatGroupingSettings } from '../../domain/bat-grouping'
+import { batGroupRank, classifyBat, type BatGroup, type BatGroupingSettings } from '../../domain/bat-grouping'
 import { text } from '../../i18n/zh-TW'
 
 interface SortableRow {
+  group?: BatGroup
+  rawMaximumDiameterMm?: number | null
   name: string
   cells: Record<MetricId, { value: number | null; maximum?: number }>
 }
@@ -11,7 +13,7 @@ interface SortableRow {
 export function orderBatchRows<Row extends SortableRow>(rows: readonly Row[], sort: BatchSort, grouping: BatGroupingSettings): Row[] {
   const collator = new Intl.Collator(text.locale, { numeric: true, sensitivity: 'base' })
   const direction = sort.direction === 'asc' ? 1 : -1
-  const rank = (row: Row) => batGroupRank(classifyBat(row.cells.maximumDiameter.value, grouping), grouping.firstGroup)
+  const rank = (row: Row) => batGroupRank(row.group ?? classifyBat(row.rawMaximumDiameterMm === undefined ? row.cells.maximumDiameter.value : row.rawMaximumDiameterMm, grouping), grouping.firstGroup)
   return [...rows].sort((a, b) => {
     const groupDifference = rank(a) - rank(b)
     if (groupDifference) return groupDifference
