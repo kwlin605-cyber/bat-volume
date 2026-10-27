@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, FolderArchive, LoaderCircle, Search, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Folder, LoaderCircle, Search, X } from 'lucide-react'
 import { getAncCatalog, loadAncPresetFile, type AncPresetItem } from '../services/anc-catalog'
 import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
@@ -12,6 +12,7 @@ interface Props {
 
 export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onDismiss }: Props) {
   const [selectedVendor, setSelectedVendor] = useState<string>('all')
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
@@ -35,24 +36,47 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
     }
   }, [])
 
-  const filteredItems = useMemo(() => {
+  const currentGroup = useMemo(() => {
+    return catalog.find(g => g.vendor === selectedVendor)
+  }, [catalog, selectedVendor])
+
+  const { visibleFolders, visibleItems } = useMemo(() => {
     const query = search.trim().toLowerCase()
-    let items: AncPresetItem[] = []
 
     if (selectedVendor === 'all') {
-      items = catalog.flatMap(group => group.items)
-    } else {
-      const group = catalog.find(g => g.vendor === selectedVendor)
-      items = group ? group.items : []
+      const direct = catalog.flatMap(group => group.directItems)
+      const items = query
+        ? direct.filter(
+            item =>
+              item.name.toLowerCase().includes(query) ||
+              item.vendor.toLowerCase().includes(query)
+          )
+        : direct
+      return { visibleFolders: [], visibleItems: items }
     }
 
-    if (!query) return items
-    return items.filter(
-      item =>
-        item.name.toLowerCase().includes(query) ||
-        item.vendor.toLowerCase().includes(query)
-    )
-  }, [catalog, selectedVendor, search])
+    if (!currentGroup) return { visibleFolders: [], visibleItems: [] }
+
+    if (currentFolder === null) {
+      const folders = query
+        ? currentGroup.folders.filter(f => f.name.toLowerCase().includes(query))
+        : currentGroup.folders
+
+      const items = query
+        ? currentGroup.directItems.filter(item => item.name.toLowerCase().includes(query))
+        : currentGroup.directItems
+
+      return { visibleFolders: folders, visibleItems: items }
+    } else {
+      const folder = currentGroup.folders.find(f => f.name === currentFolder)
+      const items = folder
+        ? query
+          ? folder.items.filter(item => item.name.toLowerCase().includes(query))
+          : folder.items
+        : []
+      return { visibleFolders: [], visibleItems: items }
+    }
+  }, [catalog, selectedVendor, currentGroup, currentFolder, search])
 
   async function handleItemClick(item: AncPresetItem) {
     if (loadingId) return
@@ -68,28 +92,10 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
 
   return (
     <div className="mobile-drawer-overlay" onClick={e => { if (e.target === e.currentTarget) onDismiss() }}>
-      <div className="mobile-drawer-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-drawer-title">
+      <div className="mobile-drawer-sheet" role="dialog" aria-modal="true" aria-label={text.presetLibrary}>
         {/* Top Drag Handle */}
         <div className="mobile-drawer-handle-bar">
           <div className="mobile-drawer-handle" />
-        </div>
-
-        {/* Header */}
-        <div className="mobile-drawer-header">
-          <div className="mobile-drawer-title-wrap">
-            <FolderArchive size={18} className="text-zinc-600" aria-hidden="true" />
-            <h2 id="mobile-drawer-title" className="mobile-drawer-title">
-              {text.presetLibrary}
-            </h2>
-          </div>
-          <button
-            type="button"
-            className="mobile-drawer-close"
-            onClick={onDismiss}
-            aria-label={text.cancel}
-          >
-            <X size={20} />
-          </button>
         </div>
 
         {/* Search */}
@@ -115,67 +121,120 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
           )}
         </div>
 
-        {/* Vendor Chips (Horizontal Scroll) */}
-        <div className="mobile-vendor-chips-wrap">
-          <div className="mobile-vendor-chips">
+        {/* Row 2: In-place swap between Vendor Chips and Folder Breadcrumb */}
+        {currentFolder ? (
+          <div className="mobile-breadcrumb-bar">
             <button
               type="button"
-              className={`mobile-vendor-chip ${selectedVendor === 'all' ? 'is-active' : ''}`}
-              onClick={() => setSelectedVendor('all')}
+              className="mobile-breadcrumb-back"
+              onClick={() => {
+                setCurrentFolder(null)
+                setSearch('')
+              }}
             >
-              {text.allVendors}
+              <ChevronLeft size={18} aria-hidden="true" />
+              <span>{text.backToVendor}</span>
+              <span className="text-zinc-400">·</span>
+              <span className="text-zinc-500">{selectedVendor}</span>
+              <span className="text-zinc-400">/</span>
+              <span className="font-semibold text-zinc-900">{currentFolder}</span>
             </button>
-            {catalog.map(group => (
-              <button
-                key={group.vendor}
-                type="button"
-                className={`mobile-vendor-chip ${selectedVendor === group.vendor ? 'is-active' : ''}`}
-                onClick={() => setSelectedVendor(group.vendor)}
-              >
-                {group.vendor} ({group.items.length})
-              </button>
-            ))}
           </div>
-        </div>
+        ) : (
+          <div className="mobile-vendor-chips-wrap">
+            <div className="mobile-vendor-chips">
+              <button
+                type="button"
+                className={`mobile-vendor-chip ${selectedVendor === 'all' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setSelectedVendor('all')
+                  setCurrentFolder(null)
+                  setSearch('')
+                }}
+              >
+                {text.allVendors}
+              </button>
+              {catalog.map(group => (
+                <button
+                  key={group.vendor}
+                  type="button"
+                  className={`mobile-vendor-chip ${selectedVendor === group.vendor ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setSelectedVendor(group.vendor)
+                    setCurrentFolder(null)
+                    setSearch('')
+                  }}
+                >
+                  {group.vendor} ({group.items.length})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* Item List */}
+        {/* Item & Folder List */}
         <div className="mobile-drawer-list">
-          {filteredItems.length === 0 ? (
+          {visibleFolders.length === 0 && visibleItems.length === 0 ? (
             <div className="preset-empty-state">
               <p>{text.noPresetFound}</p>
             </div>
           ) : (
-            filteredItems.map(item => {
-              const isAdded = currentFileNames.has(item.name)
-              const isLoading = loadingId === item.id
-              return (
+            <>
+              {/* Folder Items */}
+              {visibleFolders.map(folder => (
                 <button
-                  key={item.id}
+                  key={folder.name}
                   type="button"
-                  className={`mobile-model-item ${isAdded ? 'is-added' : ''}`}
-                  disabled={isLoading}
-                  onClick={() => handleItemClick(item)}
+                  className="mobile-folder-item"
+                  onClick={() => {
+                    setCurrentFolder(folder.name)
+                    setSearch('')
+                  }}
                 >
-                  <div className="mobile-model-info">
-                    {selectedVendor === 'all' && (
-                      <span className="mobile-model-vendor">{item.vendor}</span>
-                    )}
-                    <span className="mobile-model-name">{displayFileName(item.name)}</span>
+                  <div className="mobile-folder-left">
+                    <Folder size={18} className="mobile-folder-icon" aria-hidden="true" />
+                    <span className="mobile-folder-name">{folder.name}</span>
                   </div>
-                  <div className="mobile-model-status">
-                    {isAdded && (
-                      <span className="preset-added-pill">
-                        <Check size={11} aria-hidden="true" />
-                        {text.addedBadge}
-                      </span>
-                    )}
-                    {isLoading && (
-                      <LoaderCircle size={15} className="spin text-zinc-500" aria-hidden="true" />
-                    )}
+                  <div className="mobile-folder-right">
+                    <span className="mobile-folder-count">{folder.items.length}</span>
+                    <ChevronRight size={16} aria-hidden="true" />
                   </div>
                 </button>
-              )
-            })
+              ))}
+
+              {/* Bat Items */}
+              {visibleItems.map(item => {
+                const isAdded = currentFileNames.has(item.name)
+                const isLoading = loadingId === item.id
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`mobile-model-item ${isAdded ? 'is-added' : ''}`}
+                    disabled={isLoading}
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="mobile-model-info">
+                      {selectedVendor === 'all' && (
+                        <span className="mobile-model-vendor">{item.vendor}</span>
+                      )}
+                      <span className="mobile-model-name">{displayFileName(item.name)}</span>
+                    </div>
+                    <div className="mobile-model-status">
+                      {isAdded && (
+                        <span className="preset-added-pill">
+                          <Check size={11} aria-hidden="true" />
+                          {text.addedBadge}
+                        </span>
+                      )}
+                      {isLoading && (
+                        <LoaderCircle size={15} className="spin text-zinc-500" aria-hidden="true" />
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </>
           )}
         </div>
       </div>

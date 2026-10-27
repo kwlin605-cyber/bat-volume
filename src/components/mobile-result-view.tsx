@@ -1,9 +1,10 @@
-import { lazy, Suspense, useState } from 'react'
-import { Box, CircleAlert, FileCode2, LoaderCircle, Plus, Settings2, X } from 'lucide-react'
+import { lazy, Suspense, useRef, useState } from 'react'
+import { Box, ChevronDown, CircleAlert, FileCode2, LoaderCircle, Plus, Settings2, X } from 'lucide-react'
 import type { AnalysisEntry } from '../services/analysis-state'
 import type { MaterialSettings, WeightRange } from '../domain/weight'
-import { estimateBatWeight, calculateMaterialWeight, validWeightRange } from '../domain/weight'
+import { estimateBatWeight, calculateMaterialWeight } from '../domain/weight'
 import type { WeightDisplayMode } from '../domain/weight-unit'
+import { inputWeightUnit } from '../domain/weight-unit'
 import type { LengthDisplayMode } from '../domain/length-unit'
 import { weightDisplay } from '../lib/weight-display'
 import { lengthDisplay } from '../lib/length-display'
@@ -11,6 +12,7 @@ import { formatCoordinate, formatDimension, formatVolume } from '../lib/format'
 import { defaultDiameterAllowanceMm, finishedDiameter } from '../domain/diameter-allowance'
 import { displayFileName } from '../lib/file-name'
 import { diagnosticText, gripDiagnosticText, text } from '../i18n/zh-TW'
+import { parseRequirement } from '../features/batch/weight-input'
 import { PreviewBoundary } from './preview-boundary'
 
 const BatPreview = lazy(() => import('./bat-preview'))
@@ -22,8 +24,8 @@ interface Props {
   weightUnit: WeightDisplayMode
   lengthUnit: LengthDisplayMode
   requirement?: WeightRange | null
-  onWeightUnitChange: (unit: WeightDisplayMode) => void
-  onLengthUnitChange: (unit: LengthDisplayMode) => void
+  onWeightUnitChange?: (unit: WeightDisplayMode) => void
+  onLengthUnitChange?: (unit: LengthDisplayMode) => void
   onRequirementChange?: (range: WeightRange | null) => void
   onMaterialOpen: () => void
   onOpenLibrary: () => void
@@ -37,10 +39,9 @@ export function MobileResultView({
   weightUnit,
   lengthUnit,
   requirement = null,
-  onWeightUnitChange,
-  onLengthUnitChange,
   onRequirementChange,
   onMaterialOpen,
+  onOpenLibrary,
   onClose,
 }: Props) {
   const [show3d, setShow3d] = useState(false)
@@ -48,6 +49,9 @@ export function MobileResultView({
   const [weightInputMin, setWeightInputMin] = useState('')
   const [weightInputMax, setWeightInputMax] = useState('')
   const [inputError, setInputError] = useState<string | null>(null)
+  const minInputRef = useRef<HTMLInputElement>(null)
+  const maxInputRef = useRef<HTMLInputElement>(null)
+  const isCancellingRef = useRef(false)
 
   const state = entry.state
   const source = state.status === 'loading' ? state.source : state.result.source
@@ -88,38 +92,78 @@ export function MobileResultView({
   const gripRaw = grip && grip.status === 'detected' ? grip.diameterMm : null
   const gripDia = finishedDiameter(gripRaw, diameterAllowanceMm)
 
-  function toggleWeightUnit() {
-    onWeightUnitChange(weightUnit === 'g' ? 'oz' : 'g')
-  }
-
-  function toggleLengthUnit() {
-    onLengthUnitChange(lengthUnit === 'cm' ? 'in' : 'cm')
-  }
-
   function handleApplySpecifiedWeight() {
     setInputError(null)
-    const minVal = parseFloat(weightInputMin.trim())
-    const maxVal = weightInputMax.trim() ? parseFloat(weightInputMax.trim()) : minVal
+    const minRaw = weightInputMin.trim()
+    const maxRaw = weightInputMax.trim() || minRaw
 
-    if (isNaN(minVal) || minVal <= 0) {
-      setInputError(text.invalidPositiveNumber)
-      return
-    }
-    if (isNaN(maxVal) || maxVal < minVal) {
-      setInputError(text.invalidWeightRange)
+    if (!minRaw && !maxRaw) {
+      handleCancelSpecifying()
       return
     }
 
-    const range: WeightRange = { min: minVal, max: maxVal }
-    if (!validWeightRange(range)) {
-      setInputError(text.invalidWeightRange)
+    const unit = inputWeightUnit(weightUnit)
+    const parsed = parseRequirement(minRaw, maxRaw, unit, requirement)
+    if (parsed.error || !parsed.range) {
+      setInputError(parsed.error === 'range' ? text.invalidWeightRange : text.invalidPositiveNumber)
       return
     }
 
-    onRequirementChange?.(range)
+    onRequirementChange?.(parsed.range)
     setSpecifying(false)
     setWeightInputMin('')
     setWeightInputMax('')
+  }
+
+  function handleBoxBlur(e: React.FocusEvent<HTMLDivElement>) {
+    if (isCancellingRef.current) {
+      isCancellingRef.current = false
+      return
+    }
+    // If focus is still within the specify box (e.g. switching between min and max inputs), do nothing
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return
+    }
+    const minRaw = weightInputMin.trim()
+    const maxRaw = weightInputMax.trim()
+    if (!minRaw && !maxRaw) {
+      handleCancelSpecifying()
+      return
+    }
+    handleApplySpecifiedWeight()
+  }
+
+  function handleMinKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const raw = weightInputMin.trim()
+      const val = parseFloat(raw)
+      if (isNaN(val) || val <= 0) {
+        setInputError(text.invalidPositiveNumber)
+        return
+      }
+      setInputError(null)
+      if (!weightInputMax.trim()) {
+        setWeightInputMax(raw)
+      }
+      requestAnimationFrame(() => {
+        maxInputRef.current?.focus()
+        maxInputRef.current?.select()
+      })
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelSpecifying()
+    }
+  }
+
+  function handleMaxKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleApplySpecifiedWeight()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelSpecifying()
+    }
   }
 
   function handleCancelSpecifying() {
@@ -127,6 +171,7 @@ export function MobileResultView({
     setInputError(null)
     setWeightInputMin('')
     setWeightInputMax('')
+    isCancellingRef.current = false
   }
 
   function handleClearRequirement() {
@@ -135,14 +180,21 @@ export function MobileResultView({
 
   return (
     <div className="mobile-view-container">
-      {/* Top Header Bar: Clean single-line filename with settings & close on right */}
+      {/* Top Header Bar: Entire dark row is clickable to switch model */}
       <header className="mobile-header-bar">
-        <div className="mobile-header-file">
-          <FileCode2 size={17} className="mobile-header-icon" aria-hidden="true" />
+        <button
+          type="button"
+          className="mobile-header-file-btn"
+          onClick={onOpenLibrary}
+          aria-label={`${text.switchBat}: ${displayFileName(source.name)}`}
+          title={`${text.switchBat}: ${displayFileName(source.name)}`}
+        >
+          <FileCode2 size={16} className="mobile-header-icon" aria-hidden="true" />
           <span className="mobile-header-name" title={displayFileName(source.name)}>
             {displayFileName(source.name)}
           </span>
-        </div>
+          <ChevronDown size={14} className="mobile-header-chevron" aria-hidden="true" />
+        </button>
         <div className="mobile-header-actions">
           <button
             type="button"
@@ -151,7 +203,7 @@ export function MobileResultView({
             aria-label={text.materialSettings}
             title={text.materialSettings}
           >
-            <Settings2 size={16} aria-hidden="true" />
+            <Settings2 size={15} aria-hidden="true" />
           </button>
           {onClose && (
             <button
@@ -161,7 +213,7 @@ export function MobileResultView({
               aria-label={text.closeBat}
               title={text.closeBat}
             >
-              <X size={18} aria-hidden="true" />
+              <X size={16} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -182,30 +234,18 @@ export function MobileResultView({
                 <span className="mobile-card-tag">
                   {requirement ? text.specifiedTargetWeight : text.batWeight}
                 </span>
-                <div className="flex items-center gap-2">
-                  {hasMaterial && (
-                    <button
-                      type="button"
-                      className="mobile-unit-toggle"
-                      onClick={toggleWeightUnit}
-                      title={text.clickToSwitchUnit}
-                    >
-                      {weightUnit === 'g' ? '公克 (g)' : '盎司 (oz)'}
-                    </button>
-                  )}
-                  {requirement && (
-                    <button
-                      type="button"
-                      className="mobile-cancel-requirement-btn"
-                      onClick={handleClearRequirement}
-                      title={text.clearSpecifiedWeight}
-                      aria-label={text.clearSpecifiedWeight}
-                    >
-                      <X size={13} aria-hidden="true" />
-                      <span>{text.clearSpecifiedWeight}</span>
-                    </button>
-                  )}
-                </div>
+                {requirement && (
+                  <button
+                    type="button"
+                    className="mobile-cancel-requirement-btn"
+                    onClick={handleClearRequirement}
+                    title={text.clearSpecifiedWeight}
+                    aria-label={text.clearSpecifiedWeight}
+                  >
+                    <X size={13} aria-hidden="true" />
+                    <span>{text.clearSpecifiedWeight}</span>
+                  </button>
+                )}
               </div>
 
               {/* Weight Grid */}
@@ -247,42 +287,51 @@ export function MobileResultView({
 
               {/* Specify Weight Inline Box / Trigger */}
               {!requirement && (
-                <div className="mt-3 pt-3 border-t border-zinc-100">
+                <div className="mobile-specify-wrap">
                   {specifying ? (
-                    <div className="mobile-specify-box">
-                      <span className="mobile-specify-title">{text.specifyBatWeightPrompt}</span>
+                    <div className="mobile-specify-box" onBlur={handleBoxBlur}>
                       <div className="mobile-specify-inputs">
                         <input
+                          ref={minInputRef}
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           placeholder={text.minimumWeight}
                           value={weightInputMin}
-                          onChange={e => setWeightInputMin(e.target.value)}
+                          onChange={e => {
+                            setWeightInputMin(e.target.value)
+                            setInputError(null)
+                          }}
+                          onKeyDown={handleMinKeyDown}
                           className="mobile-specify-input"
                           autoFocus
                         />
-                        <span className="text-zinc-400">~</span>
+                        <span className="text-zinc-400 font-light">~</span>
                         <input
+                          ref={maxInputRef}
                           type="number"
+                          inputMode="decimal"
                           step="any"
-                          placeholder={`${text.maximumWeight} (${text.optionalField})`}
+                          placeholder={text.maximumWeight}
                           value={weightInputMax}
-                          onChange={e => setWeightInputMax(e.target.value)}
+                          onChange={e => {
+                            setWeightInputMax(e.target.value)
+                            setInputError(null)
+                          }}
+                          onKeyDown={handleMaxKeyDown}
                           className="mobile-specify-input"
                         />
                         <button
                           type="button"
-                          className="mobile-specify-apply-btn"
-                          onClick={handleApplySpecifiedWeight}
-                        >
-                          {text.applySettings}
-                        </button>
-                        <button
-                          type="button"
                           className="mobile-specify-cancel-btn"
+                          onPointerDown={() => {
+                            isCancellingRef.current = true
+                          }}
                           onClick={handleCancelSpecifying}
+                          title={text.cancel}
+                          aria-label={text.cancel}
                         >
-                          <X size={15} />
+                          <X size={15} aria-hidden="true" />
                         </button>
                       </div>
                       {inputError && <p className="text-xs text-red-500 mt-1">{inputError}</p>}
@@ -291,10 +340,13 @@ export function MobileResultView({
                     <button
                       type="button"
                       className="mobile-specify-trigger"
-                      onClick={() => setSpecifying(true)}
+                      onClick={() => {
+                        setSpecifying(true)
+                        setInputError(null)
+                      }}
                     >
-                      <Plus size={14} aria-hidden="true" />
-                      <span>{text.specifyBatWeight} ({text.specifyBatWeightHint})</span>
+                      <Plus size={13} aria-hidden="true" />
+                      <span>{text.specifyBatWeight}</span>
                     </button>
                   )}
                 </div>
@@ -303,27 +355,24 @@ export function MobileResultView({
 
             {/* Geometry Dimensions Card */}
             <section className="mobile-card mobile-dimensions-card">
-              <div className="mobile-card-tag-row">
-                <span className="mobile-card-tag">{text.dimensions}</span>
-                {lengthFormatted && (
-                  <button
-                    type="button"
-                    className="mobile-unit-toggle"
-                    onClick={toggleLengthUnit}
-                    title={text.clickToSwitchUnit}
-                  >
-                    {lengthUnit === 'cm' ? '公分 (cm)' : '英吋 (in)'}
-                  </button>
-                )}
-              </div>
-
               <dl className="mobile-dims-list">
                 {/* Length */}
                 <div className="mobile-dim-row">
                   <dt>{text.retainedLength}</dt>
                   <dd>
-                    <span>{lengthFormatted?.display ?? '-'}</span>
-                    {lengthFormatted?.secondary && <small className="text-zinc-500 font-normal text-xs">{lengthFormatted.secondary}</small>}
+                    {lengthFormatted ? (
+                      <>
+                        <span>{lengthFormatted.display}</span>
+                        <span className="mobile-dim-unit">
+                          {lengthUnit === 'in' ? text.inchUnit : text.centimetreUnit}
+                        </span>
+                        {lengthFormatted.secondary && (
+                          <small className="text-zinc-500 font-normal text-xs">{lengthFormatted.secondary}</small>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-zinc-400">{text.missingValue}</span>
+                    )}
                   </dd>
                 </div>
 
@@ -368,6 +417,19 @@ export function MobileResultView({
                   </dd>
                 </div>
               </dl>
+
+              <div className="mobile-allowance-hint">
+                <span>{text.diameterAllowance}：{formatCoordinate(diameterAllowanceMm)} {text.millimetreUnit}</span>
+                <button
+                  type="button"
+                  className="mobile-allowance-edit-btn"
+                  onClick={onMaterialOpen}
+                  title={`${text.materialSettings} / ${text.diameterAllowance}`}
+                >
+                  <Settings2 size={12} aria-hidden="true" />
+                  <span>{text.adjust}</span>
+                </button>
+              </div>
 
               {/* Collapsible Cuts */}
               <details className="mobile-cut-details">

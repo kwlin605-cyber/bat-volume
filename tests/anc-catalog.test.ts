@@ -11,6 +11,14 @@ describe('ANC preset catalog and on-demand loader', () => {
     for (const group of catalog) {
       expect(group.vendor).toBeTruthy()
       expect(group.items.length).toBeGreaterThan(0)
+      expect(group.directItems.length + group.folders.reduce((acc, f) => acc + f.items.length, 0)).toBe(group.items.length)
+      for (const folder of group.folders) {
+        expect(folder.name).toBeTruthy()
+        expect(folder.items.length).toBeGreaterThan(0)
+        for (const fItem of folder.items) {
+          expect(fItem.folder).toBe(folder.name)
+        }
+      }
       for (const item of group.items) {
         expect(item.id).toMatch(/^\/src\/assets\/anc\//)
         expect(item.name.endsWith('.anc')).toBe(true)

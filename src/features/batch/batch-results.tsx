@@ -84,6 +84,6 @@ export default function BatchResults({ diameterAllowanceMm, onDiameterAllowanceC
       onCommit={commitRequirement} onCancel={selection.cancel} />}
     {selectedEntry && <ResultDialog diameterAllowanceMm={diameterAllowanceMm} key={selectedEntry.id} entry={selectedEntry} onDismiss={() => setSelected(null)} />}
     {report && <Suspense fallback={<p role="status">{text.preparingReport}</p>}><ReportPreviewDialog view={report.view} format={report.format} onDismiss={() => setReport(null)} /></Suspense>}
-    {materialOpen && <MaterialDialog value={material} onApply={applyMaterial} onDismiss={() => setMaterialOpen(false)} />}
+    {materialOpen && <MaterialDialog value={material} diameterAllowanceMm={diameterAllowanceMm} onDiameterAllowanceChange={onDiameterAllowanceChange} onApply={applyMaterial} onDismiss={() => setMaterialOpen(false)} />}
   </section>
 }

@@ -17,7 +17,10 @@ export function WeightEditor({ value, unit = 'g', onCommit, onCancel }: { value:
   function advance() {
     if (step === 'min') {
       if (!positiveFinite(Number(minimum))) { setError(text.invalidPositiveNumber); return }
-      setError(''); setStep('max'); return
+      setError('')
+      if (!maximum) { setMaximum(minimum) }
+      setStep('max')
+      return
     }
     const parsed = parseRequirement(minimum, maximum, unit, value)
     if (parsed.error) { setError(parsed.error === 'range' ? text.invalidWeightRange : text.invalidPositiveNumber); return }

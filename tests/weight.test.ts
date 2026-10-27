@@ -95,7 +95,7 @@ describe('requirement draft validation', () => {
   it.each([['', '650'], ['600', ''], ['0', '650'], ['-1', '650'], ['Infinity', '700'], ['NaN', '700']])('rejects incomplete or nonpositive input %s / %s', (min, max) => {
     expect(parseRequirement(min, max).error).toBe('positive')
   })
-  it('rejects reversed limits', () => { expect(parseRequirement('650', '600').error).toBe('range') })
+  it('automatically orders limits regardless of input sequence', () => { expect(parseRequirement('650', '600')).toEqual({ range: { min: 600, max: 650 } }) })
 })
 
 describe('versioned local material storage', () => {

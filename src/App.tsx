@@ -163,27 +163,15 @@ export default function App() {
       {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {materialStorageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
 
-      {/* Floating Action Buttons: Desktop gets batch FileActions; Mobile gets single clean Change Bat FAB */}
-      {hasFile && (
-        desktop ? (
-          <FileActions
-            removing={removing}
-            onAdd={choose}
-            onOpenLibrary={() => setLibraryOpen(true)}
-            onToggleRemoving={() => setRemoving(value => !value)}
-            onClear={clear}
-          />
-        ) : (
-          <button
-            type="button"
-            className="mobile-fab-change"
-            onClick={() => setLibraryOpen(true)}
-            aria-label={text.changeBat}
-          >
-            <FolderArchive size={16} aria-hidden="true" />
-            <span>{text.changeBat}</span>
-          </button>
-        )
+      {/* Floating Action Buttons: Desktop gets batch FileActions */}
+      {hasFile && desktop && (
+        <FileActions
+          removing={removing}
+          onAdd={choose}
+          onOpenLibrary={() => setLibraryOpen(true)}
+          onToggleRemoving={() => setRemoving(value => !value)}
+          onClear={clear}
+        />
       )}
 
       {/* Preset Library: Desktop Modal (Toggle mode, remains open) vs Mobile Bottom Drawer (Single-pick replace) */}
@@ -217,6 +205,12 @@ export default function App() {
         <MaterialDialog
           value={material}
           unit={weightUnit === 'oz' ? 'oz' : 'g'}
+          weightUnit={weightUnit}
+          lengthUnit={lengthUnit}
+          onWeightUnitChange={selectWeightUnit}
+          onLengthUnitChange={selectLengthUnit}
+          diameterAllowanceMm={diameter.allowanceMm}
+          onDiameterAllowanceChange={diameter.applyAllowance}
           onApply={applyMaterial}
           onDismiss={() => setMaterialOpen(false)}
         />

@@ -30,7 +30,7 @@ describe('weight units and canonical gram data', () => {
     const original = { min: 600.123456789, max: 650.987654321 }
     expect(parseRequirement(editableWeight(original.min, 'oz'), editableWeight(original.max, 'oz'), 'oz', original).range).toEqual(original)
     expect(parseRequirement('28', '30', 'oz').range).toEqual({ min: 28 * gramsPerOunce, max: 30 * gramsPerOunce })
-    expect(parseRequirement('30', '28', 'oz').error).toBe('range')
+    expect(parseRequirement('30', '28', 'oz').range).toEqual({ min: 28 * gramsPerOunce, max: 30 * gramsPerOunce })
     expect(parseRequirement('1e309', '1e309', 'oz').error).toBe('positive')
     expect(inputWeightUnit('both')).toBe('g')
   })

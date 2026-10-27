@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, FolderArchive, LoaderCircle, Search, X } from 'lucide-react'
+import { Check, ChevronLeft, Folder, FolderArchive, LoaderCircle, Search, X } from 'lucide-react'
 import { getAncCatalog, loadAncPresetFile, type AncPresetItem } from '../services/anc-catalog'
 import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
@@ -14,6 +14,7 @@ interface Props {
 export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, onRemoveByName, onDismiss }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [selectedVendor, setSelectedVendor] = useState<string>('all')
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
@@ -25,26 +26,57 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
     }
   }, [])
 
-  const filteredItems = useMemo(() => {
+  const currentGroup = useMemo(() => {
+    return catalog.find(g => g.vendor === selectedVendor)
+  }, [catalog, selectedVendor])
+
+  const { visibleFolders, visibleItems } = useMemo(() => {
     const query = search.trim().toLowerCase()
-    let items: AncPresetItem[] = []
 
     if (selectedVendor === 'all') {
-      items = catalog.flatMap(group => group.items)
-    } else {
-      const group = catalog.find(g => g.vendor === selectedVendor)
-      items = group ? group.items : []
+      // In all vendors: only show direct items with vendor tag
+      const direct = catalog.flatMap(g => g.directItems)
+      const items = query
+        ? direct.filter(
+            item =>
+              item.name.toLowerCase().includes(query) ||
+              item.vendor.toLowerCase().includes(query)
+          )
+        : direct
+      return { visibleFolders: [], visibleItems: items }
     }
 
-    if (!query) return items
-    return items.filter(
-      item =>
-        item.name.toLowerCase().includes(query) ||
-        item.vendor.toLowerCase().includes(query)
-    )
-  }, [catalog, selectedVendor, search])
+    if (!currentGroup) return { visibleFolders: [], visibleItems: [] }
 
-  const totalCount = useMemo(() => catalog.reduce((acc, g) => acc + g.items.length, 0), [catalog])
+    if (currentFolder === null) {
+      // At vendor root: show subfolders and direct items
+      const folders = query
+        ? currentGroup.folders.filter(f => f.name.toLowerCase().includes(query))
+        : currentGroup.folders
+
+      const items = query
+        ? currentGroup.directItems.filter(item => item.name.toLowerCase().includes(query))
+        : currentGroup.directItems
+
+      return { visibleFolders: folders, visibleItems: items }
+    } else {
+      // Inside subfolder
+      const folder = currentGroup.folders.find(f => f.name === currentFolder)
+      const items = folder
+        ? query
+          ? folder.items.filter(item => item.name.toLowerCase().includes(query))
+          : folder.items
+        : []
+      return { visibleFolders: [], visibleItems: items }
+    }
+  }, [catalog, selectedVendor, currentGroup, currentFolder, search])
+
+  const totalCount = useMemo(() => {
+    if (selectedVendor === 'all') {
+      return catalog.reduce((acc, g) => acc + g.directItems.length, 0)
+    }
+    return currentGroup?.items.length ?? 0
+  }, [catalog, selectedVendor, currentGroup])
 
   async function handleItemClick(item: AncPresetItem) {
     if (loadingId) return
@@ -84,7 +116,7 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
               {text.presetLibrary}
             </h2>
             <span className="preset-dialog-counter">
-              {filteredItems.length} / {totalCount}
+              {visibleFolders.length + visibleItems.length} / {totalCount}
             </span>
           </div>
           <button
@@ -104,7 +136,11 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
             <button
               type="button"
               className={`preset-vendor-tab ${selectedVendor === 'all' ? 'is-active' : ''}`}
-              onClick={() => setSelectedVendor('all')}
+              onClick={() => {
+                setSelectedVendor('all')
+                setCurrentFolder(null)
+                setSearch('')
+              }}
             >
               <span>{text.allVendors}</span>
               <span className="preset-badge">{totalCount}</span>
@@ -114,7 +150,11 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
                 key={group.vendor}
                 type="button"
                 className={`preset-vendor-tab ${selectedVendor === group.vendor ? 'is-active' : ''}`}
-                onClick={() => setSelectedVendor(group.vendor)}
+                onClick={() => {
+                  setSelectedVendor(group.vendor)
+                  setCurrentFolder(null)
+                  setSearch('')
+                }}
               >
                 <span>{group.vendor}</span>
                 <span className="preset-badge">{group.items.length}</span>
@@ -146,14 +186,59 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
               )}
             </div>
 
+            {/* Breadcrumb when inside subfolder */}
+            {currentFolder && (
+              <div className="preset-breadcrumb-bar">
+                <button
+                  type="button"
+                  className="preset-breadcrumb-btn"
+                  onClick={() => {
+                    setCurrentFolder(null)
+                    setSearch('')
+                  }}
+                  title={text.backToVendor}
+                >
+                  <ChevronLeft size={16} aria-hidden="true" />
+                  <span>{selectedVendor}</span>
+                  <span className="text-zinc-400">/</span>
+                  <span className="font-semibold text-zinc-900">{currentFolder}</span>
+                </button>
+              </div>
+            )}
+
             <div className="preset-grid-scroll">
-              {filteredItems.length === 0 ? (
+              {visibleFolders.length === 0 && visibleItems.length === 0 ? (
                 <div className="preset-empty-state">
                   <p>{text.noPresetFound}</p>
                 </div>
               ) : (
                 <div className="preset-cards-grid">
-                  {filteredItems.map(item => {
+                  {/* Folder Cards */}
+                  {visibleFolders.map(folder => (
+                    <button
+                      key={folder.name}
+                      type="button"
+                      className="preset-card preset-card-folder"
+                      onClick={() => {
+                        setCurrentFolder(folder.name)
+                        setSearch('')
+                      }}
+                    >
+                      <div className="preset-card-header">
+                        <span className="preset-folder-tag">
+                          <Folder size={13} aria-hidden="true" />
+                          <span>{text.folderBadge}</span>
+                        </span>
+                        <span className="preset-badge">{folder.items.length}</span>
+                      </div>
+                      <div className="preset-card-name font-semibold" title={folder.name}>
+                        {folder.name}
+                      </div>
+                    </button>
+                  ))}
+
+                  {/* Bat Item Cards */}
+                  {visibleItems.map(item => {
                     const isAdded = currentFileNames.has(item.name)
                     const isLoading = loadingId === item.id
                     return (
