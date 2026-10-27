@@ -50,7 +50,13 @@ export default function App() {
   const acceptFiles = (files: File[]) => {
     if (!files.length) return
     setRemoving(false)
-    addFiles(desktop ? files : files.slice(0, 1))
+    if (desktop) {
+      addFiles(files)
+    } else {
+      // Mobile mode: single-item replacement. Clear existing and add the single new file.
+      clearFiles()
+      addFiles(files.slice(0, 1))
+    }
   }
 
   const remove = (id: string) => {
@@ -142,10 +148,13 @@ export default function App() {
             material={material}
             weightUnit={weightUnit}
             lengthUnit={lengthUnit}
+            requirement={requirements[activeEntry.id] ?? null}
             onWeightUnitChange={selectWeightUnit}
             onLengthUnitChange={selectLengthUnit}
+            onRequirementChange={range => setFileRequirements([activeEntry.id], range)}
             onMaterialOpen={() => setMaterialOpen(true)}
             onOpenLibrary={() => setLibraryOpen(true)}
+            onClose={() => remove(activeEntry.id)}
           />
         ) : null}
       </main>
@@ -154,24 +163,40 @@ export default function App() {
       {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {materialStorageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
 
+      {/* Floating Action Buttons: Desktop gets batch FileActions; Mobile gets single clean Change Bat FAB */}
       {hasFile && (
-        <FileActions
-          removing={removing}
-          onAdd={choose}
-          onOpenLibrary={() => setLibraryOpen(true)}
-          onToggleRemoving={() => setRemoving(value => !value)}
-          onClear={clear}
-        />
+        desktop ? (
+          <FileActions
+            removing={removing}
+            onAdd={choose}
+            onOpenLibrary={() => setLibraryOpen(true)}
+            onToggleRemoving={() => setRemoving(value => !value)}
+            onClear={clear}
+          />
+        ) : (
+          <button
+            type="button"
+            className="mobile-fab-change"
+            onClick={() => setLibraryOpen(true)}
+            aria-label={text.changeBat}
+          >
+            <FolderArchive size={16} aria-hidden="true" />
+            <span>{text.changeBat}</span>
+          </button>
+        )
       )}
 
-      {/* Preset Library: Desktop Modal vs Mobile Bottom Drawer */}
+      {/* Preset Library: Desktop Modal (Toggle mode, remains open) vs Mobile Bottom Drawer (Single-pick replace) */}
       {libraryOpen && (
         desktop ? (
           <PresetLibraryDialog
             currentFileNames={new Set(entries.map(e => e.source.name))}
             onSelect={file => {
               acceptFiles([file])
-              setLibraryOpen(false)
+            }}
+            onRemoveByName={name => {
+              const target = entries.find(e => e.source.name === name)
+              if (target) remove(target.id)
             }}
             onDismiss={() => setLibraryOpen(false)}
           />

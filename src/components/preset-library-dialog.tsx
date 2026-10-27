@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, FolderArchive, LoaderCircle, Search, X } from 'lucide-react'
 import { getAncCatalog, loadAncPresetFile, type AncPresetItem } from '../services/anc-catalog'
+import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
 
 interface Props {
   currentFileNames?: Set<string>
   onSelect: (file: File) => void
+  onRemoveByName?: (name: string) => void
   onDismiss: () => void
 }
 
-export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, onDismiss }: Props) {
+export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, onRemoveByName, onDismiss }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [selectedVendor, setSelectedVendor] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -46,6 +48,14 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
 
   async function handleItemClick(item: AncPresetItem) {
     if (loadingId) return
+    const isAdded = currentFileNames.has(item.name)
+
+    // Toggle mode: If already added, clicking toggles it off (removes from table)
+    if (isAdded && onRemoveByName) {
+      onRemoveByName(item.name)
+      return
+    }
+
     setLoadingId(item.id)
     try {
       const file = await loadAncPresetFile(item)
@@ -155,7 +165,9 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
                         onClick={() => handleItemClick(item)}
                       >
                         <div className="preset-card-header">
-                          <span className="preset-vendor-tag">{item.vendor}</span>
+                          {selectedVendor === 'all' && (
+                            <span className="preset-vendor-tag">{item.vendor}</span>
+                          )}
                           {isAdded && (
                             <span className="preset-added-pill">
                               <Check size={11} aria-hidden="true" />
@@ -166,8 +178,8 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
                             <LoaderCircle size={14} className="spin text-zinc-500" aria-hidden="true" />
                           )}
                         </div>
-                        <div className="preset-card-name" title={item.name}>
-                          {item.name}
+                        <div className="preset-card-name" title={displayFileName(item.name)}>
+                          {displayFileName(item.name)}
                         </div>
                       </button>
                     )

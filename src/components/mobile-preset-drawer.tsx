@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check, FolderArchive, LoaderCircle, Search, X } from 'lucide-react'
 import { getAncCatalog, loadAncPresetFile, type AncPresetItem } from '../services/anc-catalog'
+import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
 
 interface Props {
@@ -156,8 +157,10 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
                   onClick={() => handleItemClick(item)}
                 >
                   <div className="mobile-model-info">
-                    <span className="mobile-model-vendor">{item.vendor}</span>
-                    <span className="mobile-model-name">{item.name}</span>
+                    {selectedVendor === 'all' && (
+                      <span className="mobile-model-vendor">{item.vendor}</span>
+                    )}
+                    <span className="mobile-model-name">{displayFileName(item.name)}</span>
                   </div>
                   <div className="mobile-model-status">
                     {isAdded && (

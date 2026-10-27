@@ -1,8 +1,8 @@
 import { lazy, Suspense, useState } from 'react'
-import { Box, CircleAlert, FileCode2, LoaderCircle, RefreshCw, Settings2, X } from 'lucide-react'
+import { Box, CircleAlert, FileCode2, LoaderCircle, Plus, Settings2, X } from 'lucide-react'
 import type { AnalysisEntry } from '../services/analysis-state'
-import type { MaterialSettings } from '../domain/weight'
-import { estimateBatWeight, calculateMaterialWeight } from '../domain/weight'
+import type { MaterialSettings, WeightRange } from '../domain/weight'
+import { estimateBatWeight, calculateMaterialWeight, validWeightRange } from '../domain/weight'
 import type { WeightDisplayMode } from '../domain/weight-unit'
 import type { LengthDisplayMode } from '../domain/length-unit'
 import { weightDisplay } from '../lib/weight-display'
@@ -21,10 +21,13 @@ interface Props {
   material: MaterialSettings
   weightUnit: WeightDisplayMode
   lengthUnit: LengthDisplayMode
+  requirement?: WeightRange | null
   onWeightUnitChange: (unit: WeightDisplayMode) => void
   onLengthUnitChange: (unit: LengthDisplayMode) => void
+  onRequirementChange?: (range: WeightRange | null) => void
   onMaterialOpen: () => void
   onOpenLibrary: () => void
+  onClose?: () => void
 }
 
 export function MobileResultView({
@@ -33,12 +36,19 @@ export function MobileResultView({
   material,
   weightUnit,
   lengthUnit,
+  requirement = null,
   onWeightUnitChange,
   onLengthUnitChange,
+  onRequirementChange,
   onMaterialOpen,
-  onOpenLibrary,
+  onClose,
 }: Props) {
   const [show3d, setShow3d] = useState(false)
+  const [specifying, setSpecifying] = useState(false)
+  const [weightInputMin, setWeightInputMin] = useState('')
+  const [weightInputMax, setWeightInputMax] = useState('')
+  const [inputError, setInputError] = useState<string | null>(null)
+
   const state = entry.state
   const source = state.status === 'loading' ? state.source : state.result.source
   const result = state.status === 'result' ? state.result : null
@@ -47,22 +57,27 @@ export function MobileResultView({
   // Has material been configured?
   const hasMaterial = material.referenceDensity !== null || (material.volumeCm3 !== null && material.weightG !== null)
 
+  // When a requirement is set, we calculate material weight based on requirement
+  const materialCalc = calculated && result
+    ? calculateMaterialWeight(material, result.volumeCm3, requirement)
+    : null
+
   const estimatedBatWeight = calculated && result
     ? estimateBatWeight(material, result.volumeCm3)
     : null
 
-  const materialCalc = calculated && result
-    ? calculateMaterialWeight(material, result.volumeCm3, null)
-    : null
+  // Bat weight display: Either specified requirement, or density-estimated
+  const batWeightFormatted = requirement
+    ? weightDisplay(requirement.min, requirement.max === requirement.min ? undefined : requirement.max, 'g')
+    : estimatedBatWeight !== null
+      ? weightDisplay(estimatedBatWeight, undefined, weightUnit)
+      : null
 
-  const batWeightFormatted = estimatedBatWeight !== null
-    ? weightDisplay(estimatedBatWeight, undefined, weightUnit)
-    : null
-
-  const matWeightFormatted = materialCalc && materialCalc.kind === 'reference'
-    ? weightDisplay(materialCalc.weightG, undefined, weightUnit)
-    : materialCalc && materialCalc.kind === 'recommended'
-      ? weightDisplay(materialCalc.range.min, materialCalc.range.max, weightUnit)
+  // Required material weight display
+  const matWeightFormatted = materialCalc && materialCalc.kind === 'recommended'
+    ? weightDisplay(materialCalc.range.min, materialCalc.range.max, weightUnit)
+    : materialCalc && materialCalc.kind === 'reference'
+      ? weightDisplay(materialCalc.weightG, undefined, weightUnit)
       : null
 
   const dimensions = calculated && result ? result.dimensions : null
@@ -81,12 +96,49 @@ export function MobileResultView({
     onLengthUnitChange(lengthUnit === 'cm' ? 'in' : 'cm')
   }
 
+  function handleApplySpecifiedWeight() {
+    setInputError(null)
+    const minVal = parseFloat(weightInputMin.trim())
+    const maxVal = weightInputMax.trim() ? parseFloat(weightInputMax.trim()) : minVal
+
+    if (isNaN(minVal) || minVal <= 0) {
+      setInputError(text.invalidPositiveNumber)
+      return
+    }
+    if (isNaN(maxVal) || maxVal < minVal) {
+      setInputError(text.invalidWeightRange)
+      return
+    }
+
+    const range: WeightRange = { min: minVal, max: maxVal }
+    if (!validWeightRange(range)) {
+      setInputError(text.invalidWeightRange)
+      return
+    }
+
+    onRequirementChange?.(range)
+    setSpecifying(false)
+    setWeightInputMin('')
+    setWeightInputMax('')
+  }
+
+  function handleCancelSpecifying() {
+    setSpecifying(false)
+    setInputError(null)
+    setWeightInputMin('')
+    setWeightInputMax('')
+  }
+
+  function handleClearRequirement() {
+    onRequirementChange?.(null)
+  }
+
   return (
     <div className="mobile-view-container">
-      {/* Top Sticky Bar */}
+      {/* Top Header Bar: Clean single-line filename with settings & close on right */}
       <header className="mobile-header-bar">
         <div className="mobile-header-file">
-          <FileCode2 size={16} className="mobile-header-icon" aria-hidden="true" />
+          <FileCode2 size={17} className="mobile-header-icon" aria-hidden="true" />
           <span className="mobile-header-name" title={displayFileName(source.name)}>
             {displayFileName(source.name)}
           </span>
@@ -95,34 +147,23 @@ export function MobileResultView({
           <button
             type="button"
             className="mobile-header-btn"
-            onClick={onOpenLibrary}
-            aria-label={text.changeBat}
-            title={text.changeBat}
-          >
-            <RefreshCw size={14} aria-hidden="true" />
-            <span>{text.changeBat}</span>
-          </button>
-          {calculated && result?.profile && (
-            <button
-              type="button"
-              className="mobile-header-btn"
-              onClick={() => setShow3d(true)}
-              aria-label={text.view3dModel}
-              title={text.view3dModel}
-            >
-              <Box size={14} aria-hidden="true" />
-              <span>{text.view3dModel}</span>
-            </button>
-          )}
-          <button
-            type="button"
-            className="mobile-header-btn"
             onClick={onMaterialOpen}
             aria-label={text.materialSettings}
             title={text.materialSettings}
           >
-            <Settings2 size={14} aria-hidden="true" />
+            <Settings2 size={16} aria-hidden="true" />
           </button>
+          {onClose && (
+            <button
+              type="button"
+              className="mobile-header-btn"
+              onClick={onClose}
+              aria-label={text.closeBat}
+              title={text.closeBat}
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </header>
 
@@ -138,60 +179,125 @@ export function MobileResultView({
             {/* Hero Card: Prominent Weights */}
             <section className="mobile-card mobile-weight-hero">
               <div className="mobile-card-tag-row">
-                <span className="mobile-card-tag">{text.batWeight}</span>
-                {hasMaterial && (
-                  <button
-                    type="button"
-                    className="mobile-unit-toggle"
-                    onClick={toggleWeightUnit}
-                    title={text.clickToSwitchUnit}
-                  >
-                    {weightUnit === 'g' ? '公克 (g)' : '盎司 (oz)'}
-                  </button>
-                )}
-              </div>
-
-              {hasMaterial && batWeightFormatted ? (
-                <div className="mobile-weights-grid">
-                  {/* Estimated Bat Weight */}
-                  <div className="mobile-weight-block">
-                    <span className="mobile-weight-label">{text.estimatedBatWeight}</span>
-                    <div className="mobile-weight-val-wrap">
-                      <span className="mobile-weight-val">{batWeightFormatted.display}</span>
-                      {batWeightFormatted.secondary && (
-                        <small className="mobile-weight-sub">{batWeightFormatted.secondary}</small>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Required Material Weight */}
-                  {matWeightFormatted && (
-                    <div className="mobile-weight-block">
-                      <span className="mobile-weight-label">{text.requiredMaterialWeight}</span>
-                      <div className="mobile-weight-val-wrap">
-                        <span className="mobile-weight-val">{matWeightFormatted.display}</span>
-                        {matWeightFormatted.secondary && (
-                          <small className="mobile-weight-sub">{matWeightFormatted.secondary}</small>
-                        )}
-                      </div>
-                    </div>
+                <span className="mobile-card-tag">
+                  {requirement ? text.specifiedTargetWeight : text.batWeight}
+                </span>
+                <div className="flex items-center gap-2">
+                  {hasMaterial && (
+                    <button
+                      type="button"
+                      className="mobile-unit-toggle"
+                      onClick={toggleWeightUnit}
+                      title={text.clickToSwitchUnit}
+                    >
+                      {weightUnit === 'g' ? '公克 (g)' : '盎司 (oz)'}
+                    </button>
+                  )}
+                  {requirement && (
+                    <button
+                      type="button"
+                      className="mobile-cancel-requirement-btn"
+                      onClick={handleClearRequirement}
+                      title={text.clearSpecifiedWeight}
+                      aria-label={text.clearSpecifiedWeight}
+                    >
+                      <X size={13} aria-hidden="true" />
+                      <span>{text.clearSpecifiedWeight}</span>
+                    </button>
                   )}
                 </div>
-              ) : (
-                /* Unconfigured Guide Button */
-                <button
-                  type="button"
-                  className="mobile-unconfigured-guide"
-                  onClick={onMaterialOpen}
-                >
-                  <div className="mobile-guide-icon">
-                    <Settings2 size={20} aria-hidden="true" />
+              </div>
+
+              {/* Weight Grid */}
+              <div className="mobile-weights-grid">
+                {/* Left: Bat Weight (Target or Estimated) */}
+                <div className="mobile-weight-block">
+                  <span className="mobile-weight-label">
+                    {requirement ? text.batWeight : text.estimatedBatWeight}
+                  </span>
+                  <div className="mobile-weight-val-wrap">
+                    {batWeightFormatted ? (
+                      <span className="mobile-weight-val">{batWeightFormatted.display}</span>
+                    ) : (
+                      <span className="mobile-weight-val text-zinc-400">—</span>
+                    )}
+                    {batWeightFormatted?.secondary && (
+                      <small className="mobile-weight-sub">{batWeightFormatted.secondary}</small>
+                    )}
                   </div>
-                  <div className="mobile-guide-text">
-                    <span className="mobile-guide-title">{text.unconfiguredMaterial}</span>
-                    <span className="mobile-guide-desc">{text.configureMaterialHint}</span>
+                </div>
+
+                {/* Right: Required Material Weight */}
+                <div className="mobile-weight-block">
+                  <span className="mobile-weight-label">{text.requiredMaterialWeight}</span>
+                  <div className="mobile-weight-val-wrap">
+                    {matWeightFormatted ? (
+                      <span className="mobile-weight-val font-semibold">{matWeightFormatted.display}</span>
+                    ) : materialCalc?.kind === 'unavailable' && materialCalc.reason === 'materialTooSmall' ? (
+                      <span className="mobile-weight-val text-amber-600 text-sm">{text.materialTooSmall}</span>
+                    ) : (
+                      <span className="mobile-weight-val text-zinc-400">—</span>
+                    )}
+                    {matWeightFormatted?.secondary && (
+                      <small className="mobile-weight-sub">{matWeightFormatted.secondary}</small>
+                    )}
                   </div>
-                </button>
+                </div>
+              </div>
+
+              {/* Specify Weight Inline Box / Trigger */}
+              {!requirement && (
+                <div className="mt-3 pt-3 border-t border-zinc-100">
+                  {specifying ? (
+                    <div className="mobile-specify-box">
+                      <span className="mobile-specify-title">{text.specifyBatWeightPrompt}</span>
+                      <div className="mobile-specify-inputs">
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder={text.minimumWeight}
+                          value={weightInputMin}
+                          onChange={e => setWeightInputMin(e.target.value)}
+                          className="mobile-specify-input"
+                          autoFocus
+                        />
+                        <span className="text-zinc-400">~</span>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder={`${text.maximumWeight} (${text.optionalField})`}
+                          value={weightInputMax}
+                          onChange={e => setWeightInputMax(e.target.value)}
+                          className="mobile-specify-input"
+                        />
+                        <button
+                          type="button"
+                          className="mobile-specify-apply-btn"
+                          onClick={handleApplySpecifiedWeight}
+                        >
+                          {text.applySettings}
+                        </button>
+                        <button
+                          type="button"
+                          className="mobile-specify-cancel-btn"
+                          onClick={handleCancelSpecifying}
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                      {inputError && <p className="text-xs text-red-500 mt-1">{inputError}</p>}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mobile-specify-trigger"
+                      onClick={() => setSpecifying(true)}
+                    >
+                      <Plus size={14} aria-hidden="true" />
+                      <span>{text.specifyBatWeight} ({text.specifyBatWeightHint})</span>
+                    </button>
+                  )}
+                </div>
               )}
             </section>
 
@@ -278,6 +384,18 @@ export function MobileResultView({
                 </div>
               </details>
             </section>
+
+            {/* 3D Action Button: Positioned cleanly right below the dimensions table */}
+            {calculated && result?.profile && (
+              <button
+                type="button"
+                className="mobile-3d-action-button"
+                onClick={() => setShow3d(true)}
+              >
+                <Box size={16} aria-hidden="true" />
+                <span>{text.view3dPreviewButton}</span>
+              </button>
+            )}
           </>
         ) : result?.status === 'undetermined' ? (
           <div className="mobile-card mobile-error-card">
