@@ -75,7 +75,7 @@ describe.skipIf(!windows)('Windows launcher', () => {
   it('reads UTF-8 messages correctly with Windows PowerShell 5 when no runtime is available', () => {
     const fixture = launcherFixture()
     try {
-      const env = { ...process.env, PATH: join(process.env.SystemRoot!, 'System32'), LOCALAPPDATA: fixture.root, USERPROFILE: fixture.root }
+      const env: NodeJS.ProcessEnv = { ...process.env, PATH: join(process.env.SystemRoot!, 'System32'), LOCALAPPDATA: fixture.root, USERPROFILE: fixture.root }
       for (const key of Object.keys(env)) {
         if (/^(programfiles|programw6432)/i.test(key)) env[key] = fixture.root
       }
