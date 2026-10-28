@@ -27,8 +27,8 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'cm', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm): BatchView {
-  const weightUnit = weights.weightUnit ?? 'g'
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm): BatchView {
+  const weightUnit = weights.weightUnit ?? 'oz'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
   const summary = { total: entries.length, calculated: 0, failed: 0, pending: 0 }

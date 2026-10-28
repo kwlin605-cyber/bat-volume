@@ -29,6 +29,7 @@ describe('Excel report saved-file behavior', () => {
     const second = { ...sample, id: 'reference', source: { ...sample.source, name: 'reference.anc' } }
     const view = buildBatchView([sample, second], ['volume', 'materialWeight', 'batWeight'], defaultSort, {
       material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { [sample.id]: { min: 600, max: 650 } },
+      weightUnit: 'g',
     })
     const sheet = await reopen(createExcelReport(view))
     expect(sheet.pageSetup.printArea).toBe('A1:D3')
@@ -48,7 +49,7 @@ describe('Excel report saved-file behavior', () => {
     }
   })
   it('preserves A4 portrait pagination, repeated headers, print area and every supplied file after saving', async () => {
-    const view = buildBatchView(entries, allMetricIds, defaultSort)
+    const view = buildBatchView(entries, allMetricIds, defaultSort, undefined, 'cm')
     const sheet = await reopen(createExcelReport(view))
     expect(sheet.pageSetup).toMatchObject({ paperSize: 9, orientation: 'portrait', fitToPage: false,
       scale: 100, horizontalCentered: true, verticalCentered: true, printTitlesRow: '1:1', printArea: 'A1:E44' })

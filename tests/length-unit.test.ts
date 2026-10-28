@@ -39,7 +39,7 @@ describe('length display units', () => {
   })
   it('sorts distinct raw lengths even when their cm displays are identical', () => {
     const samples = [entry('a-long.anc', 870.449 / 25.4), entry('z-short.anc', 870.24 / 25.4)]
-    const current = buildBatchView(samples, ['length'], { key: 'length', direction: 'asc' })
+    const current = buildBatchView(samples, ['length'], { key: 'length', direction: 'asc' }, undefined, 'cm')
     expect(current.columns[0].unit).toBe('cm')
     expect(current.rows.map(row => row.cells.length.display)).toEqual(['87.0', '87.0'])
     expect(current.rows.map(row => row.name)).toEqual(['z-short.anc', 'a-long.anc'])
@@ -68,12 +68,12 @@ describe('length display units', () => {
     const failed: AnalysisEntry = { id: 'loading', source: { name: 'loading', size: 0 }, state: { status: 'loading', source: { name: 'loading', size: 0 } } }
     expect(buildBatchView([failed], ['length'], { key: 'length', direction: 'desc' }, undefined, 'both').rows[0].cells.length).toEqual({ value: null, display: '—' })
   })
-  it('saves length independently of weight and falls back to cm for missing, invalid or blocked storage', () => {
+  it('saves length independently of weight and falls back to in for missing, invalid or blocked storage', () => {
     const saved = new Map<string, string>()
     const storage = { getItem: (key: string) => saved.get(key) ?? null, setItem: (key: string, value: string) => { saved.set(key, value) } }
-    expect(readLengthUnit(storage).mode).toBe('cm')
+    expect(readLengthUnit(storage).mode).toBe('in')
     saved.set(lengthUnitStorageKey, 'mm')
-    expect(readLengthUnit(storage).mode).toBe('cm')
+    expect(readLengthUnit(storage).mode).toBe('in')
     for (const mode of ['cm', 'in', 'both'] as const) {
       expect(saveLengthUnit(storage, mode)).toBe(true)
       expect(readLengthUnit(storage).mode).toBe(mode)
@@ -82,9 +82,9 @@ describe('length display units', () => {
     expect(readWeightUnit(storage).mode).toBe('oz')
     expect(readLengthUnit(storage).mode).toBe('both')
     saved.set(lengthUnitStorageKey, 'invalid')
-    expect(readLengthUnit(storage).mode).toBe('cm')
+    expect(readLengthUnit(storage).mode).toBe('in')
     const blocked = { getItem: () => { throw Error() }, setItem: () => { throw Error() } }
-    expect(readLengthUnit(blocked)).toEqual({ mode: 'cm', unavailable: true })
+    expect(readLengthUnit(blocked)).toEqual({ mode: 'in', unavailable: true })
     expect(saveLengthUnit(blocked, 'in')).toBe(false)
   })
 })
@@ -92,7 +92,7 @@ describe('length display units', () => {
 describe('length units in exported reports', () => {
   it('stores full-precision centimetres in Excel while PDF uses the rounded display', async () => {
     const sample: AnalysisEntry = { id: 'raw', source: base.source, state: { status: 'result', result: { ...base, dimensions: { ...base.dimensions, lengthMm: 870.449 } } } }
-    const current = buildBatchView([sample], ['length', 'maximumDiameter'], { key: 'name', direction: 'asc' })
+    const current = buildBatchView([sample], ['length', 'maximumDiameter'], { key: 'name', direction: 'asc' }, undefined, 'cm')
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(await createExcelReport(current).xlsx.writeBuffer())
     const sheet = workbook.worksheets[0]

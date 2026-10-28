@@ -47,9 +47,9 @@ describe('blade width validation and parsing', () => {
     expect(parseBladeWidth('0')).toBe(0)
     expect(parseBladeWidth('3.5')).toBe(3.5)
     expect(parseBladeWidth('  8.2  ')).toBe(8.2)
-    // Empty / whitespace → default
-    expect(parseBladeWidth('')).toBe(defaultBladeWidthMm)
-    expect(parseBladeWidth('   ')).toBe(defaultBladeWidthMm)
+    // Empty / whitespace → 0 (unfilled is 0 mm)
+    expect(parseBladeWidth('')).toBe(0)
+    expect(parseBladeWidth('   ')).toBe(0)
     // Invalid → null
     expect(parseBladeWidth('-1')).toBeNull()
     expect(parseBladeWidth('abc')).toBeNull()

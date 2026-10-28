@@ -5,8 +5,8 @@ export const weightUnitStorageKey = 'bat-volume.weight-unit'
 export function readWeightUnit(storage: SettingsStorage) {
   try {
     const mode = storage.getItem(weightUnitStorageKey)
-    return { mode: isWeightDisplayMode(mode) ? mode : 'g' as WeightDisplayMode, unavailable: false }
-  } catch { return { mode: 'g' as WeightDisplayMode, unavailable: true } }
+    return { mode: isWeightDisplayMode(mode) ? mode : 'oz' as WeightDisplayMode, unavailable: false }
+  } catch { return { mode: 'oz' as WeightDisplayMode, unavailable: true } }
 }
 export function saveWeightUnit(storage: SettingsStorage, mode: WeightDisplayMode) {
   try { storage.setItem(weightUnitStorageKey, mode); return true }

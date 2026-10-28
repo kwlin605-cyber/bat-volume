@@ -5,7 +5,7 @@ import { readLengthUnit, saveLengthUnit } from '../../services/length-unit-stora
 export function useLengthUnit() {
   const [loaded] = useState(() => {
     try { return readLengthUnit(window.localStorage) }
-    catch { return { mode: 'cm' as LengthDisplayMode, unavailable: true } }
+    catch { return { mode: 'in' as LengthDisplayMode, unavailable: true } }
   })
   const [mode, setMode] = useState<LengthDisplayMode>(loaded.mode)
   const [storageUnavailable, setStorageUnavailable] = useState(loaded.unavailable)

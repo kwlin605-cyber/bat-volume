@@ -58,13 +58,15 @@ describe('weight units and canonical gram data', () => {
   it('remembers the choice and falls back safely when saved settings or storage are unavailable', () => {
     let saved: string | null = null
     const storage = { getItem: () => saved, setItem: (_key: string, value: string) => { saved = value } }
-    expect(readWeightUnit(storage).mode).toBe('g')
-    expect(saveWeightUnit(storage, 'both')).toBe(true)
-    expect(readWeightUnit(storage).mode).toBe('both')
+    expect(readWeightUnit(storage).mode).toBe('oz')
+    for (const mode of ['g', 'oz', 'both'] as const) {
+      expect(saveWeightUnit(storage, mode)).toBe(true)
+      expect(readWeightUnit(storage).mode).toBe(mode)
+    }
     saved = 'invalid'
-    expect(readWeightUnit(storage).mode).toBe('g')
+    expect(readWeightUnit(storage).mode).toBe('oz')
     const blocked = { getItem: () => { throw Error() }, setItem: () => { throw Error() } }
-    expect(readWeightUnit(blocked)).toEqual({ mode: 'g', unavailable: true })
+    expect(readWeightUnit(blocked)).toEqual({ mode: 'oz', unavailable: true })
     expect(saveWeightUnit(blocked, 'oz')).toBe(false)
   })
 })

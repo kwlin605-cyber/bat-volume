@@ -25,13 +25,13 @@ const view = (allowance = defaultDiameterAllowanceMm) => buildBatchView([entry],
 
 describe('finishing diameters', () => {
   it.each([[60.36, '60.2'], [24.87, '24.7'], [60.3499, '60.1'], [60.35, '60.2'], [24.8499, '24.6'], [24.85, '24.7']])('subtracts before rounding %s to %s', (rawMm, display) => {
-    const adjusted = finishedDiameter(Number(rawMm))!
+    const adjusted = finishedDiameter(Number(rawMm), 0.2)!
     expect(adjusted).toBe(Number(rawMm) - 0.2)
     expect(formatDimension(adjusted)).toBe(display)
   })
   it('keeps the source, length, volume and weights unchanged while adjusting both diameters', () => {
     const original = structuredClone(entry)
-    const cells = view().rows[0].cells
+    const cells = view(0.2).rows[0].cells
     expect(cells.maximumDiameter).toEqual({ value: 60.36 - 0.2, display: '60.2' })
     expect(cells.gripDiameter).toEqual({ value: 24.87 - 0.2, display: '24.7' })
     for (const id of ['length', 'volume', 'batWeight', 'materialWeight'] as const) expect(cells[id]).toEqual(view(0).rows[0].cells[id])
@@ -44,7 +44,7 @@ describe('finishing diameters', () => {
       const source = { name: String(id), size: 1 }
       return { id: String(id), source, state: { status: 'result', result: { ...measured, source, dimensions: { ...measured.dimensions, maximumDiameterMm: Number(diameter) } } } }
     })
-    const current = buildBatchView(entries, ['maximumDiameter'], { key: 'maximumDiameter', direction: 'asc' })
+    const current = buildBatchView(entries, ['maximumDiameter'], { key: 'maximumDiameter', direction: 'asc' }, undefined, 'cm', undefined, 0.2)
     expect(current.rows.map(row => row.id)).toEqual(['z-soft', 'a-base', 'z-smaller', 'a-larger'])
     expect(current.rows[1].cells.maximumDiameter.display).toBe('59.9')
     expect(current.rows.slice(2).map(row => row.cells.maximumDiameter.display)).toEqual(['60.2', '60.2'])
@@ -52,7 +52,8 @@ describe('finishing diameters', () => {
     expect(byName.rows.map(row => row.id)).toEqual(['z-soft', 'a-base'])
   })
   it('keeps missing and nonpositive adjusted diameters unavailable', () => {
-    for (const raw of [null, NaN, Infinity, 0, 0.1, 0.2]) expect(finishedDiameter(raw)).toBeNull()
+    for (const raw of [null, NaN, Infinity, 0, 0.1, 0.2]) expect(finishedDiameter(raw, 0.2)).toBeNull()
+    for (const raw of [null, NaN, Infinity, 0, -1]) expect(finishedDiameter(raw, 0)).toBeNull()
     expect(view(100).rows[0].cells.maximumDiameter).toEqual({ value: null, display: '—' })
     const missing: AnalysisEntry = { ...entry, state: { status: 'result', result: { ...measured, dimensions: { ...measured.dimensions, grip: { status: 'undetermined', code: 'missingGripKnob' } } } } }
     expect(buildBatchView([missing], columns, { key: 'name', direction: 'asc' }).rows[0].cells.gripDiameter).toEqual({ value: null, display: '—' })
@@ -84,25 +85,27 @@ describe('finishing diameters', () => {
 })
 
 describe('diameter allowance preference', () => {
-  it('defaults old/missing or corrupt settings to 0.2 and preserves zero and custom values', () => {
+  it('defaults old/missing or corrupt settings to 0 and preserves zero and custom values', () => {
     const values = new Map<string, string>([['bat-volume.length-unit', 'in']])
     const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }
-    expect(readDiameterAllowance(storage)).toEqual({ value: 0.2, unavailable: false })
+    expect(readDiameterAllowance(storage)).toEqual({ value: 0, unavailable: false })
     for (const value of [0, 0.35]) {
       expect(saveDiameterAllowance(storage, value)).toBe(true)
       expect(readDiameterAllowance(storage).value).toBe(value)
     }
-    for (const invalid of ['', ' ', '-0.2', 'NaN', 'Infinity', 'bad']) {
+    for (const invalid of ['-0.2', 'NaN', 'Infinity', 'bad']) {
       values.set(diameterAllowanceStorageKey, invalid)
-      expect(readDiameterAllowance(storage).value).toBe(0.2)
+      expect(readDiameterAllowance(storage).value).toBe(0)
       expect(parseDiameterAllowance(invalid)).toBeNull()
     }
+    expect(parseDiameterAllowance('')).toBe(0)
+    expect(parseDiameterAllowance('   ')).toBe(0)
     expect(values.get('bat-volume.length-unit')).toBe('in')
     expect(saveDiameterAllowance(storage, -1)).toBe(false)
   })
   it('reports storage failures without losing the default or accepting invalid drafts', () => {
     const storage = { getItem: () => { throw Error() }, setItem: () => { throw Error() } }
-    expect(readDiameterAllowance(storage)).toEqual({ value: 0.2, unavailable: true })
+    expect(readDiameterAllowance(storage)).toEqual({ value: 0, unavailable: true })
     expect(saveDiameterAllowance(storage, 0.3)).toBe(false)
     expect(parseDiameterAllowance('0')).toBe(0)
     expect(parseDiameterAllowance('0.25')).toBe(0.25)

@@ -422,18 +422,20 @@ export function MobileResultView({
                 </div>
               </dl>
 
-              <div className="mobile-allowance-hint">
-                <span>{text.diameterAllowance}：{formatCoordinate(diameterAllowanceMm)} {text.millimetreUnit}</span>
-                <button
-                  type="button"
-                  className="mobile-allowance-edit-btn"
-                  onClick={onMaterialOpen}
-                  title={`${text.materialSettings} / ${text.diameterAllowance}`}
-                >
-                  <Settings2 size={12} aria-hidden="true" />
-                  <span>{text.adjust}</span>
-                </button>
-              </div>
+              {diameterAllowanceMm > 0 && (
+                <div className="mobile-allowance-hint">
+                  <span>{text.diameterAllowance}：{formatCoordinate(diameterAllowanceMm)} {text.millimetreUnit}</span>
+                  <button
+                    type="button"
+                    className="mobile-allowance-edit-btn"
+                    onClick={onMaterialOpen}
+                    title={`${text.materialSettings} / ${text.diameterAllowance}`}
+                  >
+                    <Settings2 size={12} aria-hidden="true" />
+                    <span>{text.adjust}</span>
+                  </button>
+                </div>
+              )}
 
               {/* Collapsible Cuts */}
               <details className="mobile-cut-details">

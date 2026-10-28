@@ -1,9 +1,9 @@
 /** Total diameter reduction for displayed finishing dimensions; not a radial offset. */
-export const defaultDiameterAllowanceMm = 0.2
+export const defaultDiameterAllowanceMm = 0
 export const validDiameterAllowance = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
 
 export function parseDiameterAllowance(draft: string): number | null {
-  if (!draft.trim()) return null
+  if (!draft.trim()) return defaultDiameterAllowanceMm
   const value = Number(draft)
   return validDiameterAllowance(value) ? value : null
 }

@@ -5,7 +5,7 @@ import { readWeightUnit, saveWeightUnit } from '../../services/weight-unit-stora
 export function useWeightUnit() {
   const [loaded] = useState(() => {
     try { return readWeightUnit(window.localStorage) }
-    catch { return { mode: 'g' as WeightDisplayMode, unavailable: true } }
+    catch { return { mode: 'oz' as WeightDisplayMode, unavailable: true } }
   })
   const [mode, setMode] = useState<WeightDisplayMode>(loaded.mode)
   const [storageUnavailable, setStorageUnavailable] = useState(loaded.unavailable)

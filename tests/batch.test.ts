@@ -37,12 +37,26 @@ describe('batch data shared by table and report', () => {
   })
   it('defaults to all metrics and material-weight order, with targets isolated by entry ID', () => {
     const view = buildBatchView([entry('a', 'same.anc', 1000), entry('b', 'same.anc', 2000)], defaultMetricIds, defaultSort, {
-      material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { a: { min: 600, max: 650 } },
+      material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { a: { min: 600, max: 650 } }, weightUnit: 'g',
     })
     expect(view.columns.map(column => column.id)).toEqual(allMetricIds)
     expect(view.rows[0].cells.materialWeight).toEqual({ value: 1800, maximum: 1950, display: '1,800 – 1,950' })
     expect(view.rows[1].cells.batWeight.value).toBe(1400)
     expect(view.rows[1].cells.materialWeight).toEqual({ value: 2100, display: '2,100' })
+  })
+  it('defaults to inches and ounces while preserving raw geometry and gram targets', () => {
+    const sample = entry('a', 'sample.anc', 1000)
+    const view = buildBatchView([sample], allMetricIds, defaultSort, {
+      material: { referenceDensity: null, volumeCm3: 3725.6, weightG: null, weightErrorPercent: 0 },
+      requirements: { a: { min: 600, max: 650 } },
+    })
+    expect(view.columns.find(column => column.id === 'length')?.unit).toBe('in')
+    expect(view.columns.find(column => column.id === 'materialWeight')?.unit).toBe('oz')
+    expect(view.columns.find(column => column.id === 'batWeight')?.unit).toBe('g')
+    expect(view.rows[0].cells.batWeight).toEqual({ value: 600, maximum: 650, display: '600 – 650' })
+    expect(view.rows[0].cells.materialWeight.value).toBeCloseTo(600 * 3.7256)
+    expect(view.rows[0].cells.maximumDiameter.value).toBe(base.dimensions.maximumDiameterMm)
+    expect(view.rows[0].cells.length.value).toBe(base.dimensions.lengthMm)
   })
   it.each(['asc', 'desc'] as const)('sorts target ranges by full-precision lower then upper limit and missing last, %s', direction => {
     const view = buildBatchView([entry('a', 'a.anc', 1000), entry('b', 'b.anc', 1000), entry('c', 'c.anc', 1000), failed], defaultMetricIds, { key: 'batWeight', direction }, {

@@ -8,14 +8,12 @@ import type { BatchDisplaySettings, BatchSort } from '../../domain/batch-display
 import { buildBatchView, type BatchView } from './view-model'
 import { ResultDialog } from './result-dialog'
 import { useColumnLayout } from './use-column-layout'
-import { useMaterialSettings } from './use-material-settings'
-import { MaterialDialog } from './material-dialog'
 import { RequirementPopover } from './requirement-popover'
 import { useRowSelection } from './use-row-selection'
 import { rowSelectionSettings } from '../../config/selection'
-import type { WeightRange } from '../../domain/weight'
-import { useWeightUnit } from './use-weight-unit'
-import { useLengthUnit } from './use-length-unit'
+import type { MaterialSettings, WeightRange } from '../../domain/weight'
+import type { WeightDisplayMode } from '../../domain/weight-unit'
+import type { LengthDisplayMode } from '../../domain/length-unit'
 import { useBatGrouping } from './use-bat-grouping'
 import { BatchToolbar } from './batch-toolbar'
 import { RemoveFileButton } from '../../components/remove-file-button'
@@ -25,8 +23,12 @@ const ReportPreviewDialog = lazy(() => import('./report-preview-dialog'))
 export default function BatchResults({
   diameterAllowanceMm,
   onDiameterAllowanceChange,
-  bladeWidthMm,
-  onBladeWidthChange,
+  material,
+  weightUnit,
+  lengthUnit,
+  onWeightUnitChange: selectMode,
+  onLengthUnitChange: selectLengthUnit,
+  onMaterialOpen,
   entries,
   requirements,
   display,
@@ -39,8 +41,12 @@ export default function BatchResults({
 }: {
   diameterAllowanceMm: number
   onDiameterAllowanceChange: (value: number) => void
-  bladeWidthMm?: number
-  onBladeWidthChange?: (value: number) => void
+  material: MaterialSettings
+  weightUnit: WeightDisplayMode
+  lengthUnit: LengthDisplayMode
+  onWeightUnitChange: (value: WeightDisplayMode) => void
+  onLengthUnitChange: (value: LengthDisplayMode) => void
+  onMaterialOpen: () => void
   entries: AnalysisEntry[]
   requirements: Record<string, WeightRange>
   display: BatchDisplaySettings
@@ -52,11 +58,7 @@ export default function BatchResults({
   onRequirementChange: (ids: readonly string[], range: WeightRange | null) => void
 }) {
   const { visible } = display
-  const { material, applyMaterial, storageUnavailable } = useMaterialSettings()
-  const { mode: weightUnit, selectMode, storageUnavailable: unitStorageUnavailable } = useWeightUnit()
-  const { mode: lengthUnit, selectMode: selectLengthUnit, storageUnavailable: lengthStorageUnavailable } = useLengthUnit()
   const { grouping, applyGrouping, storageUnavailable: groupingStorageUnavailable } = useBatGrouping()
-  const [materialOpen, setMaterialOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [report, setReport] = useState<{ format: ReportFormat; view: BatchView } | null>(null)
   const selectionKey = entries.map(entry => entry.id).join('|')
@@ -78,10 +80,10 @@ export default function BatchResults({
       <BatchToolbar diameterAllowanceMm={diameterAllowanceMm} onDiameterAllowanceChange={next => { selection.cancel(); onDiameterAllowanceChange(next) }} visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0}
         grouping={grouping} onGroupingChange={next => { selection.cancel(); applyGrouping(next) }}
         onVisibleChange={columns => { selection.cancel(); onDisplayChange({ visible: columns }) }} onSortChange={next => { selection.cancel(); onSortChange(next) }} onUnitChange={selectMode}
-        onMaterialOpen={() => { selection.cancel(); setMaterialOpen(true) }} onExport={format => { selection.cancel(); setReport({ format, view }) }} />
+        onMaterialOpen={() => { selection.cancel(); onMaterialOpen() }} onExport={format => { selection.cancel(); setReport({ format, view }) }} />
     </div>
 
-    {(storageUnavailable || unitStorageUnavailable || lengthStorageUnavailable || groupingStorageUnavailable) && <p className="report-error" role="alert">{text.storageUnavailable}</p>}
+    {groupingStorageUnavailable && <p className="report-error" role="alert">{text.storageUnavailable}</p>}
     <div className={`batch-table-area ${removing ? 'is-removing' : ''}`} ref={areaRef}><div className="batch-table-wrap" style={{ width: layout.width + 2 + (removing ? 48 : 0) }}>
       <table className={`batch-table ${selection.dragging ? 'is-selecting' : ''}`} style={{ width: layout.width + (removing ? 48 : 0) }}>
         <colgroup><col style={{ width: layout.filenameWidth }} />{layout.columns.map(({ column, width }) => <col key={column.id} style={{ width }} />)}{removing && <col style={{ width: 48 }} />}</colgroup>
@@ -112,16 +114,5 @@ export default function BatchResults({
       onCommit={commitRequirement} onCancel={selection.cancel} />}
     {selectedEntry && <ResultDialog diameterAllowanceMm={diameterAllowanceMm} key={selectedEntry.id} entry={selectedEntry} onDismiss={() => setSelected(null)} />}
     {report && <Suspense fallback={<p role="status">{text.preparingReport}</p>}><ReportPreviewDialog view={report.view} format={report.format} onDismiss={() => setReport(null)} /></Suspense>}
-    {materialOpen && (
-      <MaterialDialog
-        value={material}
-        diameterAllowanceMm={diameterAllowanceMm}
-        onDiameterAllowanceChange={onDiameterAllowanceChange}
-        bladeWidthMm={bladeWidthMm}
-        onBladeWidthChange={onBladeWidthChange}
-        onApply={applyMaterial}
-        onDismiss={() => setMaterialOpen(false)}
-      />
-    )}
   </section>
 }

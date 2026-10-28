@@ -38,8 +38,8 @@ export default function App() {
   const desktop = useDesktop()
 
   const { material, applyMaterial, storageUnavailable: materialStorageUnavailable } = useMaterialSettings()
-  const { mode: weightUnit, selectMode: selectWeightUnit } = useWeightUnit()
-  const { mode: lengthUnit, selectMode: selectLengthUnit } = useLengthUnit()
+  const { mode: weightUnit, selectMode: selectWeightUnit, storageUnavailable: weightUnitStorageUnavailable } = useWeightUnit()
+  const { mode: lengthUnit, selectMode: selectLengthUnit, storageUnavailable: lengthUnitStorageUnavailable } = useLengthUnit()
 
   const [dragging, setDragging] = useState(false)
   const [removing, setRemoving] = useState(false)
@@ -133,8 +133,12 @@ export default function App() {
           <BatchResults
             diameterAllowanceMm={diameter.allowanceMm}
             onDiameterAllowanceChange={diameter.applyAllowance}
-            bladeWidthMm={blade.widthMm}
-            onBladeWidthChange={blade.applyBladeWidth}
+            material={material}
+            weightUnit={weightUnit}
+            lengthUnit={lengthUnit}
+            onWeightUnitChange={selectWeightUnit}
+            onLengthUnitChange={selectLengthUnit}
+            onMaterialOpen={() => setMaterialOpen(true)}
             entries={entries}
             requirements={requirements}
             display={display}
@@ -166,7 +170,7 @@ export default function App() {
       {storageUnavailable && <p className="session-storage-error" role="alert">{text.sessionStorageUnavailable}</p>}
       {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {blade.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
-      {materialStorageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
+      {(materialStorageUnavailable || weightUnitStorageUnavailable || lengthUnitStorageUnavailable) && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
 
       {/* Floating Action Buttons: Desktop gets batch FileActions */}
       {hasFile && desktop && (
@@ -205,8 +209,7 @@ export default function App() {
         )
       )}
 
-      {/* Mobile Material Dialog */}
-      {!desktop && materialOpen && (
+      {materialOpen && (
         <MaterialDialog
           value={material}
           weightUnit={weightUnit}

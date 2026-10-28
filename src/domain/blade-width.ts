@@ -9,7 +9,7 @@ export const validBladeWidth = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0
 
 export function parseBladeWidth(draft: string): number | null {
-  if (!draft.trim()) return defaultBladeWidthMm
+  if (!draft.trim()) return 0
   const value = Number(draft)
   return validBladeWidth(value) ? value : null
 }
