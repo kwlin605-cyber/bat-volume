@@ -7,10 +7,16 @@ import { detectCuts } from './cuts/registry'
 import { clipProfile, integrateVolumeMm3 } from './geometry/volume'
 import { measureDimensions } from './geometry/dimensions'
 
-export function analyzeAnc(text: string, source: SourceInfo, context: StrategyContext = { calibration, parameters: ruleParameters }, gripContext: GripContext = { parameters: gripParameters }): AnalysisResult {
+export function analyzeAnc(
+  text: string,
+  source: SourceInfo,
+  context: StrategyContext = { calibration, parameters: ruleParameters },
+  gripContext: GripContext = { parameters: gripParameters },
+  bladeWidthMm = 0
+): AnalysisResult {
   let profile: Profile | undefined
   try {
-    profile = extractProfile(parseAnc(text), context.calibration)
+    profile = extractProfile(parseAnc(text), context.calibration, bladeWidthMm)
     const { decision, trace } = detectCuts(profile, context)
     if (decision.status !== 'detected' || !trace) {
       return { status: 'undetermined', source, profile, code: decision.status === 'undetermined' ? decision.code : 'processingFailed', partial: decision.status === 'undetermined' ? decision.partial : {} }

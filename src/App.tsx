@@ -5,6 +5,7 @@ import BatchResults from './features/batch/batch-results'
 import { useBatchSession } from './hooks/use-batch-session'
 import { FileActions } from './components/file-actions'
 import { useDiameterAllowance } from './hooks/use-diameter-allowance'
+import { useBladeWidth } from './hooks/use-blade-width'
 import { useDesktop } from './hooks/use-desktop'
 import { useMaterialSettings } from './features/batch/use-material-settings'
 import { useWeightUnit } from './features/batch/use-weight-unit'
@@ -17,6 +18,7 @@ import { text } from './i18n/zh-TW'
 
 export default function App() {
   const input = useRef<HTMLInputElement>(null)
+  const blade = useBladeWidth()
   const {
     entries,
     requirements,
@@ -30,7 +32,7 @@ export default function App() {
     setFileRequirements,
     updateDisplay,
     updateSort,
-  } = useBatchSession()
+  } = useBatchSession(blade.widthMm)
 
   const diameter = useDiameterAllowance()
   const desktop = useDesktop()
@@ -131,6 +133,8 @@ export default function App() {
           <BatchResults
             diameterAllowanceMm={diameter.allowanceMm}
             onDiameterAllowanceChange={diameter.applyAllowance}
+            bladeWidthMm={blade.widthMm}
+            onBladeWidthChange={blade.applyBladeWidth}
             entries={entries}
             requirements={requirements}
             display={display}
@@ -161,6 +165,7 @@ export default function App() {
 
       {storageUnavailable && <p className="session-storage-error" role="alert">{text.sessionStorageUnavailable}</p>}
       {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
+      {blade.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {materialStorageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
 
       {/* Floating Action Buttons: Desktop gets batch FileActions */}
@@ -210,6 +215,8 @@ export default function App() {
           onLengthUnitChange={selectLengthUnit}
           diameterAllowanceMm={diameter.allowanceMm}
           onDiameterAllowanceChange={diameter.applyAllowance}
+          bladeWidthMm={blade.widthMm}
+          onBladeWidthChange={blade.applyBladeWidth}
           onApply={applyMaterial}
           onDismiss={() => setMaterialOpen(false)}
         />

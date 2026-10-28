@@ -1,7 +1,7 @@
 import type { AnalysisResult } from '../domain/types'
 
-type Analyzer = (file: File, signal: AbortSignal) => Promise<AnalysisResult>
-interface Job { id: string; file: File; controller: AbortController }
+type Analyzer = (file: File, signal: AbortSignal, bladeWidthMm?: number) => Promise<AnalysisResult>
+interface Job { id: string; file: File; controller: AbortController; bladeWidthMm?: number }
 
 /** One bounded queue across uploads; removing one file cancels only its work. */
 export class IncrementalAnalysis {
@@ -11,10 +11,10 @@ export class IncrementalAnalysis {
   private closed = false
   constructor(private readonly analyzer: Analyzer, private readonly deliver: (id: string, result: AnalysisResult) => void, private readonly concurrency = 2) {}
 
-  add(files: readonly File[], ids: readonly string[]) {
+  add(files: readonly File[], ids: readonly string[], bladeWidthMm?: number) {
     if (this.closed) return
     files.forEach((file, index) => {
-      const job = { id: ids[index], file, controller: new AbortController() }
+      const job = { id: ids[index], file, controller: new AbortController(), bladeWidthMm }
       this.jobs.set(job.id, job); this.queue.push(job)
     })
     this.pump()
@@ -40,7 +40,7 @@ export class IncrementalAnalysis {
   }
   private async run(job: Job) {
     let result: AnalysisResult
-    try { result = await this.analyzer(job.file, job.controller.signal) }
+    try { result = await this.analyzer(job.file, job.controller.signal, job.bladeWidthMm) }
     catch { result = { status: 'undetermined', source: { name: job.file.name, size: job.file.size }, code: 'processingFailed' } }
     if (this.jobs.get(job.id) === job) {
       this.jobs.delete(job.id)

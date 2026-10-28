@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { materialDensity, positiveFinite, validWeightError, type MaterialSettings } from '../../domain/weight'
 import { parseDiameterAllowance } from '../../domain/diameter-allowance'
+import { parseBladeWidth } from '../../domain/blade-width'
 import { text } from '../../i18n/zh-TW'
 import { formatCoordinate } from '../../lib/format'
 import type { WeightUnit, WeightDisplayMode } from '../../domain/weight-unit'
@@ -15,6 +16,8 @@ export function MaterialDialog({
   onLengthUnitChange,
   diameterAllowanceMm,
   onDiameterAllowanceChange,
+  bladeWidthMm,
+  onBladeWidthChange,
   onApply,
   onDismiss,
 }: {
@@ -26,6 +29,8 @@ export function MaterialDialog({
   onLengthUnitChange?: (unit: LengthDisplayMode) => void
   diameterAllowanceMm?: number
   onDiameterAllowanceChange?: (value: number) => void
+  bladeWidthMm?: number
+  onBladeWidthChange?: (value: number) => void
   onApply: (value: MaterialSettings) => void
   onDismiss: () => void
 }) {
@@ -36,6 +41,7 @@ export function MaterialDialog({
   const [weight, setWeight] = useState(value.weightG?.toString() ?? '')
   const [weightError, setWeightError] = useState(value.weightErrorPercent?.toString() ?? '')
   const [allowance, setAllowance] = useState(diameterAllowanceMm !== undefined ? String(diameterAllowanceMm) : '')
+  const [bladeWidth, setBladeWidth] = useState(bladeWidthMm !== undefined ? String(bladeWidthMm) : '')
   const [error, setError] = useState('')
 
   const weightG = weight.trim() ? Number(weight) : null
@@ -82,6 +88,17 @@ export function MaterialDialog({
       }
       if (nextAllowance !== diameterAllowanceMm) {
         onDiameterAllowanceChange(nextAllowance)
+      }
+    }
+
+    if (bladeWidthMm !== undefined && onBladeWidthChange) {
+      const nextBladeWidth = parseBladeWidth(bladeWidth)
+      if (nextBladeWidth === null) {
+        setError(text.invalidPositiveNumber)
+        return
+      }
+      if (nextBladeWidth !== bladeWidthMm) {
+        onBladeWidthChange(nextBladeWidth)
       }
     }
 
@@ -189,6 +206,24 @@ export function MaterialDialog({
                 placeholder="0.2"
                 value={allowance}
                 onChange={event => { setAllowance(event.target.value); setError('') }}
+              />
+              <small>{text.millimetreUnit}</small>
+            </div>
+          </label>
+        )}
+        {bladeWidthMm !== undefined && onBladeWidthChange && (
+          <label className="material-field">
+            <span>{text.bladeWidth}</span>
+            <div>
+              <input
+                type="number"
+                aria-label={text.bladeWidth}
+                inputMode="decimal"
+                min="0"
+                step="any"
+                placeholder={text.bladeWidthPlaceholder}
+                value={bladeWidth}
+                onChange={event => { setBladeWidth(event.target.value); setError('') }}
               />
               <small>{text.millimetreUnit}</small>
             </div>

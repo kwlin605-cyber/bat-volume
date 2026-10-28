@@ -22,7 +22,35 @@ import { RemoveFileButton } from '../../components/remove-file-button'
 import './batch.css'
 const ReportPreviewDialog = lazy(() => import('./report-preview-dialog'))
 
-export default function BatchResults({ diameterAllowanceMm, onDiameterAllowanceChange, entries, requirements, display, onDisplayChange, sort, onSortChange, removing, onRemove, onRequirementChange }: { diameterAllowanceMm: number; onDiameterAllowanceChange: (value: number) => void; entries: AnalysisEntry[]; requirements: Record<string, WeightRange>; display: BatchDisplaySettings; onDisplayChange: (value: BatchDisplaySettings) => void; sort: BatchSort; onSortChange: (value: BatchSort) => void; removing: boolean; onRemove: (id: string) => void; onRequirementChange: (ids: readonly string[], range: WeightRange | null) => void }) {
+export default function BatchResults({
+  diameterAllowanceMm,
+  onDiameterAllowanceChange,
+  bladeWidthMm,
+  onBladeWidthChange,
+  entries,
+  requirements,
+  display,
+  onDisplayChange,
+  sort,
+  onSortChange,
+  removing,
+  onRemove,
+  onRequirementChange,
+}: {
+  diameterAllowanceMm: number
+  onDiameterAllowanceChange: (value: number) => void
+  bladeWidthMm?: number
+  onBladeWidthChange?: (value: number) => void
+  entries: AnalysisEntry[]
+  requirements: Record<string, WeightRange>
+  display: BatchDisplaySettings
+  onDisplayChange: (value: BatchDisplaySettings) => void
+  sort: BatchSort
+  onSortChange: (value: BatchSort) => void
+  removing: boolean
+  onRemove: (id: string) => void
+  onRequirementChange: (ids: readonly string[], range: WeightRange | null) => void
+}) {
   const { visible } = display
   const { material, applyMaterial, storageUnavailable } = useMaterialSettings()
   const { mode: weightUnit, selectMode, storageUnavailable: unitStorageUnavailable } = useWeightUnit()
@@ -84,6 +112,16 @@ export default function BatchResults({ diameterAllowanceMm, onDiameterAllowanceC
       onCommit={commitRequirement} onCancel={selection.cancel} />}
     {selectedEntry && <ResultDialog diameterAllowanceMm={diameterAllowanceMm} key={selectedEntry.id} entry={selectedEntry} onDismiss={() => setSelected(null)} />}
     {report && <Suspense fallback={<p role="status">{text.preparingReport}</p>}><ReportPreviewDialog view={report.view} format={report.format} onDismiss={() => setReport(null)} /></Suspense>}
-    {materialOpen && <MaterialDialog value={material} diameterAllowanceMm={diameterAllowanceMm} onDiameterAllowanceChange={onDiameterAllowanceChange} onApply={applyMaterial} onDismiss={() => setMaterialOpen(false)} />}
+    {materialOpen && (
+      <MaterialDialog
+        value={material}
+        diameterAllowanceMm={diameterAllowanceMm}
+        onDiameterAllowanceChange={onDiameterAllowanceChange}
+        bladeWidthMm={bladeWidthMm}
+        onBladeWidthChange={onBladeWidthChange}
+        onApply={applyMaterial}
+        onDismiss={() => setMaterialOpen(false)}
+      />
+    )}
   </section>
 }

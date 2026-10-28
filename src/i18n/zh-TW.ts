@@ -58,6 +58,8 @@ export const text = {
   inchUnit: 'in',
   lengthDisplayUnit: '長度單位',
   diameterAllowance: '直徑扣除量',
+  bladeWidth: '鋸片寬度',
+  bladeWidthPlaceholder: '5',
   weightDisplayUnit: '木料重量單位',
   measuredWeightError: '實測重量誤差',
   percentUnit: '%',

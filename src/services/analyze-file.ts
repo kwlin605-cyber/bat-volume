@@ -2,7 +2,7 @@ import { fileLimits } from '../config/analysis'
 import type { AnalysisResult, DiagnosticCode } from '../domain/types'
 import { AnalysisWorkerPool, type AnalysisExecutor } from './analysis-worker-pool'
 
-export async function analyzeFile(file: File, signal: AbortSignal, executor?: AnalysisExecutor): Promise<AnalysisResult> {
+export async function analyzeFile(file: File, signal: AbortSignal, executor?: AnalysisExecutor, bladeWidthMm?: number): Promise<AnalysisResult> {
   signal.throwIfAborted()
   const source = { name: file.name, size: file.size }
   const fail = (code: DiagnosticCode): AnalysisResult => ({ status: 'undetermined', source, code })
@@ -17,7 +17,7 @@ export async function analyzeFile(file: File, signal: AbortSignal, executor?: An
   catch { text = new TextDecoder('big5').decode(buffer) }
   const ownedSession = executor ? null : new AnalysisWorkerPool(1)
   const session = executor ?? ownedSession!
-  try { return await session.analyze(text, source, signal) }
+  try { return await session.analyze(text, source, signal, bladeWidthMm) }
   catch { signal.throwIfAborted(); return fail('processingFailed') }
   finally { ownedSession?.dispose() }
 }

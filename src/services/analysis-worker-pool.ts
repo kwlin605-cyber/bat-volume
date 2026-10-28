@@ -2,7 +2,7 @@ import type { AnalysisResult, SourceInfo } from '../domain/types'
 import type { AnalysisRequest, AnalysisResponse } from '../workers/analysis-message'
 
 export interface AnalysisExecutor {
-  analyze(text: string, source: SourceInfo, signal: AbortSignal): Promise<AnalysisResult>
+  analyze(text: string, source: SourceInfo, signal: AbortSignal, bladeWidthMm?: number): Promise<AnalysisResult>
 }
 interface Job {
   request: AnalysisRequest; signal: AbortSignal; abort: () => void
@@ -29,11 +29,11 @@ export class AnalysisWorkerPool implements AnalysisExecutor {
     catch { /* A later analysis can retry loading; prewarming must not block the UI. */ }
   }
 
-  analyze(text: string, source: SourceInfo, signal: AbortSignal): Promise<AnalysisResult> {
+  analyze(text: string, source: SourceInfo, signal: AbortSignal, bladeWidthMm?: number): Promise<AnalysisResult> {
     signal.throwIfAborted()
     if (this.closed) return Promise.reject(new DOMException('Analysis session closed', 'AbortError'))
     return new Promise((resolve, reject) => {
-      const job: Job = { request: { id: ++this.nextId, text, source }, signal, resolve, reject, abort: () => this.cancel(job) }
+      const job: Job = { request: { id: ++this.nextId, text, source, bladeWidthMm }, signal, resolve, reject, abort: () => this.cancel(job) }
       signal.addEventListener('abort', job.abort, { once: true })
       this.queue.push(job)
       this.pump()
@@ -59,56 +59,53 @@ export class AnalysisWorkerPool implements AnalysisExecutor {
       job.resolve(event.data.result)
       this.pump()
     }
-    slot.worker.onerror = () => this.failed(slot)
-    slot.worker.onmessageerror = () => this.failed(slot)
+    slot.worker.onerror = () => {
+      this.removeSlot(slot)
+      if (!this.closed) this.addSlot()
+      this.pump()
+    }
     this.slots.push(slot)
     return slot
   }
 
   private removeSlot(slot: Slot) {
-    slot.job = null
-    slot.worker.onmessage = null
-    slot.worker.onerror = null
-    slot.worker.onmessageerror = null
-    slot.worker.terminate()
-    this.slots = this.slots.filter(current => current !== slot)
-  }
-
-  private reject(job: Job, reason: unknown) {
-    job.signal.removeEventListener('abort', job.abort)
-    job.reject(reason)
+    this.slots = this.slots.filter(candidate => candidate !== slot)
+    try { slot.worker.terminate() }
+    catch { /* Terminate errors must not throw into calling UI. */ }
+    if (slot.job) this.reject(slot.job, new Error('Analysis worker terminated unexpectedly'))
   }
 
   private cancel(job: Job) {
-    const slot = this.slots.find(current => current.job === job)
-    if (slot) this.removeSlot(slot)
-    else this.queue = this.queue.filter(current => current !== job)
-    this.reject(job, job.signal.reason)
-    this.pump()
-  }
-
-  private failed(slot: Slot) {
-    const job = slot.job
-    this.removeSlot(slot)
-    if (job) this.reject(job, new Error('Analysis worker failed'))
-    this.pump()
+    job.signal.removeEventListener('abort', job.abort)
+    this.queue = this.queue.filter(candidate => candidate !== job)
+    const slot = this.slots.find(candidate => candidate.job === job)
+    if (slot) {
+      slot.job = null
+      this.removeSlot(slot)
+      if (!this.closed) this.addSlot()
+      this.pump()
+    }
+    this.reject(job, new DOMException('Analysis aborted', 'AbortError'))
   }
 
   private pump() {
     if (this.closed) return
-    while (this.queue.length) {
-      let slot = this.slots.find(current => !current.job)
-      if (!slot && this.slots.length >= this.size) return
-      const job = this.queue.shift()!
-      if (job.signal.aborted) { this.reject(job, job.signal.reason); continue }
-      try {
-        slot ??= this.addSlot()
-        slot.job = job
-        slot.worker.postMessage(job.request)
-      } catch (reason) {
-        if (slot) this.removeSlot(slot)
-        this.reject(job, reason)
-      }
+    const slot = this.slots.find(candidate => candidate.job === null)
+    if (!slot) return
+    const job = this.queue.shift()
+    if (!job) return
+    slot.job = job
+    try { slot.worker.postMessage(job.request) }
+    catch (error) {
+      this.removeSlot(slot)
+      if (!this.closed) this.addSlot()
+      this.reject(job, error)
+      this.pump()
     }
+  }
+
+  private reject(job: Job, error: unknown) {
+    job.signal.removeEventListener('abort', job.abort)
+    job.reject(error)
   }
 }
