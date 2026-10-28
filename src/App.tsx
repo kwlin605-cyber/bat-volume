@@ -204,7 +204,6 @@ export default function App() {
       {!desktop && materialOpen && (
         <MaterialDialog
           value={material}
-          unit={weightUnit === 'oz' ? 'oz' : 'g'}
           weightUnit={weightUnit}
           lengthUnit={lengthUnit}
           onWeightUnitChange={selectWeightUnit}

@@ -4,9 +4,8 @@ import type { AnalysisEntry } from '../services/analysis-state'
 import type { MaterialSettings, WeightRange } from '../domain/weight'
 import { estimateBatWeight, calculateMaterialWeight } from '../domain/weight'
 import type { WeightDisplayMode } from '../domain/weight-unit'
-import { inputWeightUnit } from '../domain/weight-unit'
 import type { LengthDisplayMode } from '../domain/length-unit'
-import { weightDisplay } from '../lib/weight-display'
+import { weightDisplay, weightHeaderUnit, weightUnitLabel } from '../lib/weight-display'
 import { lengthDisplay } from '../lib/length-display'
 import { formatCoordinate, formatDimension, formatVolume } from '../lib/format'
 import { defaultDiameterAllowanceMm, finishedDiameter } from '../domain/diameter-allowance'
@@ -70,11 +69,11 @@ export function MobileResultView({
     ? estimateBatWeight(material, result.volumeCm3)
     : null
 
-  // Bat weight display: Either specified requirement, or density-estimated
+  // Bat weight display: Either specified requirement, or density-estimated (always canonical grams)
   const batWeightFormatted = requirement
     ? weightDisplay(requirement.min, requirement.max === requirement.min ? undefined : requirement.max, 'g')
     : estimatedBatWeight !== null
-      ? weightDisplay(estimatedBatWeight, undefined, weightUnit)
+      ? weightDisplay(estimatedBatWeight, undefined, 'g')
       : null
 
   // Required material weight display
@@ -102,8 +101,7 @@ export function MobileResultView({
       return
     }
 
-    const unit = inputWeightUnit(weightUnit)
-    const parsed = parseRequirement(minRaw, maxRaw, unit, requirement)
+    const parsed = parseRequirement(minRaw, maxRaw, 'g', requirement)
     if (parsed.error || !parsed.range) {
       setInputError(parsed.error === 'range' ? text.invalidWeightRange : text.invalidPositiveNumber)
       return
@@ -257,12 +255,12 @@ export function MobileResultView({
                   </span>
                   <div className="mobile-weight-val-wrap">
                     {batWeightFormatted ? (
-                      <span className="mobile-weight-val">{batWeightFormatted.display}</span>
+                      <>
+                        <span className="mobile-weight-val">{batWeightFormatted.display}</span>
+                        <small className="mobile-weight-sub">{text.weightUnit}</small>
+                      </>
                     ) : (
                       <span className="mobile-weight-val text-zinc-400">—</span>
-                    )}
-                    {batWeightFormatted?.secondary && (
-                      <small className="mobile-weight-sub">{batWeightFormatted.secondary}</small>
                     )}
                   </div>
                 </div>
@@ -272,14 +270,19 @@ export function MobileResultView({
                   <span className="mobile-weight-label">{text.requiredMaterialWeight}</span>
                   <div className="mobile-weight-val-wrap">
                     {matWeightFormatted ? (
-                      <span className="mobile-weight-val font-semibold">{matWeightFormatted.display}</span>
+                      <>
+                        <span className="mobile-weight-val font-semibold">{matWeightFormatted.display}</span>
+                        <small className="mobile-weight-sub">
+                          {weightUnit === 'both' ? text.ounceUnit : weightUnitLabel(weightUnit)}
+                        </small>
+                      </>
                     ) : materialCalc?.kind === 'unavailable' && materialCalc.reason === 'materialTooSmall' ? (
                       <span className="mobile-weight-val text-amber-600 text-sm">{text.materialTooSmall}</span>
                     ) : (
                       <span className="mobile-weight-val text-zinc-400">—</span>
                     )}
                     {matWeightFormatted?.secondary && (
-                      <small className="mobile-weight-sub">{matWeightFormatted.secondary}</small>
+                      <small className="mobile-weight-sub">/ {matWeightFormatted.secondary} {text.weightUnit}</small>
                     )}
                   </div>
                 </div>
@@ -321,6 +324,7 @@ export function MobileResultView({
                           onKeyDown={handleMaxKeyDown}
                           className="mobile-specify-input"
                         />
+                        <span className="mobile-specify-unit">{text.weightUnit}</span>
                         <button
                           type="button"
                           className="mobile-specify-cancel-btn"

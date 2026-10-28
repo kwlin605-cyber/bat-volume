@@ -3,8 +3,7 @@ import { materialDensity, positiveFinite, validWeightError, type MaterialSetting
 import { parseDiameterAllowance } from '../../domain/diameter-allowance'
 import { text } from '../../i18n/zh-TW'
 import { formatCoordinate } from '../../lib/format'
-import { toGrams, type WeightUnit, type WeightDisplayMode } from '../../domain/weight-unit'
-import { editableWeight, weightUnitLabel } from '../../lib/weight-display'
+import type { WeightUnit, WeightDisplayMode } from '../../domain/weight-unit'
 import type { LengthDisplayMode, LengthUnit } from '../../domain/length-unit'
 
 export function MaterialDialog({
@@ -32,33 +31,21 @@ export function MaterialDialog({
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
-  const activeWeightUnit: WeightUnit = weightUnit ? (weightUnit === 'oz' ? 'oz' : 'g') : unit
   const [density, setDensity] = useState(value.referenceDensity?.toString() ?? '')
   const [volume, setVolume] = useState(value.volumeCm3?.toString() ?? '')
-  const [weight, setWeight] = useState(value.weightG === null ? '' : editableWeight(value.weightG, activeWeightUnit))
+  const [weight, setWeight] = useState(value.weightG?.toString() ?? '')
   const [weightError, setWeightError] = useState(value.weightErrorPercent?.toString() ?? '')
   const [allowance, setAllowance] = useState(diameterAllowanceMm !== undefined ? String(diameterAllowanceMm) : '')
   const [error, setError] = useState('')
 
-  const weightG = weight.trim()
-    ? (value.weightG !== null && weight === editableWeight(value.weightG, activeWeightUnit)
-        ? value.weightG
-        : toGrams(Number(weight), activeWeightUnit))
-    : null
+  const weightG = weight.trim() ? Number(weight) : null
 
   useEffect(() => {
     if (dialog.current && !dialog.current.open) dialog.current.showModal()
   }, [])
 
-  function handleSelectWeightUnit(target: WeightUnit) {
-    if (activeWeightUnit === target) return
-    if (weight.trim()) {
-      const num = Number(weight)
-      if (positiveFinite(num)) {
-        const grams = toGrams(num, activeWeightUnit)
-        setWeight(editableWeight(grams, target))
-      }
-    }
+  function handleSelectWeightUnit(target: WeightDisplayMode) {
+    if (weightUnit === target) return
     onWeightUnitChange?.(target)
   }
 
@@ -167,7 +154,7 @@ export function MaterialDialog({
               value={weight}
               onChange={event => { setWeight(event.target.value); setError('') }}
             />
-            <small>{weightUnitLabel(activeWeightUnit)}</small>
+            <small>{text.weightUnit}</small>
           </div>
         </label>
         {actualDensity !== null && (
@@ -237,14 +224,14 @@ export function MaterialDialog({
                 <div className="material-segmented-group" role="group" aria-label={text.weightDisplayUnit}>
                   <button
                     type="button"
-                    className={`material-segmented-btn ${activeWeightUnit === 'g' ? 'is-active' : ''}`}
+                    className={`material-segmented-btn ${weightUnit === 'g' || !weightUnit ? 'is-active' : ''}`}
                     onClick={() => handleSelectWeightUnit('g')}
                   >
                     {text.gramToggleLabel}
                   </button>
                   <button
                     type="button"
-                    className={`material-segmented-btn ${activeWeightUnit === 'oz' ? 'is-active' : ''}`}
+                    className={`material-segmented-btn ${weightUnit === 'oz' ? 'is-active' : ''}`}
                     onClick={() => handleSelectWeightUnit('oz')}
                   >
                     {text.ounceToggleLabel}
