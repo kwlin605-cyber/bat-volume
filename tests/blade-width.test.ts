@@ -9,6 +9,7 @@ import {
 import { analyzeAnc } from '../src/domain/analyze'
 import { extractProfile } from '../src/domain/anc/profile'
 import { parseAnc } from '../src/domain/anc/parser'
+import { profilePointAt } from '../src/domain/geometry/profile'
 import { calibration, ruleParameters, gripParameters } from '../src/config/analysis'
 import { AnalysisWorkerPool } from '../src/services/analysis-worker-pool'
 import type { AnalysisRequest, AnalysisResponse } from '../src/workers/analysis-message'
@@ -139,32 +140,24 @@ describe('blade envelope profile extraction', () => {
     expect(raw.points.length).toBeGreaterThan(0)
   })
 
-  it('produces a blade-envelope profile (bladeWidthMm = 5) with strictly fewer points and correct structure', () => {
+  it('preserves the full sweep range with a 5 mm blade', () => {
     const parsed = parseAnc(twoPassProgram)
     const blade = extractProfile(parsed, calibration, 5.0)
     expect(blade).toBeDefined()
     expect(blade.sweepCount).toBe(2)
 
-    // Blade envelope should have 6 simplified segments
-    // [17.5, r25] → [37.45, r25] | [37.5, r15] → [62.5, r15] | [82.5, r25] → [102.5, r25]
-    expect(blade.points.length).toBeGreaterThan(0)
+    expect(blade.range).toEqual({ low: 17.5, high: 102.5 })
   })
 
   it('shows lower radius at the deepest-cut band centre under blade simulation', () => {
     const parsed = parseAnc(twoPassProgram)
     const blade = extractProfile(parsed, calibration, 5.0)
 
-    // The blade profile is simplified: only boundary points are kept (collinear simplification).
-    // At Y=37.5..62.5 all points have radius 15; outside this band, radius is 25.
-    // We find the nearest stored point to Y=50 (it may not be exactly at 50, but it's within band [37.5, 62.5]).
-    const ptMid = blade.points.find(p => p.y >= 37.5 && p.y <= 62.5)
-    expect(ptMid).toBeDefined()
-    expect(ptMid!.radius).toBeCloseTo(15, 2)
-
-    // At Y ≈ 17.5..37.45 (pass-1 band, outside pass-2), radius is 25
-    const ptOuter = blade.points.find(p => p.y >= 17.5 && p.y < 37.5)
-    expect(ptOuter).toBeDefined()
-    expect(ptOuter!.radius).toBeCloseTo(25, 2)
+    expect(profilePointAt(blade.points, 50).radius).toBe(15)
+    expect(profilePointAt(blade.points, 37.49).radius).toBe(25)
+    expect(profilePointAt(blade.points, 37.5).radius).toBe(15)
+    // The second pass rises linearly from radius 15 at Y=60 to 25 at Y=80.
+    expect(profilePointAt(blade.points, 72.5).radius).toBe(20)
   })
 
   it('blade envelope has radius ≤ raw profile radius at corresponding positions', () => {

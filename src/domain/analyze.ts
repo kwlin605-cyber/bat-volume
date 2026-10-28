@@ -1,4 +1,4 @@
-import { calibration, gripParameters, ruleParameters } from '../config/analysis'
+import { bladeGeometrySettings, calibration, gripParameters, ruleParameters } from '../config/analysis'
 import { AnalysisError } from './types'
 import type { AnalysisResult, GripContext, Profile, SourceInfo, StrategyContext } from './types'
 import { parseAnc } from './anc/parser'
@@ -6,6 +6,7 @@ import { extractProfile } from './anc/profile'
 import { detectCuts } from './cuts/registry'
 import { clipProfile, integrateVolumeMm3 } from './geometry/volume'
 import { measureDimensions } from './geometry/dimensions'
+import { sampleProfile } from './geometry/profile'
 
 export function analyzeAnc(
   text: string,
@@ -17,7 +18,8 @@ export function analyzeAnc(
   let profile: Profile | undefined
   try {
     profile = extractProfile(parseAnc(text), context.calibration, bladeWidthMm)
-    const { decision, trace } = detectCuts(profile, context)
+    const cutProfile = bladeWidthMm > 0 ? sampleProfile(profile, bladeGeometrySettings.cutSampleSpacingMm) : profile
+    const { decision, trace } = detectCuts(cutProfile, context)
     if (decision.status !== 'detected' || !trace) {
       return { status: 'undetermined', source, profile, code: decision.status === 'undetermined' ? decision.code : 'processingFailed', partial: decision.status === 'undetermined' ? decision.partial : {} }
     }

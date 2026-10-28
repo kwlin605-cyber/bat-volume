@@ -10,6 +10,7 @@ export interface FeedSweep { points: RawPoint[]; span: number }
 export interface Program { sweeps: FeedSweep[]; lineCount: number }
 export interface ProfilePoint { y: number; radius: number; line: number }
 export interface Profile {
+  /** Ordered geometry boundary. Equal Y values preserve the two sides of a vertical step. */
   points: ProfilePoint[]
   range: { low: number; high: number }
   sourceLines: { start: number; end: number }

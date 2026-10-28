@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Bounds, OrbitControls, useBounds } from '@react-three/drei'
-import { BufferGeometry, LatheGeometry, Line, LineDashedMaterial, Vector2, Vector3 } from 'three'
+import { BufferGeometry, Line, LineDashedMaterial, Vector3 } from 'three'
 import type { AnalysisResult, ProfilePoint } from '../domain/types'
 import { text } from '../i18n/zh-TW'
 import { SectionMarker } from './section-marker'
+import { createBatGeometry } from './bat-geometry'
 
 function CutRing({ y }: { y: number }) {
   const line = useMemo(() => {
@@ -21,11 +22,7 @@ function CutRing({ y }: { y: number }) {
 }
 
 function BatMesh({ points, center }: { points: ProfilePoint[]; center: number }) {
-  const geometry = useMemo(() => new LatheGeometry([
-    new Vector2(0, points[0].y - center),
-    ...points.map(point => new Vector2(point.radius, point.y - center)),
-    new Vector2(0, points.at(-1)!.y - center),
-  ], 96), [points, center])
+  const geometry = useMemo(() => createBatGeometry(points, center), [points, center])
   useEffect(() => () => geometry.dispose(), [geometry])
   return <mesh geometry={geometry}><meshStandardMaterial color="#c5a479" roughness={0.58} metalness={0} /></mesh>
 }

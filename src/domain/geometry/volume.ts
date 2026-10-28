@@ -1,27 +1,16 @@
 import { AnalysisError } from '../types'
 import type { Cuts, ProfilePoint } from '../types'
-
-function atY(points: ProfilePoint[], y: number): ProfilePoint {
-  const exact = points.find(point => point.y === y)
-  if (exact) return exact
-  for (let index = 1; index < points.length; index++) {
-    const previous = points[index - 1], next = points[index]
-    if (previous.y < y && y < next.y) {
-      const fraction = (y - previous.y) / (next.y - previous.y)
-      return { y, radius: previous.radius + (next.radius - previous.radius) * fraction, line: next.line }
-    }
-  }
-  throw new AnalysisError('invalidCuts')
-}
+import { profilePointAt } from './profile'
 
 export function clipProfile(points: ProfilePoint[], cuts: Cuts): ProfilePoint[] {
   if (!points.length || !(cuts.low < cuts.high) || cuts.low < points[0].y || cuts.high > points.at(-1)!.y) {
     throw new AnalysisError('invalidCuts')
   }
-  const within = points.filter(point => point.y >= cuts.low && point.y <= cuts.high)
-  if (!within.length || within[0].y > cuts.low) within.unshift(atY(points, cuts.low))
-  if (within.at(-1)!.y < cuts.high) within.push(atY(points, cuts.high))
-  return within
+  return [
+    profilePointAt(points, cuts.low, 'right'),
+    ...points.filter(point => point.y > cuts.low && point.y < cuts.high),
+    profilePointAt(points, cuts.high, 'left'),
+  ]
 }
 
 export function integrateVolumeMm3(points: ProfilePoint[]): number {
