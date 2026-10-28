@@ -12,6 +12,7 @@ if not defined batRuntime if exist "%ProgramFiles%\nodejs\node.exe" set "batRunt
 if not defined batRuntime if exist "%LOCALAPPDATA%\Programs\nodejs\node.exe" set "batRuntime=%LOCALAPPDATA%\Programs\nodejs\node.exe"
 
 if not defined batRuntime (
+  chcp 65001 >nul
   "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Write-Host ((Get-Content -LiteralPath 'scripts/messages.json' -Raw -Encoding UTF8 | ConvertFrom-Json).missingRuntime)"
   pause
   exit /b 1
