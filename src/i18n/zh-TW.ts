@@ -172,6 +172,7 @@ export const text = {
   previewLoading: '載入預覽',
   previewUnavailable: '此瀏覽器無法顯示 3D',
   orbitHelp: '左鍵旋轉 · 右鍵平移 · 滾輪縮放',
+  orbitTouchHelp: '單指旋轉 · 雙指平移／縮放',
   linesLegend: '虛線為預計切線',
   failureDescription: '這個檔案未產生體積。',
   retry: '選擇其他檔案',

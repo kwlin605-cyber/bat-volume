@@ -504,7 +504,7 @@ export function MobileResultView({
                   </div>
                 }
               >
-                <BatPreview result={result} />
+                <BatPreview result={result} interactionHelp={text.orbitTouchHelp} />
               </Suspense>
             </PreviewBoundary>
             <PreviewMeasurements dimensions={result.dimensions} diameterAllowanceMm={diameterAllowanceMm} />
