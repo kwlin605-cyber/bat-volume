@@ -114,11 +114,16 @@
 .row-diagnostic { display: block; color: var(--ui-detailText); font-size: 12px; font-weight: 400; line-height: 1.6; margin-top: 7px; overflow-wrap: anywhere; }
 .row-loading { display: flex; align-items: center; gap: 6px; color: var(--ui-loadingText); font-size: 12px; font-weight: 400; margin-top: 7px; }
 .report-error { color: var(--ui-noteText); font-size: 13px; margin: 0 0 15px; }
-.result-dialog { box-sizing: border-box; width: min(1180px, 94vw); max-height: 88dvh; margin: auto; padding: 24px; border: 1px solid var(--ui-cardBorder); border-radius: 20px; color: var(--ui-resultText); overflow: auto; overscroll-behavior: contain; }
+.result-dialog { --result-columns: minmax(340px,.85fr) minmax(0,1.65fr); --result-column-gap: 28px; box-sizing: border-box; width: min(1180px, 94vw); max-height: 88dvh; margin: auto; padding: 24px; border: 1px solid var(--ui-cardBorder); border-radius: 20px; color: var(--ui-resultText); overflow: auto; overscroll-behavior: contain; }
 body:has(.result-dialog[open], .material-dialog[open]) { overflow: hidden; }
 .result-dialog::backdrop { background: var(--ui-resultBackdrop); backdrop-filter: blur(3px); }
 .dialog-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
 .dialog-heading h2 { font-size: 13px; font-weight: 400; color: var(--ui-dialogTitle); overflow-wrap: anywhere; margin: 8px 0; }
+.result-preview-heading { display: grid; grid-template-columns: var(--result-columns); gap: var(--result-column-gap); align-items: center; }
+.result-preview-heading h2 { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.preview-heading-actions { display: flex; align-items: center; justify-content: center; position: relative; }
+.result-preview-heading .preview-heading-actions { padding: 0 44px; }
+.result-preview-heading .preview-heading-actions > .icon-button { position: absolute; right: 0; }
 @media (min-width: 1024px) and (max-width: 1190px) { .batch-heading { align-items: flex-start; } .batch-tools { gap: 6px; } .batch-table td, .batch-table th { padding-left: 14px; padding-right: 14px; } }
 
 /* Shared toolbar sizing; the sort label switches direction, the small arrow opens its menu. */

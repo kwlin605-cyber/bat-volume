@@ -1,20 +1,14 @@
-import { displayFileName } from '../lib/file-name'
-import { Check, ChevronDown, CircleAlert, FileCode2, LoaderCircle } from 'lucide-react'
+import { Check, ChevronDown, CircleAlert, LoaderCircle } from 'lucide-react'
 import type { UploadState } from '../services/analysis-state'
 import { diagnosticText, text } from '../i18n/zh-TW'
 import { formatCoordinate, formatVolume } from '../lib/format'
 import { DimensionsSummary } from './dimensions-summary'
 
 export function ResultCard({ state, diameterAllowanceMm }: { state: Exclude<UploadState, { status: 'empty' }>; diameterAllowanceMm?: number }) {
-  const source = state.status === 'result' ? state.result.source : state.source
   const result = state.status === 'result' ? state.result : null
   const calculated = result?.status === 'calculated'
   const status = state.status === 'loading' ? text.loading : calculated ? (result.estimated ? text.estimated : text.calculated) : text.failed
   return <section className="result-card" aria-live="polite" aria-busy={state.status === 'loading'}>
-    <div className="file-heading">
-      <span className="file-symbol"><FileCode2 size={18} aria-hidden="true" /></span>
-      <p className="file-name" title={displayFileName(source.name)}>{displayFileName(source.name)}</p>
-    </div>
     <div className={`status-pill ${calculated ? 'status-complete' : state.status !== 'loading' ? 'status-error' : ''}`}>
       {state.status === 'loading' ? <LoaderCircle className="spin" size={12} aria-hidden="true" /> : calculated ? <Check size={12} aria-hidden="true" /> : <CircleAlert size={12} aria-hidden="true" />}
       <span>{status}</span>

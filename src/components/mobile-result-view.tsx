@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Box, ChevronDown, CircleAlert, FileCode2, LoaderCircle, Plus, Settings2, X } from 'lucide-react'
 import type { AnalysisEntry } from '../services/analysis-state'
 import type { MaterialSettings, WeightRange } from '../domain/weight'
@@ -12,10 +12,7 @@ import { defaultDiameterAllowanceMm, finishedDiameter } from '../domain/diameter
 import { displayFileName } from '../lib/file-name'
 import { diagnosticText, gripDiagnosticText, text } from '../i18n/zh-TW'
 import { parseRequirement } from '../features/batch/weight-input'
-import { PreviewBoundary } from './preview-boundary'
-import { PreviewMeasurements } from './preview-measurements'
-
-const BatPreview = lazy(() => import('./bat-preview'))
+import { MobilePreviewDialog } from './mobile-preview-dialog'
 
 interface Props {
   entry: AnalysisEntry
@@ -482,34 +479,7 @@ export function MobileResultView({
 
       {/* 3D Fullscreen Modal */}
       {show3d && calculated && result?.profile && (
-        <div className="mobile-3d-overlay" role="dialog" aria-modal="true" aria-label={text.view3dModel}>
-          <div className="mobile-3d-header">
-            <span className="mobile-3d-title">{displayFileName(source.name)}</span>
-            <button
-              type="button"
-              className="mobile-3d-close"
-              onClick={() => setShow3d(false)}
-              aria-label={text.close3dModel}
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div className="mobile-3d-body">
-            <PreviewBoundary>
-              <Suspense
-                fallback={
-                  <div className="preview-fallback">
-                    <LoaderCircle className="spin" size={20} />
-                    {text.previewLoading}
-                  </div>
-                }
-              >
-                <BatPreview result={result} interactionHelp={text.orbitTouchHelp} />
-              </Suspense>
-            </PreviewBoundary>
-            <PreviewMeasurements dimensions={result.dimensions} diameterAllowanceMm={diameterAllowanceMm} />
-          </div>
-        </div>
+        <MobilePreviewDialog result={result} diameterAllowanceMm={diameterAllowanceMm} onClose={() => setShow3d(false)} />
       )}
     </div>
   )
