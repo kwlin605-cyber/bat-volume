@@ -89,15 +89,36 @@ describe('continuous flat-blade envelope', () => {
 })
 
 describe('full envelope shared by dimensions and weight calculations', () => {
-  it('keeps the existing multi-step cut decision without changing the cut strategy', () => {
-    // Characterizes the requested legacy decision, not a physically validated cutting position.
+  it.each([
+    ['劉/X-56-860.anc', 7.93, 867.59],
+    ['na/243.anc', 6.97, 852.37],
+    ['星裕/730M2.anc', 7.39, 860.13],
+  ] as const)('uses the off-grid blade boundary at both ends of %s', (file, low, high) => {
+    const text = readFileSync(new URL(`../src/assets/anc/${file}`, import.meta.url), 'utf8')
+    const result = analyzeAnc(text, { name: file, size: text.length }, undefined, undefined, 5)
+    if (result.status !== 'calculated') throw new Error('Expected a calculated bat')
+    expect(result.cuts.low).toBeCloseTo(low, 10)
+    expect(result.cuts.high).toBeCloseTo(high, 10)
+    expect(result.dimensions.lengthMm).toBeCloseTo(high - low, 10)
+  })
+
+  it.each([0, 3.175, 5])('keeps exact boundaries when the blade width is %s', width => {
+    const text = 'G90 G0 X0 Y100 Z30\nG1 Z10\nY95.123\nY80 Z20\nY20\nY5.017 Z10\nY0\nM30'
+    const result = analyzeAnc(text, { name: 'fractional.anc', size: text.length }, undefined, undefined, width)
+    if (result.status !== 'calculated') throw new Error('Expected a calculated bat')
+    expect(result.cuts.low).toBeCloseTo(5.017 + width / 2, 10)
+    expect(result.cuts.high).toBeCloseTo(95.123 - width / 2, 10)
+  })
+
+  it('cuts at the inward rise beyond the narrowing outer step of 318-V2', () => {
     const text = readFileSync(new URL('../src/assets/anc/拿/318-V2.anc', import.meta.url), 'utf8')
     const result = analyzeAnc(text, { name: '318-V2.anc', size: text.length }, undefined, undefined, 5)
     expect(result.status).toBe('calculated')
     if (result.status !== 'calculated') throw new Error('Expected a calculated bat')
     expect(result.cuts.low).toBeCloseTo(7.5, 10)
-    expect(result.cuts.high).toBeCloseTo(877.55, 10)
-    expect(result.rule).toMatchObject({ strategy: 'terminal-constant-radius', version: '1.0.0' })
+    expect(result.cuts.high).toBeCloseTo(855.5, 10)
+    expect(result.dimensions.lengthMm).toBeCloseTo(848, 10)
+    expect(result.rule).toMatchObject({ strategy: 'terminal-first-rise', version: '1.0.0' })
   })
 
   it('keeps the real WT320.33 handle valley at 21.8 mm', () => {

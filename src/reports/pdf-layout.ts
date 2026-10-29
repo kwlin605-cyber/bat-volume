@@ -1,7 +1,7 @@
 import { pdfPageSize, type PdfOrientation } from '../config/pdf'
 import type { BatchView } from '../features/batch/view-model'
 import { text } from '../i18n/zh-TW'
-import { buildReportLayout, reportRowHeight, type ReportRow } from './report-layout'
+import { buildReportLayout, reportRowHeight, sourceTagHeight, type ReportRow } from './report-layout'
 import { printSectionStarts, type PrintOptions } from './print-options'
 
 /** Page breaks change placement only; measurements, units and sort remain canonical. */
@@ -27,12 +27,14 @@ export function buildPdfLayout(view: BatchView, orientation: PdfOrientation, mea
     if (breaks.has(item.index) && pages.at(-1)!.length) { pages.push([]); y = top }
     if (item.height <= capacity) { append(item); continue }
     // Very long filenames/diagnostics continue on following pages without truncation.
-    const names = [...item.nameLines], details = [...item.detailLines]
-    while (names.length || details.length) {
+    const names = [...item.nameLines], sources = [...item.sourceLines], details = [...item.detailLines]
+    while (names.length || sources.length || details.length) {
       const nameLines = names.splice(0, Math.max(1, Math.floor((capacity - style.rowPadding * 2) / style.filenameLineHeight)))
-      const remaining = capacity - style.rowPadding * 2 - nameLines.length * style.filenameLineHeight - style.detailGap
-      const detailLines = names.length ? [] : details.splice(0, Math.max(0, Math.floor(remaining / style.detailLineHeight)))
-      append({ ...item, nameLines, detailLines, height: reportRowHeight(view, item.row, nameLines, detailLines, style) })
+      let remaining = capacity - style.rowPadding * 2 - nameLines.length * style.filenameLineHeight - style.detailGap
+      const sourceLines = names.length ? [] : sources.splice(0, Math.max(0, Math.floor((remaining - (style.sourceTag.paddingY + style.sourceTag.borderWidth) * 2) / style.sourceTag.lineHeight)))
+      if (sourceLines.length) remaining -= sourceTagHeight(sourceLines, style) + style.detailGap
+      const detailLines = names.length || sources.length ? [] : details.splice(0, Math.max(0, Math.floor(remaining / style.detailLineHeight)))
+      append({ ...item, nameLines, sourceLines, sourceInline: false, detailLines, height: reportRowHeight(view, item.row, nameLines, detailLines, style, sourceLines) })
     }
   }
   return { ...size, percent, widthOverflow, sectionStarts, table: layout, sections: [{ table: layout, sectionStarts }], tableOffsetX: (size.width - layout.width) / 2,

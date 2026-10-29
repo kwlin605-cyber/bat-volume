@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { profilePointAt, sampleProfile } from '../src/domain/geometry/profile'
+import { profilePointAt } from '../src/domain/geometry/profile'
 import { clipProfile, integrateVolumeMm3 } from '../src/domain/geometry/volume'
 import { detectCuts } from '../src/domain/cuts/registry'
-import { bladeGeometrySettings, calibration, ruleParameters } from '../src/config/analysis'
+import { calibration, ruleParameters } from '../src/config/analysis'
 import type { Profile } from '../src/domain/types'
 
 const profile: Profile = {
@@ -11,7 +11,7 @@ const profile: Profile = {
   range: { low: -0.017, high: 100.017 }, sourceLines: { start: 1, end: 6 }, sweepCount: 2,
 }
 
-describe('full profile interpolation and legacy cut sampling', () => {
+describe('full profile interpolation and exact cuts', () => {
   it('distinguishes the two sides of a step and the deepest radius at its boundary', () => {
     expect(profilePointAt(profile.points, 5, 'left').radius).toBe(10)
     expect(profilePointAt(profile.points, 5, 'right').radius).toBe(20)
@@ -28,21 +28,16 @@ describe('full profile interpolation and legacy cut sampling', () => {
     expect(integrateVolumeMm3(retained)).toBeCloseTo(Math.PI * 400 * 90, 8)
   })
 
-  it('keeps scan spacing and cut rules while leaving the complete source untouched', () => {
+  it('finds cuts on the complete source without changing its endpoints or points', () => {
     const original = structuredClone(profile)
-    const scanned = sampleProfile(profile, bladeGeometrySettings.cutSampleSpacingMm)
-    expect(scanned.points).toHaveLength(2001)
-    expect(scanned.range).toEqual({ low: 0, high: 100 })
-    expect(scanned.points[100]).toMatchObject({ y: 5, radius: 10 })
-    const { decision } = detectCuts(scanned, { calibration, parameters: ruleParameters })
+    const { decision } = detectCuts(profile, { calibration, parameters: ruleParameters })
     expect(decision).toMatchObject({ status: 'detected', cuts: { low: 5, high: 95 } })
     expect(profile).toEqual(original)
     expect(profile.range.low).toBe(-0.017)
     expect(profile.range.high).toBe(100.017)
   })
 
-  it('rejects invalid scan spacings and coordinates outside the known shape', () => {
-    for (const spacing of [0, -1, NaN, Infinity]) expect(() => sampleProfile(profile, spacing)).toThrow()
+  it('rejects coordinates outside the known shape', () => {
     for (const y of [-1, 101]) expect(() => profilePointAt(profile.points, y)).toThrow()
   })
 })

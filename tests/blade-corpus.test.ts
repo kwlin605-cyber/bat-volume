@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { analyzeAnc } from '../src/domain/analyze'
 import { parseAnc } from '../src/domain/anc/parser'
-import { profilePointAt, sampleProfile } from '../src/domain/geometry/profile'
+import { profilePointAt } from '../src/domain/geometry/profile'
 import { clipProfile, integrateVolumeMm3 } from '../src/domain/geometry/volume'
 import { detectCuts } from '../src/domain/cuts/registry'
-import { bladeGeometrySettings, calibration, ruleParameters } from '../src/config/analysis'
+import { calibration, ruleParameters } from '../src/config/analysis'
 import type { Program } from '../src/domain/types'
 
 const root = fileURLToPath(new URL('../src/assets/anc', import.meta.url))
@@ -55,10 +55,9 @@ describe('5 mm full geometry across the entire built-in ANC library', () => {
         const y = result.profile.range.low + (result.profile.range.high - result.profile.range.low) * (i + 0.371) / 31
         expect(profilePointAt(result.profile.points, y).radius).toBeCloseTo(directCutRadius(program, y, 2.5), 8)
       }
-      const scan = sampleProfile(result.profile, bladeGeometrySettings.cutSampleSpacingMm)
-      const { decision } = detectCuts(scan, { calibration, parameters: ruleParameters })
+      const { decision } = detectCuts(result.profile, { calibration, parameters: ruleParameters })
       expect(decision).toMatchObject({ status: 'detected', cuts: result.cuts })
-      expect(result.rule.strategy).toBe('terminal-constant-radius')
+      expect(result.rule.strategy).toBe('terminal-first-rise')
       expect(result.rule.version).toBe('1.0.0')
       expect(result.retained).toEqual(clipProfile(result.profile.points, result.cuts))
       expect(result.volumeMm3).toBe(integrateVolumeMm3(result.retained))

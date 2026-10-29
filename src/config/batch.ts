@@ -1,5 +1,8 @@
+import { sourceTagStyle } from './source-tag'
+
 export const batchExecution = { concurrency: 2 } as const
 export const batchTableStyle = {
+  sourceTag: sourceTagStyle,
   minimumFilenameWidth: 180, maximumFilenameWidth: 560, minimumMetricWidth: 64, cellPadding: 20,
   minimumEditableWidth: 184, headerUnitGap: 6,
   fonts: {

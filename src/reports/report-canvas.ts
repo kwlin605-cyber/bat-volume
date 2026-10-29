@@ -1,5 +1,5 @@
 import { text } from '../i18n/zh-TW'
-import type { ReportLayout } from './report-layout'
+import { nameBlockHeight, sourceTagHeight, type ReportLayout } from './report-layout'
 import { palette } from '../config/theme'
 import { metricFonts } from '../features/batch/column-layout'
 
@@ -32,9 +32,21 @@ export function paintReportPage(ctx: CanvasRenderingContext2D, layout: ReportLay
     layout.columns.forEach(({ column, x, width }) => {
       if (column.prominent) { ctx.fillStyle = index % 2 ? palette.emphasisAlt : palette.emphasis; ctx.fillRect(x, item.y, width, item.height) }
     })
-    const nameHeight = item.nameLines.length * style.filenameLineHeight + (item.detailLines.length ? style.detailGap + item.detailLines.length * style.detailLineHeight : 0)
+    const nameHeight = nameBlockHeight(item.nameLines, item.sourceLines, item.sourceInline, style) + (item.detailLines.length ? style.detailGap + item.detailLines.length * style.detailLineHeight : 0)
     const top = item.y + (item.height - nameHeight) / 2
     item.nameLines.forEach((line, i) => write(line, style.padding + style.cellPadding, top + i * style.filenameLineHeight, style.fonts.filename.size, palette.muted, 'left', style.fonts.filename.weight))
+    if (item.sourceLines.length) {
+      const tag = style.sourceTag
+      const height = sourceTagHeight(item.sourceLines, style)
+      const x = style.padding + style.cellPadding + (item.sourceInline ? item.sourceOffsetX : 0)
+      const y = item.sourceInline ? top + (Math.max(style.filenameLineHeight, height) - height) / 2 : top + item.nameLines.length * style.filenameLineHeight + style.detailGap
+      ctx.font = `${tag.fontWeight} ${tag.fontSize}px ${style.fontFamily}`
+      const width = Math.max(...item.sourceLines.map(line => ctx.measureText(line).width)) + (tag.paddingX + tag.borderWidth) * 2
+      ctx.beginPath(); ctx.roundRect(x, y, width, height, tag.radius)
+      ctx.fillStyle = palette.header; ctx.fill()
+      ctx.strokeStyle = palette.emphasisHover; ctx.lineWidth = tag.borderWidth; ctx.stroke()
+      item.sourceLines.forEach((line, i) => write(line, x + tag.paddingX + tag.borderWidth, y + tag.paddingY + tag.borderWidth + i * tag.lineHeight, tag.fontSize, palette.muted, 'left', tag.fontWeight))
+    }
     layout.columns.forEach(({ column, x, width }) => {
       const { value: font, secondary: secondaryFont } = metricFonts(column, style)
       const cell = item.row.cells[column.id]
@@ -53,7 +65,7 @@ export function paintReportPage(ctx: CanvasRenderingContext2D, layout: ReportLay
       if (cell.secondary) write(cell.secondary, center, valueY + font.size + style.detailGap, secondaryFont.size, column.splitUnits ? palette.text : palette.muted, 'center', secondaryFont.weight)
       if (cell.caption) write(cell.caption, center, valueY + font.size + style.detailGap + (cell.secondary ? style.detailGap + secondaryFont.size : 0), style.fonts.detail.size, palette.muted, 'center', style.fonts.detail.weight)
     })
-    const detailY = top + item.nameLines.length * style.filenameLineHeight + style.detailGap
+    const detailY = top + nameBlockHeight(item.nameLines, item.sourceLines, item.sourceInline, style) + style.detailGap
     item.detailLines.forEach((line, i) => write(line, style.padding + style.cellPadding, detailY + i * style.detailLineHeight, style.fonts.detail.size, palette.muted, 'left', style.fonts.detail.weight))
     if (item !== layout.rows.at(-1)) {
       ctx.strokeStyle = style.rowLineColor; ctx.lineWidth = 1

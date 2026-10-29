@@ -12,6 +12,8 @@ import { defaultBatGrouping } from '../../config/grouping'
 import { classifyBat, type BatGroup, type BatGroupingSettings } from '../../domain/bat-grouping'
 import { orderBatchRows } from './row-order'
 import { defaultDiameterAllowanceMm, finishedDiameter } from '../../domain/diameter-allowance'
+import { displayFileName } from '../../lib/file-name'
+import { sourceLabel } from '../../lib/source-label'
 export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
 export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string }
@@ -20,6 +22,7 @@ const emptyWeightContext: WeightContext = { material: initialMaterialSettings, r
 export interface BatchRow {
   group?: BatGroup
   rawMaximumDiameterMm?: number | null
+  sourceLabel?: string
   id: string; name: string; pending: boolean; cells: Record<MetricId, BatchCell>
   status: { label: string; detail: string; kind: 'loading' | 'complete' | 'partial' | 'failed' }
 }
@@ -32,6 +35,11 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
   const summary = { total: entries.length, calculated: 0, failed: 0, pending: 0 }
+  const nameCounts = new Map<string, number>()
+  for (const entry of entries) {
+    const name = displayFileName(entry.source.name)
+    nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
+  }
   const rows: BatchRow[] = entries.map(entry => {
     const result = entry.state.status === 'result' ? entry.state.result : null
     const calculated = result?.status === 'calculated' ? result : null
@@ -50,7 +58,7 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
       ? weightCell(required.min, required.max)
       : weightCell(estimatedWeight)
     const materialWeight = calculateMaterialWeight(weights.material, calculated?.volumeCm3 ?? null, required)
-    cells.materialWeight = materialWeight.kind === 'reference'
+    cells.materialWeight = entry.state.status === 'unavailable' ? { value: null, display: text.missingValue } : materialWeight.kind === 'reference'
       ? weightCell(materialWeight.weightG, undefined, weightUnit)
       : materialWeight.kind === 'recommended'
         ? weightCell(materialWeight.range.min, materialWeight.range.max, weightUnit)
@@ -62,9 +70,9 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
       status = grip.status === 'undetermined'
         ? { label: text.partialInformation, detail: gripDiagnosticText[grip.code], kind: 'partial' }
         : { label: calculated.estimated ? text.estimated : text.calculated, detail: '', kind: 'complete' }
-    } else status = { label: text.failed, detail: result?.status === 'undetermined' ? diagnosticText[result.code] : '', kind: 'failed' }
+    } else status = { label: text.failed, detail: entry.state.status === 'unavailable' ? text[entry.state.reason] : result?.status === 'undetermined' ? diagnosticText[result.code] : '', kind: 'failed' }
     const rawMaximumDiameterMm = calculated?.dimensions.maximumDiameterMm ?? null
-    return { id: entry.id, name: entry.source.name, pending, cells, status, rawMaximumDiameterMm, group: classifyBat(rawMaximumDiameterMm, grouping) }
+    return { id: entry.id, name: entry.source.name, ...(nameCounts.get(displayFileName(entry.source.name))! > 1 ? { sourceLabel: sourceLabel(entry.origin) } : {}), pending, cells, status, rawMaximumDiameterMm, group: classifyBat(rawMaximumDiameterMm, grouping) }
   })
   return { rows: orderBatchRows(rows, sort, grouping), summary, columns: columnsForUnits(weightUnit, lengthUnit).filter(column => visible.includes(column.id)), sort,
     sortLabel: sort.key === 'name' ? text.fileName : metricColumns.find(column => column.id === sort.key)!.label }

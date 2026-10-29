@@ -1,6 +1,8 @@
 import { palette } from './theme'
+import { scaledSourceTagStyle } from './source-tag'
 
 export const reportStyle = {
+  sourceTag: scaledSourceTagStyle(72 / 96),
   rowLineColor: palette.border,
   // Print dimensions and font sizes are in points, independent of screen pixels.
   padding: 5 * 72 / 25.4, minimumFilenameWidth: 86.4, maximumFilenameWidth: 288, minimumMetricWidth: 43.2, cellPadding: 8.4,
@@ -23,6 +25,7 @@ export function scaledReportStyle(percent = printScaleSettings.initial as number
   const factor = percent / 100
   return {
     ...reportStyle,
+    sourceTag: scaledSourceTagStyle(72 / 96 * factor),
     minimumFilenameWidth: reportStyle.minimumFilenameWidth * factor, maximumFilenameWidth: reportStyle.maximumFilenameWidth * factor,
     minimumMetricWidth: reportStyle.minimumMetricWidth * factor, cellPadding: reportStyle.cellPadding * factor,
     filenameLineHeight: reportStyle.filenameLineHeight * factor, detailLineHeight: reportStyle.detailLineHeight * factor,

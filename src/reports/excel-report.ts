@@ -7,6 +7,7 @@ import { palette, excelColor } from '../config/theme'
 import { buildPdfLayout, type PrintLayout } from './pdf-layout'
 import { createReportMeasure } from './report-rendering'
 import { displayFileName } from '../lib/file-name'
+import { reportView } from './report-view'
 
 /** Excel column units use the Normal-style digit width, independently of each cell's font. */
 export const pointsToExcelWidth = (points: number) => Math.max(0, (points * 96 / 72 - 5) / 7)
@@ -30,6 +31,7 @@ function splitUnitFill(lowerColor: string): ExcelJS.Fill {
 }
 
 export function createExcelReport(view: BatchView, date = new Date(), measure: TextMeasure = (value, font) => textUnits(value) * font.size * 0.5, percent = 100, prepared?: PrintLayout) {
+  view = reportView(view, 'xlsx')
   const layout = prepared ?? buildPdfLayout(view, 'portrait', (value, size, weight) => measure(value, { size, weight }), percent)
   if (layout.widthOverflow) throw new Error(text.reportTooWide)
   const workbook = new ExcelJS.Workbook()
@@ -102,7 +104,7 @@ export async function renderExcelReport(view: BatchView, signal: AbortSignal, pr
   signal.throwIfAborted()
   await document.fonts.ready
   signal.throwIfAborted()
-  const layout = prepared ?? buildPdfLayout(view, 'portrait', createReportMeasure())
+  const layout = prepared ?? buildPdfLayout(reportView(view, 'xlsx'), 'portrait', createReportMeasure())
   const workbook = createExcelReport(view, new Date(), undefined, layout.percent, layout)
   const data = await workbook.xlsx.writeBuffer()
   signal.throwIfAborted()

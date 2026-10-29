@@ -4,9 +4,9 @@ import { analyzeAnc } from '../src/domain/analyze'
 import { createBatGeometry } from '../src/components/bat-geometry'
 
 describe('3D geometry generated from the shared full profile', () => {
-  it('keeps every source radius, exact turn and vertical step in whole and trimmed views', () => {
-    const text = readFileSync(new URL('../src/assets/anc/劉/WT320.33.anc', import.meta.url), 'utf8')
-    const result = analyzeAnc(text, { name: 'WT320.33.anc', size: text.length }, undefined, undefined, 5)
+  it.each(['劉/WT320.33.anc', '拿/318-V2.anc', '劉/X-56-860.anc'])('keeps every source radius, exact turn and vertical step in both views of %s', file => {
+    const text = readFileSync(new URL(`../src/assets/anc/${file}`, import.meta.url), 'utf8')
+    const result = analyzeAnc(text, { name: file, size: text.length }, undefined, undefined, 5)
     if (result.status !== 'calculated') throw new Error('Expected a calculated bat')
     const center = (result.profile.range.low + result.profile.range.high) / 2
     for (const points of [result.profile.points, result.retained]) {

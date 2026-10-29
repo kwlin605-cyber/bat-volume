@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { defaultBladeWidthMm } from '../domain/blade-width'
 import { useAnalysis } from './use-analysis'
-import { appendSessionFiles, removeSessionFile, sessionFiles, updateSessionRequirements, type BatchSession } from '../services/batch-session'
+import { appendSessionFiles, appendSessionPreset, removeSessionFile, updateSessionRequirements, type BatchSession } from '../services/batch-session'
+import { sessionSources } from '../services/session-sources'
+import { presetOrigin, type AncPresetItem } from '../services/anc-catalog'
 import { LatestSessionStorage } from '../services/latest-session-storage'
 import type { WeightRange } from '../domain/weight'
 import { createDefaultBatchDisplay, createDefaultBatchSort, normalizeBatchDisplay, type BatchDisplaySettings, type BatchSort } from '../domain/batch-display'
@@ -29,7 +31,7 @@ export function useBatchSession(bladeWidthMm = defaultBladeWidthMm) {
       if (session) {
         setRequirements(session.requirements)
         setDisplay(session.display)
-        analysis.loadFiles(sessionFiles(session), session.files.map(item => item.id), bladeWidthMm)
+        analysis.loadSources(sessionSources(session.files), previousBladeWidth.current)
       }
     }).catch(() => { if (alive && intent.current === token) setStorageUnavailable(true) })
       .finally(() => { if (alive) setRestoring(false) })
@@ -40,11 +42,7 @@ export function useBatchSession(bladeWidthMm = defaultBladeWidthMm) {
     if (previousBladeWidth.current !== bladeWidthMm) {
       previousBladeWidth.current = bladeWidthMm
       if (current.current && current.current.files.length > 0) {
-        analysis.loadFiles(
-          sessionFiles(current.current),
-          current.current.files.map(item => item.id),
-          bladeWidthMm
-        )
+        analysis.loadSources(sessionSources(current.current.files), bladeWidthMm)
       }
     }
   }, [bladeWidthMm])
@@ -65,7 +63,18 @@ export function useBatchSession(bladeWidthMm = defaultBladeWidthMm) {
     const session = appendSessionFiles(current.current, files)
     current.current = session
     setRequirements(session.requirements); setDisplay(session.display); setRestoring(false)
-    analysis.addFiles(files, session.files.slice(previousCount).map(item => item.id), bladeWidthMm)
+    analysis.addSources(sessionSources(session.files.slice(previousCount)), bladeWidthMm)
+    persist(storage.replace(session))
+  }
+
+  function addPreset(preset: AncPresetItem) {
+    const previous = current.current
+    const session = appendSessionPreset(previous, preset.name, presetOrigin(preset))
+    if (session === previous) return
+    ++intent.current
+    current.current = session
+    setRequirements(session.requirements); setDisplay(session.display); setRestoring(false)
+    analysis.addSources(sessionSources(session.files.slice(previous?.files.length ?? 0)), bladeWidthMm)
     persist(storage.replace(session))
   }
 
@@ -112,5 +121,5 @@ export function useBatchSession(bladeWidthMm = defaultBladeWidthMm) {
   // Keep sort outside the persisted session so additions/removals retain it, but reopening resets it.
   function updateSort(value: BatchSort) { setSort({ ...value }) }
 
-  return { entries: analysis.entries, requirements, display, sort, restoring, storageUnavailable, addFiles, removeFile, clearFiles, setFileRequirements, updateDisplay, updateSort }
+  return { entries: analysis.entries, requirements, display, sort, restoring, storageUnavailable, addFiles, addPreset, removeFile, clearFiles, setFileRequirements, updateDisplay, updateSort }
 }

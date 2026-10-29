@@ -3,18 +3,29 @@ import type { CutEvidence, CutStrategy, ProfilePoint, StrategyContext } from '..
 function terminalEvidence(points: ProfilePoint[], end: 'low' | 'high', context: StrategyContext): CutEvidence | null {
   const sequence = end === 'low' ? points : [...points].reverse()
   const terminal = sequence[0]
-  const change = sequence.findIndex(point => Math.abs(point.radius - terminal.radius) > context.parameters.coordinateToleranceMm)
-  if (change < 1) return null
-  const boundary = sequence[change - 1]
-  const stubLengthMm = Math.abs(boundary.y - terminal.y)
-  if (stubLengthMm < context.parameters.minimumStubLengthMm) return null
-  return { end, y: boundary.y, line: boundary.line, stubLengthMm }
+  let riseStart: ProfilePoint | undefined
+  for (let index = 1; index < sequence.length; index++) {
+    const previous = sequence[index - 1], point = sequence[index]
+    const difference = point.radius - previous.radius
+    // Floating-point equality must not turn envelope intersections into tiny rises or falls.
+    const roundoff = Number.EPSILON * Math.max(1, previous.radius, point.radius) * 8
+    if (difference < -roundoff) riseStart = undefined
+    else if (difference > roundoff) riseStart ??= previous
+    // Confirm the whole rise, then return its origin, not the point crossing the tolerance.
+    // Subdividing a shallow ramp must not move the cut or make that ramp disappear.
+    if (riseStart && point.radius - riseStart.radius > context.parameters.coordinateToleranceMm) {
+      const stubLengthMm = Math.abs(riseStart.y - terminal.y)
+      if (stubLengthMm < context.parameters.minimumStubLengthMm) return null
+      return { end, y: riseStart.y, line: riseStart.line, stubLengthMm }
+    }
+  }
+  return null
 }
 
 export const terminalStubStrategy: CutStrategy = {
-  id: 'terminal-constant-radius',
+  id: 'terminal-first-rise',
   version: '1.0.0',
-  applicable: profile => profile.points.length >= 5,
+  applicable: profile => profile.points.length >= 2,
   detect(profile, context) {
     const low = terminalEvidence(profile.points, 'low', context)
     const high = terminalEvidence(profile.points, 'high', context)

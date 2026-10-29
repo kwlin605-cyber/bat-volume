@@ -1,20 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Folder, LoaderCircle, Search, X } from 'lucide-react'
-import { getAncCatalog, loadAncPresetFile, type AncPresetItem } from '../services/anc-catalog'
+import { Check, ChevronLeft, ChevronRight, Folder, Search, X } from 'lucide-react'
+import { getAncCatalog, type AncPresetItem } from '../services/anc-catalog'
 import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
 
 interface Props {
-  currentFileNames?: Set<string>
-  onSelect: (file: File) => void
+  currentPresetIds?: ReadonlySet<string>
+  onSelect: (preset: AncPresetItem) => void
   onDismiss: () => void
 }
 
-export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onDismiss }: Props) {
+export function MobilePresetDrawer({ currentPresetIds = new Set(), onSelect, onDismiss }: Props) {
   const [selectedVendor, setSelectedVendor] = useState<string>('all')
   const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [loadingId, setLoadingId] = useState<string | null>(null)
 
   const catalog = useMemo(() => getAncCatalog(), [])
 
@@ -78,16 +77,9 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
     }
   }, [catalog, selectedVendor, currentGroup, currentFolder, search])
 
-  async function handleItemClick(item: AncPresetItem) {
-    if (loadingId) return
-    setLoadingId(item.id)
-    try {
-      const file = await loadAncPresetFile(item)
-      onSelect(file)
-      onDismiss()
-    } finally {
-      setLoadingId(null)
-    }
+  function handleItemClick(item: AncPresetItem) {
+    onSelect(item)
+    onDismiss()
   }
 
   return (
@@ -134,10 +126,10 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
             >
               <ChevronLeft size={18} aria-hidden="true" />
               <span>{text.backToVendor}</span>
-              <span className="text-zinc-400">·</span>
-              <span className="text-zinc-500">{selectedVendor}</span>
-              <span className="text-zinc-400">/</span>
-              <span className="font-semibold text-zinc-900">{currentFolder}</span>
+              <span className="text-[color:var(--ui-controlHint)]">·</span>
+              <span className="text-[color:var(--ui-controlMuted)]">{selectedVendor}</span>
+              <span className="text-[color:var(--ui-controlHint)]">/</span>
+              <span className="font-semibold text-[color:var(--ui-controlStrong)]">{currentFolder}</span>
             </button>
           </div>
         ) : (
@@ -204,14 +196,13 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
 
               {/* Bat Items */}
               {visibleItems.map(item => {
-                const isAdded = currentFileNames.has(item.name)
-                const isLoading = loadingId === item.id
+                const isAdded = currentPresetIds.has(item.id)
                 return (
                   <button
                     key={item.id}
                     type="button"
                     className={`mobile-model-item ${isAdded ? 'is-added' : ''}`}
-                    disabled={isLoading}
+                    aria-pressed={isAdded}
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="mobile-model-info">
@@ -226,9 +217,6 @@ export function MobilePresetDrawer({ currentFileNames = new Set(), onSelect, onD
                           <Check size={11} aria-hidden="true" />
                           {text.addedBadge}
                         </span>
-                      )}
-                      {isLoading && (
-                        <LoaderCircle size={15} className="spin text-zinc-500" aria-hidden="true" />
                       )}
                     </div>
                   </button>

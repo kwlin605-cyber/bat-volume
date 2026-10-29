@@ -53,7 +53,7 @@ export function MobileResultView({
   const isCancellingRef = useRef(false)
 
   const state = entry.state
-  const source = state.status === 'loading' ? state.source : state.result.source
+  const source = entry.source
   const result = state.status === 'result' ? state.result : null
   const calculated = result?.status === 'calculated'
 
@@ -221,7 +221,7 @@ export function MobileResultView({
       <main className="mobile-view-content">
         {state.status === 'loading' ? (
           <div className="mobile-card mobile-loading-card">
-            <LoaderCircle className="spin text-zinc-500" size={26} aria-hidden="true" />
+            <LoaderCircle className="spin text-[color:var(--ui-controlMuted)]" size={26} aria-hidden="true" />
             <p className="mobile-loading-text">{text.loadingDescription}</p>
           </div>
         ) : calculated && result && dimensions ? (
@@ -260,7 +260,7 @@ export function MobileResultView({
                         <small className="mobile-weight-sub">{text.weightUnit}</small>
                       </>
                     ) : (
-                      <span className="mobile-weight-val text-zinc-400">—</span>
+                      <span className="mobile-weight-val text-[color:var(--ui-controlHint)]">—</span>
                     )}
                   </div>
                 </div>
@@ -277,9 +277,9 @@ export function MobileResultView({
                         </small>
                       </>
                     ) : materialCalc?.kind === 'unavailable' && materialCalc.reason === 'materialTooSmall' ? (
-                      <span className="mobile-weight-val text-amber-600 text-sm">{text.materialTooSmall}</span>
+                      <span className="mobile-weight-val text-[color:var(--ui-warningText)] text-sm">{text.materialTooSmall}</span>
                     ) : (
-                      <span className="mobile-weight-val text-zinc-400">—</span>
+                      <span className="mobile-weight-val text-[color:var(--ui-controlHint)]">—</span>
                     )}
                     {matWeightFormatted?.secondary && (
                       <small className="mobile-weight-sub">/ {matWeightFormatted.secondary} {text.weightUnit}</small>
@@ -309,7 +309,7 @@ export function MobileResultView({
                           className="mobile-specify-input"
                           autoFocus
                         />
-                        <span className="text-zinc-400 font-light">~</span>
+                        <span className="text-[color:var(--ui-controlHint)] font-light">~</span>
                         <input
                           ref={maxInputRef}
                           type="number"
@@ -338,7 +338,7 @@ export function MobileResultView({
                           <X size={15} aria-hidden="true" />
                         </button>
                       </div>
-                      {inputError && <p className="text-xs text-red-500 mt-1">{inputError}</p>}
+                      {inputError && <p className="text-xs text-[color:var(--ui-errorText)] mt-1">{inputError}</p>}
                     </div>
                   ) : (
                     <button
@@ -371,11 +371,11 @@ export function MobileResultView({
                           {lengthUnit === 'in' ? text.inchUnit : text.centimetreUnit}
                         </span>
                         {lengthFormatted.secondary && (
-                          <small className="text-zinc-500 font-normal text-xs">{lengthFormatted.secondary}</small>
+                          <small className="text-[color:var(--ui-controlMuted)] font-normal text-xs">{lengthFormatted.secondary}</small>
                         )}
                       </>
                     ) : (
-                      <span className="text-zinc-400">{text.missingValue}</span>
+                      <span className="text-[color:var(--ui-controlHint)]">{text.missingValue}</span>
                     )}
                   </dd>
                 </div>
@@ -390,7 +390,7 @@ export function MobileResultView({
                         <span className="mobile-dim-unit">{text.millimetreUnit}</span>
                       </>
                     ) : (
-                      <span className="text-zinc-400">{text.missingValue}</span>
+                      <span className="text-[color:var(--ui-controlHint)]">{text.missingValue}</span>
                     )}
                   </dd>
                 </div>
@@ -405,7 +405,7 @@ export function MobileResultView({
                         <span className="mobile-dim-unit">{text.millimetreUnit}</span>
                       </>
                     ) : (
-                      <span className="text-zinc-400">
+                      <span className="text-[color:var(--ui-controlHint)]">
                         {grip && grip.status === 'undetermined' ? gripDiagnosticText[grip.code] : text.missingValue}
                       </span>
                     )}
@@ -465,9 +465,14 @@ export function MobileResultView({
               </button>
             )}
           </>
+        ) : state.status === 'unavailable' ? (
+          <div className="mobile-card mobile-error-card" role="status">
+            <CircleAlert size={28} className="text-[color:var(--ui-controlMuted)]" aria-hidden="true" />
+            <h2>{text[state.reason]}</h2>
+          </div>
         ) : result?.status === 'undetermined' ? (
           <div className="mobile-card mobile-error-card">
-            <CircleAlert size={28} className="text-zinc-500" aria-hidden="true" />
+            <CircleAlert size={28} className="text-[color:var(--ui-controlMuted)]" aria-hidden="true" />
             <h2>{diagnosticText[result.code]}</h2>
             <p>{text.failureDescription}</p>
           </div>

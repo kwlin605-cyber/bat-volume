@@ -29,8 +29,7 @@ export function RequirementPopover({ selection, value, hidden = false, onCommit,
   }, [onCancel])
   useEffect(() => { if (!hidden) root.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }) }, [hidden, selection])
   return createPortal(<div ref={root} className="requirement-popover" role="dialog" aria-label={text.editRequirement}
-    aria-hidden={hidden || undefined} style={{ ...position, width: settings.popoverWidth, visibility: hidden ? 'hidden' : undefined,
-      '--selection-background': settings.colors.background, '--selection-accent': settings.colors.accent, '--selection-border': settings.colors.border } as React.CSSProperties}>
+    aria-hidden={hidden || undefined} style={{ ...position, width: settings.popoverWidth, visibility: hidden ? 'hidden' : undefined }}>
     <div className="requirement-popover-heading"><span>{selection.ids.length > 1 ? text.selectedBatCount.replace('{count}', String(selection.ids.length)) : text.batWeight}</span>
       <button type="button" className="icon-button" aria-label={text.cancel} onClick={onCancel}><X size={15} /></button></div>
     <WeightEditor value={value} onCommit={onCommit} onCancel={onCancel} />

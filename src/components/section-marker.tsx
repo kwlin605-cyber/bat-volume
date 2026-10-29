@@ -1,3 +1,4 @@
+import { previewColors } from '../config/theme'
 import { useEffect, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
@@ -6,7 +7,7 @@ import type { Group } from 'three'
 import type { ProfilePoint } from '../domain/types'
 
 export function SectionMarker({ point, center, labelRef, kind }: { point: ProfilePoint; center: number; labelRef: RefObject<HTMLSpanElement | null>; kind: 'maximum' | 'grip' }) {
-  const color = kind === 'maximum' ? '#567c9a' : '#4f8974'
+  const color = previewColors[kind]
   const y = point.y - center
   const group = useRef<Group>(null)
   const anchor = useMemo(() => new Vector3(), [])

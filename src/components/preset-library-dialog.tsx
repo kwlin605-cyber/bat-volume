@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronLeft, Folder, FolderArchive, LoaderCircle, Search, X } from 'lucide-react'
-import { getAncCatalog, loadAncPresetFile, type AncPresetItem } from '../services/anc-catalog'
+import { Check, ChevronLeft, Folder, FolderArchive, Search, X } from 'lucide-react'
+import { getAncCatalog, type AncPresetItem } from '../services/anc-catalog'
 import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
 
 interface Props {
-  currentFileNames?: Set<string>
-  onSelect: (file: File) => void
-  onRemoveByName?: (name: string) => void
+  currentPresetIds?: ReadonlySet<string>
+  onSelect: (preset: AncPresetItem) => void
+  onRemovePreset?: (id: string) => void
   onDismiss: () => void
 }
 
-export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, onRemoveByName, onDismiss }: Props) {
+export function PresetLibraryDialog({ currentPresetIds = new Set(), onSelect, onRemovePreset, onDismiss }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [selectedVendor, setSelectedVendor] = useState<string>('all')
   const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [loadingId, setLoadingId] = useState<string | null>(null)
 
   const catalog = useMemo(() => getAncCatalog(), [])
 
@@ -78,23 +77,12 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
     return currentGroup?.items.length ?? 0
   }, [catalog, selectedVendor, currentGroup])
 
-  async function handleItemClick(item: AncPresetItem) {
-    if (loadingId) return
-    const isAdded = currentFileNames.has(item.name)
-
-    // Toggle mode: If already added, clicking toggles it off (removes from table)
-    if (isAdded && onRemoveByName) {
-      onRemoveByName(item.name)
+  function handleItemClick(item: AncPresetItem) {
+    if (currentPresetIds.has(item.id) && onRemovePreset) {
+      onRemovePreset(item.id)
       return
     }
-
-    setLoadingId(item.id)
-    try {
-      const file = await loadAncPresetFile(item)
-      onSelect(file)
-    } finally {
-      setLoadingId(null)
-    }
+    onSelect(item)
   }
 
   return (
@@ -111,7 +99,7 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
         {/* Header */}
         <div className="preset-dialog-header">
           <div className="preset-dialog-title-wrap">
-            <FolderArchive size={20} className="text-zinc-600" aria-hidden="true" />
+            <FolderArchive size={20} className="text-[color:var(--ui-controlIcon)]" aria-hidden="true" />
             <h2 id="preset-dialog-title" className="preset-dialog-title">
               {text.presetLibrary}
             </h2>
@@ -200,8 +188,8 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
                 >
                   <ChevronLeft size={16} aria-hidden="true" />
                   <span>{selectedVendor}</span>
-                  <span className="text-zinc-400">/</span>
-                  <span className="font-semibold text-zinc-900">{currentFolder}</span>
+                  <span className="text-[color:var(--ui-controlHint)]">/</span>
+                  <span className="font-semibold text-[color:var(--ui-controlStrong)]">{currentFolder}</span>
                 </button>
               </div>
             )}
@@ -239,14 +227,13 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
 
                   {/* Bat Item Cards */}
                   {visibleItems.map(item => {
-                    const isAdded = currentFileNames.has(item.name)
-                    const isLoading = loadingId === item.id
+                    const isAdded = currentPresetIds.has(item.id)
                     return (
                       <button
                         key={item.id}
                         type="button"
                         className={`preset-card ${isAdded ? 'is-added' : ''}`}
-                        disabled={isLoading}
+                        aria-pressed={isAdded}
                         onClick={() => handleItemClick(item)}
                       >
                         <div className="preset-card-header">
@@ -258,9 +245,6 @@ export function PresetLibraryDialog({ currentFileNames = new Set(), onSelect, on
                               <Check size={11} aria-hidden="true" />
                               {text.addedBadge}
                             </span>
-                          )}
-                          {isLoading && (
-                            <LoaderCircle size={14} className="spin text-zinc-500" aria-hidden="true" />
                           )}
                         </div>
                         <div className="preset-card-name" title={displayFileName(item.name)}>

@@ -27,6 +27,7 @@ export default function App() {
     restoring,
     storageUnavailable,
     addFiles,
+    addPreset,
     removeFile,
     clearFiles,
     setFileRequirements,
@@ -187,21 +188,24 @@ export default function App() {
       {libraryOpen && (
         desktop ? (
           <PresetLibraryDialog
-            currentFileNames={new Set(entries.map(e => e.source.name))}
-            onSelect={file => {
-              acceptFiles([file])
+            currentPresetIds={new Set(entries.flatMap(entry => entry.origin?.kind === 'preset' ? [entry.origin.id] : []))}
+            onSelect={preset => {
+              setRemoving(false)
+              addPreset(preset)
             }}
-            onRemoveByName={name => {
-              const target = entries.find(e => e.source.name === name)
+            onRemovePreset={id => {
+              const target = entries.find(entry => entry.origin?.kind === 'preset' && entry.origin.id === id)
               if (target) remove(target.id)
             }}
             onDismiss={() => setLibraryOpen(false)}
           />
         ) : (
           <MobilePresetDrawer
-            currentFileNames={new Set(entries.map(e => e.source.name))}
-            onSelect={file => {
-              acceptFiles([file])
+            currentPresetIds={new Set(entries.flatMap(entry => entry.origin?.kind === 'preset' ? [entry.origin.id] : []))}
+            onSelect={preset => {
+              setRemoving(false)
+              clearFiles()
+              addPreset(preset)
               setLibraryOpen(false)
             }}
             onDismiss={() => setLibraryOpen(false)}

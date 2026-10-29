@@ -1,3 +1,4 @@
+import { previewColors } from '../config/theme'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Bounds, OrbitControls, useBounds } from '@react-three/drei'
@@ -13,7 +14,7 @@ function CutRing({ y }: { y: number }) {
       const angle = index / 128 * Math.PI * 2
       return new Vector3(Math.cos(angle) * 33, y, Math.sin(angle) * 33)
     }))
-    const value = new Line(geometry, new LineDashedMaterial({ color: '#71857b', dashSize: 2.8, gapSize: 2.3 }))
+    const value = new Line(geometry, new LineDashedMaterial({ color: previewColors.cut, dashSize: 2.8, gapSize: 2.3 }))
     value.computeLineDistances()
     return value
   }, [y])
@@ -24,7 +25,7 @@ function CutRing({ y }: { y: number }) {
 function BatMesh({ points, center }: { points: ProfilePoint[]; center: number }) {
   const geometry = useMemo(() => createBatGeometry(points, center), [points, center])
   useEffect(() => () => geometry.dispose(), [geometry])
-  return <mesh geometry={geometry}><meshStandardMaterial color="#c5a479" roughness={0.58} metalness={0} /></mesh>
+  return <mesh geometry={geometry}><meshStandardMaterial color={previewColors.wood} roughness={0.58} metalness={0} /></mesh>
 }
 
 function FitView({ revision }: { revision: string }) {

@@ -1,4 +1,4 @@
-import { displayFileName } from '../../lib/file-name'
+import { displayFileLabel, displayFileName } from '../../lib/file-name'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import type { AnalysisEntry } from '../../services/analysis-state'
@@ -10,7 +10,6 @@ import { ResultDialog } from './result-dialog'
 import { useColumnLayout } from './use-column-layout'
 import { RequirementPopover } from './requirement-popover'
 import { useRowSelection } from './use-row-selection'
-import { rowSelectionSettings } from '../../config/selection'
 import type { MaterialSettings, WeightRange } from '../../domain/weight'
 import type { WeightDisplayMode } from '../../domain/weight-unit'
 import type { LengthDisplayMode } from '../../domain/length-unit'
@@ -75,7 +74,7 @@ export default function BatchResults({
     selection.cancel()
   }
   const { summary } = view
-  return <section className="batch-results" aria-labelledby="batch-title" style={{ '--selection-background': rowSelectionSettings.colors.background, '--selection-accent': rowSelectionSettings.colors.accent } as React.CSSProperties}>
+  return <section className="batch-results" aria-labelledby="batch-title">
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
       <BatchToolbar diameterAllowanceMm={diameterAllowanceMm} onDiameterAllowanceChange={next => { selection.cancel(); onDiameterAllowanceChange(next) }} visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0}
         grouping={grouping} onGroupingChange={next => { selection.cancel(); applyGrouping(next) }}
@@ -88,22 +87,23 @@ export default function BatchResults({
       <table className={`batch-table ${selection.dragging ? 'is-selecting' : ''}`} style={{ width: layout.width + (removing ? 48 : 0) }}>
         <colgroup><col style={{ width: layout.filenameWidth }} />{layout.columns.map(({ column, width }) => <col key={column.id} style={{ width }} />)}{removing && <col style={{ width: 48 }} />}</colgroup>
         <thead><tr><th scope="col">{text.fileName}</th>{view.columns.map(column => <th scope="col" className={`numeric ${column.prominent ? 'metric-primary' : ''}`} key={column.id}>{column.label}<small>{column.unit}</small></th>)}{removing && <th className="remove-cell" scope="col"><span className="sr-only">{text.removeFiles}</span></th>}</tr></thead>
-        <tbody>{view.rows.map(row => <tr key={row.id} data-row-id={row.id} className={selection.ids.includes(row.id) ? 'row-selected' : ''} tabIndex={row.pending || removing ? -1 : 0} aria-label={`${text.selectBat} ${displayFileName(row.name)}`} aria-describedby="row-selection-help"
+        <tbody>{view.rows.map(row => <tr key={row.id} data-row-id={row.id} className={selection.ids.includes(row.id) ? 'row-selected' : ''} tabIndex={row.pending || removing ? -1 : 0} aria-label={`${text.selectBat} ${displayFileLabel(row.name, row.sourceLabel)}`} aria-describedby="row-selection-help"
           onPointerDown={event => selection.pointerDown(event, row.id)}
           onClick={event => { if (!row.pending && !(event.target instanceof Element && event.target.closest('button:not(.requirement-trigger, .filename-button), input'))) selection.select(row.id, event, event.currentTarget) }}
           onKeyDown={event => { if (event.target === event.currentTarget && !row.pending && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selection.select(row.id, event, event.currentTarget) } }}>
-          <td><button type="button" className="filename-button" disabled={row.pending} aria-label={`${text.previewFile} ${displayFileName(row.name)}`} onClick={event => { if (event.ctrlKey || event.shiftKey) return; event.stopPropagation(); selection.cancel(); setSelected(row.id) }}>{displayFileName(row.name)}</button>
+          <td><div className="filename-line"><button type="button" className="filename-button" disabled={row.pending} aria-label={`${text.previewFile} ${displayFileLabel(row.name, row.sourceLabel)}`} onClick={event => { if (event.ctrlKey || event.shiftKey) return; event.stopPropagation(); selection.cancel(); setSelected(row.id) }}>{displayFileName(row.name)}</button>
+            {row.sourceLabel && <span className="source-tag">{row.sourceLabel}</span>}</div>
             {row.pending && <span className="row-loading"><LoaderCircle size={12} className="spin" aria-hidden="true" />{text.loading}</span>}
             {row.status.detail && <span className="row-diagnostic">{row.status.detail}</span>}
           </td>
           {view.columns.map(column => <td className={`numeric ${column.prominent ? 'metric-primary' : ''} ${column.splitUnits && row.cells[column.id].secondary ? 'metric-dual-value' : ''}`} key={column.id}>
             {column.id === 'batWeight'
-              ? <button type="button" className="requirement-trigger" disabled={row.pending || removing} aria-label={`${text.selectBat} ${displayFileName(row.name)}`}><span>{row.cells[column.id].display}</span>{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}</button>
+              ? <button type="button" className="requirement-trigger" disabled={row.pending || removing} aria-label={`${text.selectBat} ${displayFileLabel(row.name, row.sourceLabel)}`}><span>{row.cells[column.id].display}</span>{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}</button>
               : column.splitUnits && row.cells[column.id].secondary
                 ? <div className="dual-unit-value"><span>{row.cells[column.id].display}</span><span>{row.cells[column.id].secondary}</span></div>
                 : <>{row.cells[column.id].display}{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}{row.cells[column.id].caption && <small className="weight-caption">{row.cells[column.id].caption}</small>}</>}
           </td>)}
-          {removing && <td className="remove-cell"><RemoveFileButton name={row.name} onRemove={() => onRemove(row.id)} /></td>}
+          {removing && <td className="remove-cell"><RemoveFileButton name={row.name} sourceLabel={row.sourceLabel} onRemove={() => onRemove(row.id)} /></td>}
         </tr>)}</tbody>
       </table>
     </div>

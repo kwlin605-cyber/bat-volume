@@ -18,9 +18,6 @@ export const ruleParameters: RuleParameters = {
   strategyAgreementToleranceMm: 0.05,
 }
 
-/** Sampling is only for the existing cut detector; geometry uses the full envelope. */
-export const bladeGeometrySettings = { cutSampleSpacingMm: 0.05 } as const
-
 // Conventional bat shapes: identify the narrower end, then a knob and an
 // interior handle valley. These thresholds are intentionally versioned with
 // the grip strategy rather than being embedded in display components.

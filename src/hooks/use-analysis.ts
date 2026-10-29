@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { batchExecution } from '../config/batch'
 import { defaultBladeWidthMm } from '../domain/blade-width'
-import type { AnalysisEntry } from '../services/analysis-state'
+import type { AnalysisEntry, AnalysisSource } from '../services/analysis-state'
 import { AnalysisWorkerPool } from '../services/analysis-worker-pool'
 import { analyzeFile } from '../services/analyze-file'
 import { IncrementalAnalysis } from '../services/incremental-analysis'
@@ -18,7 +18,7 @@ export function useAnalysis(bladeWidthMm = defaultBladeWidthMm) {
       const queue = new IncrementalAnalysis(
         (file, signal, width) => analyzeFile(file, signal, pool, width ?? bladeWidthRef.current),
         (id, result) => {
-          setEntries(current => current.map(entry => entry.id === id ? { ...entry, state: { status: 'result', result } } : entry))
+          setEntries(current => current.map(entry => entry.id === id ? { ...entry, source: result.source, state: result.status === 'unavailable' ? result : { status: 'result', result } } : entry))
         },
         batchExecution.concurrency
       )
@@ -34,23 +34,22 @@ export function useAnalysis(bladeWidthMm = defaultBladeWidthMm) {
       if (runtime.current === session) runtime.current = null
     }
   }, [])
-  function addFiles(files: File[], ids: readonly string[], width = bladeWidthRef.current) {
+  function addSources(files: AnalysisSource[], width = bladeWidthRef.current) {
     if (!files.length) return
-    const added: AnalysisEntry[] = files.map((file, index) => {
-      const source = { name: file.name, size: file.size }
-      return { id: ids[index], source, state: { status: 'loading', source } }
+    const added: AnalysisEntry[] = files.map(({ id, source, origin }) => {
+      return { id, source, origin, state: { status: 'loading', source } }
     })
     setEntries(current => [...current, ...added])
-    getRuntime().queue.add(files, ids, width)
+    getRuntime().queue.add(files, files.map(file => file.id), width)
   }
   function clearFiles() { runtime.current?.queue.clear(); setEntries([]) }
-  function loadFiles(files: File[], ids: readonly string[], width = bladeWidthRef.current) {
+  function loadSources(files: AnalysisSource[], width = bladeWidthRef.current) {
     clearFiles()
-    addFiles(files, ids, width)
+    addSources(files, width)
   }
   function removeFile(id: string) {
     runtime.current?.queue.remove(id)
     setEntries(current => current.filter(entry => entry.id !== id))
   }
-  return { entries, loadFiles, addFiles, removeFile, clearFiles }
+  return { entries, loadSources, addSources, removeFile, clearFiles }
 }

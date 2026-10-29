@@ -1,3 +1,5 @@
+import type { PresetOrigin } from './file-origin'
+
 export interface AncPresetItem {
   id: string
   vendor: string
@@ -22,7 +24,7 @@ export interface AncVendorGroup {
 /**
  * Vite compile-time glob for all vendor-classified ANC files.
  * Uses lazy loading so raw G-code text is only downloaded over the network
- * when the user explicitly chooses that bat model.
+ * when the model is selected or restored from a saved reference.
  */
 const presetModules = import.meta.glob<string>('/src/assets/anc/**/*.anc', {
   query: '?raw',
@@ -127,7 +129,7 @@ export function getAncCatalog(): AncVendorGroup[] {
 /**
  * Lazily loads the raw content of the selected preset ANC file
  * and packages it into a native standard File object so it passes
- * seamlessly into the existing calculation pipeline and IndexedDB caching.
+ * seamlessly into the existing calculation pipeline.
  */
 export async function loadAncPresetFile(preset: AncPresetItem): Promise<File> {
   const content = await preset.load()
@@ -135,4 +137,9 @@ export async function loadAncPresetFile(preset: AncPresetItem): Promise<File> {
     type: 'text/plain',
     lastModified: Date.now(),
   })
+}
+
+export function presetOrigin(preset: AncPresetItem): PresetOrigin {
+  const folders = preset.id.replace(/^\/src\/assets\/anc\//, '').split('/').slice(0, -1)
+  return { kind: 'preset', id: preset.id, label: folders.join('／') }
 }

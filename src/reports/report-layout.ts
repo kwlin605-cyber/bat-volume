@@ -15,9 +15,17 @@ export function wrapText(value: string, width: number, measure: (value: string) 
   if (line) lines.push(line)
   return lines
 }
-export interface ReportRow { row: BatchRow; index: number; y: number; height: number; nameLines: string[]; detailLines: string[] }
+export interface ReportRow { row: BatchRow; index: number; y: number; height: number; nameLines: string[]; detailLines: string[]; sourceLines: string[]; sourceInline: boolean; sourceOffsetX: number }
 export type ReportLayout = ReturnType<typeof buildReportLayout>
-export function reportRowHeight(view: BatchView, row: BatchRow, nameLines: string[], detailLines: string[], style = scaledReportStyle()) {
+export function sourceTagHeight(lines: readonly string[], style = scaledReportStyle()) {
+  return lines.length ? lines.length * style.sourceTag.lineHeight + (style.sourceTag.paddingY + style.sourceTag.borderWidth) * 2 : 0
+}
+export function nameBlockHeight(nameLines: readonly string[], sourceLines: readonly string[], sourceInline: boolean, style = scaledReportStyle()) {
+  const names = nameLines.length * style.filenameLineHeight
+  const tag = sourceTagHeight(sourceLines, style)
+  return sourceInline ? Math.max(names, tag) : names + (tag ? style.detailGap + tag : 0)
+}
+export function reportRowHeight(view: BatchView, row: BatchRow, nameLines: string[], detailLines: string[], style = scaledReportStyle(), sourceLines: string[] = [], sourceInline = false) {
   const detailHeight = detailLines.length ? style.detailGap + detailLines.length * style.detailLineHeight : 0
   const metricHeight = Math.max(0, ...view.columns.map(column => {
     const fonts = metricFonts(column, style)
@@ -25,7 +33,7 @@ export function reportRowHeight(view: BatchView, row: BatchRow, nameLines: strin
     if (column.splitUnits && cell.secondary) return 2 * fonts.value.size + style.rowPadding * 2
     return fonts.value.size + (cell.secondary ? style.detailGap + fonts.secondary.size : 0) + (cell.caption ? style.detailGap + style.fonts.detail.size : 0)
   }))
-  return Math.max(style.minimumRowHeight, Math.max(metricHeight, nameLines.length * style.filenameLineHeight + detailHeight) + style.rowPadding * 2)
+  return Math.max(style.minimumRowHeight, Math.max(metricHeight, nameBlockHeight(nameLines, sourceLines, sourceInline, style) + detailHeight) + style.rowPadding * 2)
 }
 export type ReportMeasure = (value: string, size: number, weight: number) => number
 export function buildReportLayout(view: BatchView, measure: ReportMeasure, availableWidth = Infinity, percent = 100) {
@@ -43,9 +51,13 @@ export function buildReportLayout(view: BatchView, measure: ReportMeasure, avail
   const rows: ReportRow[] = view.rows.map((row, index) => {
     const contentWidth = sizing.filenameWidth - style.cellPadding * 2
     const nameLines = wrapText(displayFileName(row.name), contentWidth, value => measure(value, style.fonts.filename.size, style.fonts.filename.weight))
+    const tag = style.sourceTag
+    const sourceLines = wrapText(row.sourceLabel ?? '', Math.max(1, contentWidth - (tag.paddingX + tag.borderWidth) * 2), value => measure(value, tag.fontSize, tag.fontWeight))
+    const sourceOffsetX = measure(displayFileName(row.name), style.fonts.filename.size, style.fonts.filename.weight) + tag.gap
+    const sourceInline = nameLines.length === 1 && sourceLines.length === 1 && sourceOffsetX + measure(sourceLines[0], tag.fontSize, tag.fontWeight) + (tag.paddingX + tag.borderWidth) * 2 <= contentWidth
     const detailLines = wrapText(row.status.detail, contentWidth, value => measure(value, style.fonts.detail.size, style.fonts.detail.weight))
-    const height = reportRowHeight(view, row, nameLines, detailLines, style)
-    const layout = { row, index, y, height, nameLines, detailLines }
+    const height = reportRowHeight(view, row, nameLines, detailLines, style, sourceLines, sourceInline)
+    const layout = { row, index, y, height, nameLines, detailLines, sourceLines, sourceInline, sourceOffsetX }
     y += height
     return layout
   })

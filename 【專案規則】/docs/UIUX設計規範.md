@@ -12,16 +12,23 @@
 
 | 責任 | 現有入口 |
 | --- | --- |
-| 共用灰階、文字／邊界／強調角色 | [config/theme.ts](../../src/config/theme.ts)，由 [main.tsx](../../src/main.tsx) 注入 CSS 變數，報告亦引用 palette |
+| 共用灰階及報告色票 | [config/theme.ts](../../src/config/theme.ts) 的 `palette`，報告直接引用，畫面透過 CSS 變數使用 |
+| 畫面文字、背景、邊界、陰影及控制狀態 | 同檔的 `screenColors`，包含現有灰階、透明色及控制項色值 |
+| 表格選取、編輯框與 3D 色票 | 同檔的 `selectionColors`、`previewColors`；3D 直接引用材質與標記顏色 |
 | 全域布局、手機、資料卡與預覽樣式 | [styles.css](../../src/styles.css) |
 | 桌面批次、選單、編輯與報告彈窗樣式 | [batch.css](../../src/features/batch/batch.css) |
 | 表格字體與量測限制 | [config/batch.ts](../../src/config/batch.ts) |
-| 選取色、拖曳與浮動框互動參數 | [config/selection.ts](../../src/config/selection.ts) |
+| 來源標籤尺寸與比例 | [config/source-tag.ts](../../src/config/source-tag.ts)，網頁與 PDF 使用同份比例設定 |
+| 拖曳與浮動框互動參數 | [config/selection.ts](../../src/config/selection.ts)，只管理行為與位置參數 |
 | 列印字體、間距、紙張與 renderer 設定 | [config/report.ts](../../src/config/report.ts)、[pdf.ts](../../src/config/pdf.ts)、[excel.ts](../../src/config/excel.ts) |
 | 一般按鈕 | [components/ui/button.tsx](../../src/components/ui/button.tsx) |
 | 長度／重量單位選擇呈現 | [unit-selector.tsx](../../src/features/batch/unit-selector.tsx) 與其呼叫端 |
 
-新共用色值與樣式沿用具名來源，不能各頁建立第二套主題；相同外觀但責任不同的元件可保留獨立狀態。現有 CSS、3D 材質與標記仍有局部色值，尚未全面集中。
+`themeCssVariables` 組合既有色票與來源標籤尺寸，於 [main.tsx](../../src/main.tsx) 掛到文件根節點。CSS 與按鈕、狀態文字的 utility class 引用對應變數；選取列與掛在 body 的浮動編輯框同樣繼承根節點的選取色，不在元件另設顏色副本。
+
+來源標籤使用既有灰階背景、邊界與文字色，尺寸及 PDF 的點數比例由 `sourceTagStyle`／`scaledSourceTagStyle` 管理，不替廠商另設品牌色。是否顯示與內容由 [操作契約](手機與電腦操作.md#電腦表格) 定義；[PDF／Excel](報告與列印.md) 可依輸出用途保留差異。標籤不取代原診斷，也不將來源身分改寫到檔名。
+
+新共用色值與樣式沿用具名來源，不能各頁建立第二套主題；相同外觀但責任不同的元件可保留獨立狀態。配色管理以維持既有外觀為契約，原本不同的灰階、透明度、互動與報告差異各自保留；不因色值相近而合併，也不因集中管理自行重新設計畫面。只有用途與色值相符時才沿用共用角色。
 
 目前以淺色中性樣式及繁體中文為主，沒有獨立英文或深色主題。不得把 Mumiopad 的品牌紫色、Material、Tauri、雙語或深淺主題條款直接當成本網站已實作的功能。
 

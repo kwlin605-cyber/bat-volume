@@ -8,9 +8,11 @@ import { createReportMeasure, renderReportPage } from '../../reports/report-rend
 import { reportFormats, type ReportFormat } from '../../reports/formats'
 import { downloadReport } from '../../reports/download'
 import { text } from '../../i18n/zh-TW'
+import { reportView } from '../../reports/report-view'
 
 interface Props { view: BatchView; format: ReportFormat; onDismiss: () => void }
 export default function ReportPreviewDialog({ view, format, onDismiss }: Props) {
+  const outputView = useMemo(() => reportView(view, format), [view, format])
   const dialog = useRef<HTMLDialogElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const exportController = useRef<AbortController | null>(null)
@@ -27,7 +29,7 @@ export default function ReportPreviewDialog({ view, format, onDismiss }: Props) 
   const [error, setError] = useState('')
   const orientation = format === 'pdf-landscape' ? 'landscape' : 'portrait'
   const isExcel = format === 'xlsx'
-  const session = useMemo(() => measure ? createPrintPreview(view, orientation, measure, separateGroups) : null, [view, orientation, measure, separateGroups])
+  const session = useMemo(() => measure ? createPrintPreview(outputView, orientation, measure, separateGroups) : null, [outputView, orientation, measure, separateGroups])
   const validDraft = draft === null || (draft.trim() !== '' && validPrintScale(Number(draft)))
   useEffect(() => {
     dialog.current?.showModal()
@@ -65,7 +67,7 @@ export default function ReportPreviewDialog({ view, format, onDismiss }: Props) 
   }
   function toggleGroups() {
     const next = !separateGroups
-    const nextSession = measure ? createPrintPreview(view, orientation, measure, next) : null
+    const nextSession = measure ? createPrintPreview(outputView, orientation, measure, next) : null
     if (next) setGroupPercents(nextSession?.groups.map(() => percent) ?? [])
     else setManualPercent(percent)
     if (automatic && nextSession && (fitOnePage ? nextSession.onePageLayout : nextSession.maximumLayout) === null) {

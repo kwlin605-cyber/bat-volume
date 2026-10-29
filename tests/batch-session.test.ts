@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { appendSessionFiles, createBatchSession, removeSessionFile, restoreBatchSession, sessionFiles, type BatchSession } from '../src/services/batch-session'
+import { appendSessionFiles, createBatchSession, removeSessionFile, restoreBatchSession, type BatchSession } from '../src/services/batch-session'
+import { sessionSources } from '../src/services/session-sources'
 import { LatestSessionStorage, type SessionRepository } from '../src/services/latest-session-storage'
 import type { WeightRange } from '../src/domain/weight'
 import { createDefaultBatchDisplay, type BatchDisplaySettings } from '../src/domain/batch-display'
 
 const makeSession = () => createBatchSession([new File([new Uint8Array([0xa4, 0xa4, 0xff, 0])], '球棒.anc', { lastModified: 123 }), new File(['G1 Y0 Z2'], '球棒.anc', { lastModified: 456 })])
+const sessionFiles = (session: BatchSession) => Promise.all(sessionSources(session.files, []).map(async source => {
+  const file = await source.load()
+  if (!file) throw new Error('Expected a saved upload')
+  return file
+}))
 const deferred = () => { let resolve!: () => void, reject!: (reason: unknown) => void; const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no }); return { promise, resolve, reject } }
 
 class MemoryRepository implements SessionRepository {
@@ -85,7 +91,7 @@ describe('the latest saved ANC batch', () => {
     expect(added.files.slice(0, 2)).toEqual(original.files)
     expect(added.requirements).toEqual(original.requirements)
     expect(new Set(added.files.map(file => file.id)).size).toBe(3)
-    expect(await sessionFiles(added)[2].text()).toBe('new bytes')
+    expect(await (await sessionFiles(added))[2].text()).toBe('new bytes')
     expect(appendSessionFiles(null, [new File(['first'], 'first.anc')]).files).toHaveLength(1)
   })
   it('removes only the chosen identity and target, and clears the session at the last file', async () => {
@@ -105,7 +111,7 @@ describe('the latest saved ANC batch', () => {
     const values = { [original.files[0].id]: { min: 800.123, max: 850.456 }, [original.files[1].id]: { min: 700, max: 700 } }
     const stored = structuredClone({ version: 1, id: original.id, files: original.files })
     const restored = restoreBatchSession(stored, { sessionId: original.id, values })!
-    const files = sessionFiles(restored)
+    const files = await sessionFiles(restored)
     expect(new Uint8Array(await files[0].arrayBuffer())).toEqual(new Uint8Array([0xa4, 0xa4, 0xff, 0]))
     expect(await files[1].text()).toBe('G1 Y0 Z2')
     expect(files.map(file => [file.name, file.lastModified])).toEqual([['球棒.anc', 123], ['球棒.anc', 456]])

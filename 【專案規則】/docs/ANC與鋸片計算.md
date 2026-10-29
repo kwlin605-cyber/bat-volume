@@ -2,9 +2,11 @@
 
 ## 輸入與型號庫
 
-[anc-catalog.ts](../../src/services/anc-catalog.ts) 用建置期 `import.meta.glob` 掃描 `src/assets/anc/**/*.anc`，建立廠商及子資料夾目錄。選取型號時才下載對應文字模組，再封裝為 `File`，與手動上傳共用批次、分析及保存流程。多層資料夾以第一層為廠商、下一層為分類，其餘保留在顯示名稱；型號切換目前以檔名對照已加入資料，不以原始目錄身分對照。
+[anc-catalog.ts](../../src/services/anc-catalog.ts) 用建置期 `import.meta.glob` 掃描 `src/assets/anc/**/*.anc`，建立廠商及子資料夾目錄。選取或還原型號時按需下載對應文字模組，再封裝為 `File`，與手動上傳共用解碼與分析核心。多層資料夾以第一層為廠商、下一層為分類，其餘保留在顯示名稱。
 
-[analyze-file.ts](../../src/services/analyze-file.ts) 檢查副檔名及大小，先嘗試嚴格 UTF-8，失敗再以 Big5 解碼。限制來源為 [fileLimits](../../src/config/analysis.ts)，目前副檔名 `.anc`、上限 20 MiB。原始檔名與 Blob 用於保存，畫面名稱由 [displayFileName](../../src/lib/file-name.ts) 移除最後的 `.anc`。
+型號身分使用 glob 的完整專案路徑；不同廠商或資料夾的同名檔各自識別，不以檔名或內容相同視為同一型號。`presetOrigin` 產生來源參照及廠商／完整資料夾標示，不把來源資訊交給幾何核心。重開讀取與來源移除的契約見 [資料保存與設定](資料保存與設定.md)，同名標籤見 [操作文件](手機與電腦操作.md#電腦表格)。
+
+[analyze-file.ts](../../src/services/analyze-file.ts) 檢查副檔名及大小，先嘗試嚴格 UTF-8，失敗再以 Big5 解碼。限制來源為 [fileLimits](../../src/config/analysis.ts)，目前副檔名 `.anc`、上限 20 MiB。保留原始檔名，畫面名稱由 [displayFileName](../../src/lib/file-name.ts) 移除最後的 `.anc`；來源參照與上傳 Blob 的保存責任由保存服務管理。
 
 ## 解析支援與限制
 
@@ -26,12 +28,12 @@
 
 ## 寬度為 0
 
-[profile.ts](../../src/domain/anc/profile.ts) 沿用原始輪廓模式：在跨度達最大 sweep 的 95% 以上者，取最後一趟。檢查 X 是否維持固定、Y 是否單調，必要時反轉為 Y 升冪；半徑需有限且非負。此模式沒有刀寬補償，也沒有 0.05 mm 的切線取樣步驟。
+[profile.ts](../../src/domain/anc/profile.ts) 沿用原始輪廓模式：在跨度達最大 sweep 的 95% 以上者，取最後一趟。檢查 X 是否維持固定、Y 是否單調，必要時反轉為 Y 升冪；半徑需有限且非負。此模式沒有刀寬補償，切線與有刀寬模式同樣直接使用輪廓線段。
 
 瀏覽器偏好的初始刀寬為 5 mm，但 `analyzeAnc`／`extractProfile` 領域函式未指定刀寬時預設為 0；UI 會明確傳入偏好值。閱讀或新增測試時須明確知道正在驗證哪個模式。
 
 ## 共同幾何來源
 
-完整輪廓交給 [analyze.ts](../../src/domain/analyze.ts)。切線判斷使用從它衍生的取樣，切點再套回完整輪廓；原始幾何不被取樣覆寫。後續裁切、尺寸、體積與 3D 的分工見 [切線、尺寸與重量](切線尺寸與重量.md)。
+完整輪廓交給 [analyze.ts](../../src/domain/analyze.ts)，直接從線段與階差判斷切點，再裁切同一份邊界；不轉為固定間距取樣，也不從畫面網格反推。切線規則、裁切、尺寸、體積與 3D 的分工見 [切線、尺寸與重量](切線尺寸與重量.md)。
 
 對應測試：`anc-catalog`、`analyze-file`、`analysis`、`blade-width`、`blade-envelope`、`blade-corpus`、`corpus`。具體驗證界線見 [測試與驗證](測試與驗證.md)。
