@@ -34,7 +34,7 @@ export function buildColumnLayout(view: BatchView, style: ColumnLayoutStyle, mea
     const headerFont = column.prominent ? style.fonts.primaryHeader : style.fonts.header
     const { value: valueFont, secondary: secondaryFont } = metricFonts(column, style)
     let contentWidth = lineWidth(column.label, headerFont) + (column.unit ? style.headerUnitGap + lineWidth(column.unit, style.fonts.unit) : 0)
-    for (const row of view.rows) contentWidth = Math.max(contentWidth, lineWidth(row.cells[column.id].display, valueFont), lineWidth(row.cells[column.id].caption ?? '', style.fonts.detail), lineWidth(row.cells[column.id].secondary ?? '', secondaryFont))
+    for (const row of view.rows) contentWidth = Math.max(contentWidth, lineWidth(row.cells[column.id].display, valueFont), lineWidth(row.cells[column.id].caption ?? '', style.fonts.detail), lineWidth(row.cells[column.id].secondary ?? '', secondaryFont), lineWidth(row.cells[column.id].measurement ?? '', style.fonts.detail))
     return { column, width: Math.max(style.minimumMetricWidth, column.editable ? (style.minimumEditableWidth ?? 0) : 0, Math.ceil(contentWidth + padding)) }
   })
   const metricWidth = columns.reduce((sum, column) => sum + column.width, 0)

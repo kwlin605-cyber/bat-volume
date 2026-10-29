@@ -17,6 +17,8 @@
 .column-menu summary::-webkit-details-marker { display: none; }
 .column-popover label { display: flex; align-items: center; gap: 10px; padding: 11px 7px; cursor: pointer; }
 .column-popover input { accent-color: var(--ui-checkboxAccent); width: 14px; height: 14px; }
+.column-popover .measurement-display-toggle { border-top: 1px solid var(--ui-detailLine); }
+.measurement-caption { display: block; margin-top: 6px; color: var(--ui-noteText); font-size: 12px; font-weight: 400; white-space: normal; overflow-wrap: anywhere; }
 .diameter-allowance-control { padding: 3px 0 8px; border-bottom: 1px solid var(--color-line); }
 .column-popover .diameter-allowance-control label { justify-content: space-between; cursor: default; }
 .diameter-allowance-input { display: flex; align-items: center; gap: 6px; }

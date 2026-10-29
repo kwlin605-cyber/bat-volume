@@ -17,6 +17,7 @@ import { DiameterAllowanceControl } from './diameter-allowance-control'
 interface Props {
   diameterAllowanceMm: number; onDiameterAllowanceChange: (value: number) => void
   visible: readonly MetricId[]; sort: BatchSort; sortLabel: string; weightUnit: WeightDisplayMode
+  showMeasurementDistances: boolean; onMeasurementDistancesChange: (show: boolean) => void
   pending: boolean
   lengthUnit: LengthDisplayMode; onLengthUnitChange: (mode: LengthDisplayMode) => void
   onVisibleChange: (visible: MetricId[]) => void; onSortChange: (sort: BatchSort) => void
@@ -27,7 +28,7 @@ interface Props {
 
 /** Display controls own their menus; calculations and report generation stay with the results. */
 export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending,
-  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport, grouping, onGroupingChange, diameterAllowanceMm, onDiameterAllowanceChange }: Props) {
+  onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport, grouping, onGroupingChange, diameterAllowanceMm, onDiameterAllowanceChange, showMeasurementDistances, onMeasurementDistancesChange }: Props) {
   const toolbar = useRef<HTMLDivElement>(null)
   const sortMenu = useRef<HTMLDetailsElement>(null)
   const downloadMenu = useRef<HTMLDetailsElement>(null)
@@ -45,6 +46,7 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
       <DiameterAllowanceControl value={diameterAllowanceMm} onChange={onDiameterAllowanceChange} />
       <button type="button" onClick={() => onVisibleChange([...allMetricIds])}>{text.selectAllInformation}</button>
       {metricColumns.map(column => <label key={column.id}><input type="checkbox" checked={visible.includes(column.id)} onChange={event => onVisibleChange(event.target.checked ? [...visible, column.id] : visible.filter(id => id !== column.id))} />{column.label}</label>)}
+      <label className="measurement-display-toggle"><input type="checkbox" checked={showMeasurementDistances} onChange={event => onMeasurementDistancesChange(event.target.checked)} />{text.measurementDistance}</label>
     </div></details>
     <div className="batch-sort">
       <button className="sort-direction" type="button" title={sort.key === 'name' ? text.sortNameHint : text.sortNumericHint} aria-label={sort.direction === 'asc' ? text.sortAscending : text.sortDescending} onClick={() => onSortChange({ ...sort, direction: sort.direction === 'asc' ? 'desc' : 'asc' })}>

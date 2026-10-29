@@ -4,6 +4,7 @@ import { pdfSettings, type PdfOrientation } from '../config/pdf'
 import { createReportMeasure, renderReportPage } from './report-rendering'
 import { text } from '../i18n/zh-TW'
 import { buildPdfLayout, type PrintLayout } from './pdf-layout'
+import { reportView } from './report-view'
 
 
 /** One fixed-size lossless canvas per A4 page avoids giant batch screenshots. */
@@ -11,7 +12,7 @@ export async function renderPdfReport(view: BatchView, orientation: PdfOrientati
   signal.throwIfAborted()
   await document.fonts.ready
   signal.throwIfAborted()
-  const layout = buildPdfLayout(view, orientation, createReportMeasure(), percent)
+  const layout = buildPdfLayout(reportView(view, orientation === 'landscape' ? 'pdf-landscape' : 'pdf-portrait'), orientation, createReportMeasure(), percent)
   return renderPreparedPdf(layout, signal)
 }
 

@@ -6,7 +6,7 @@ describe('batch display preferences', () => {
   it('uses the current table catalog and gives each new session independent defaults', () => {
     expect(metricIds).toEqual(allMetricIds)
     const defaults = createDefaultBatchDisplay()
-    expect(defaults).toEqual({ visible: [...metricIds] })
+    expect(defaults).toEqual({ visible: [...metricIds], showMeasurementDistances: false })
     defaults.visible.pop()
     expect(createDefaultBatchDisplay().visible).toHaveLength(6)
     const sort = createDefaultBatchSort()
@@ -23,7 +23,12 @@ describe('batch display preferences', () => {
     expect(normalizeBatchDisplay(null)).toEqual(createDefaultBatchDisplay())
     expect(normalizeBatchDisplay({ visible: 'invalid', sort: { key: 'volume', direction: 'sideways' }, weightUnit: 'oz' }))
       .toEqual(createDefaultBatchDisplay())
-    expect(normalizeBatchDisplay({ visible: ['length'], sort: { key: 'volume', direction: 'desc' } })).toEqual({ visible: ['length'] })
+    expect(normalizeBatchDisplay({ visible: ['length'], sort: { key: 'volume', direction: 'desc' } })).toEqual({ visible: ['length'], showMeasurementDistances: false })
     expect(normalizeBatchDisplay({ sort: { key: 'removed-column', direction: 'desc' } })).toEqual(createDefaultBatchDisplay())
+  })
+  it('keeps the distance switch independent of visible columns and defaults missing or invalid flags to off', () => {
+    expect(normalizeBatchDisplay({ visible: ['maximumDiameter'], showMeasurementDistances: true })).toEqual({ visible: ['maximumDiameter'], showMeasurementDistances: true })
+    expect(normalizeBatchDisplay({ visible: [], showMeasurementDistances: true })).toEqual({ visible: [], showMeasurementDistances: true })
+    for (const flag of [undefined, null, 'true', 1]) expect(normalizeBatchDisplay({ visible: ['length'], showMeasurementDistances: flag }).showMeasurementDistances).toBe(false)
   })
 })

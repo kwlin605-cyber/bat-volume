@@ -13,6 +13,7 @@ import { displayFileName } from '../lib/file-name'
 import { diagnosticText, gripDiagnosticText, text } from '../i18n/zh-TW'
 import { parseRequirement } from '../features/batch/weight-input'
 import { PreviewBoundary } from './preview-boundary'
+import { PreviewMeasurements } from './preview-measurements'
 
 const BatPreview = lazy(() => import('./bat-preview'))
 
@@ -506,6 +507,7 @@ export function MobileResultView({
                 <BatPreview result={result} />
               </Suspense>
             </PreviewBoundary>
+            <PreviewMeasurements dimensions={result.dimensions} diameterAllowanceMm={diameterAllowanceMm} />
           </div>
         </div>
       )}

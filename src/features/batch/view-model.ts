@@ -14,9 +14,10 @@ import { orderBatchRows } from './row-order'
 import { defaultDiameterAllowanceMm, finishedDiameter } from '../../domain/diameter-allowance'
 import { displayFileName } from '../../lib/file-name'
 import { sourceLabel } from '../../lib/source-label'
+import { measurementCaption } from '../../lib/measurement-display'
 export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
-export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string }
+export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string; measurement?: string }
 export interface WeightContext { material: MaterialSettings; requirements: Readonly<Record<string, WeightRange>>; weightUnit?: WeightDisplayMode }
 const emptyWeightContext: WeightContext = { material: initialMaterialSettings, requirements: {} }
 export interface BatchRow {
@@ -30,7 +31,7 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm): BatchView {
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm, showMeasurementDistances = false): BatchView {
   const weightUnit = weights.weightUnit ?? 'oz'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
@@ -52,6 +53,10 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
       const value = column.id === 'maximumDiameter' || column.id === 'gripDiameter' ? finishedDiameter(rawValue, diameterAllowanceMm) : rawValue
       return [column.id, { value, ...(value === null ? { display: text.missingValue } : column.id === 'length' ? lengthDisplay(value, lengthUnit) : { display: column.format(value) }) }]
     })) as Record<MetricId, BatchCell>
+    if (showMeasurementDistances && calculated) {
+      cells.maximumDiameter.measurement = measurementCaption(calculated.dimensions.distances?.head, 'head')
+      cells.gripDiameter.measurement = measurementCaption(calculated.dimensions.distances?.grip, 'grip')
+    }
     const required = weights.requirements[entry.id] ?? null
     const estimatedWeight = estimateBatWeight(weights.material, calculated?.volumeCm3 ?? null)
     cells.batWeight = required

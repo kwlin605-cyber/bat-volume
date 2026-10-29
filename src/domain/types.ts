@@ -71,11 +71,14 @@ export interface GripStrategy {
 export type GripMeasurement =
   | { status: 'detected'; diameterMm: number; minimum: ProfilePoint; region: Cuts; end: 'low' | 'high'; rule: { strategy: string; version: string } }
   | { status: 'undetermined'; code: GripDiagnosticCode }
+export interface MeasurementRange { startMm: number; endMm: number }
+export interface DiameterDistances { head: MeasurementRange[]; grip: MeasurementRange[] }
 export interface BatDimensions {
   lengthMm: number
   maximumDiameterMm: number
   maximum: ProfilePoint
   grip: GripMeasurement
+  distances: DiameterDistances | null
 }
 export type AnalysisResult =
   | { status: 'calculated'; source: SourceInfo; profile: Profile; retained: ProfilePoint[];

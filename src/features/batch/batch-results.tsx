@@ -56,7 +56,7 @@ export default function BatchResults({
   onRemove: (id: string) => void
   onRequirementChange: (ids: readonly string[], range: WeightRange | null) => void
 }) {
-  const { visible } = display
+  const { visible, showMeasurementDistances } = display
   const { grouping, applyGrouping, storageUnavailable: groupingStorageUnavailable } = useBatGrouping()
   const [selected, setSelected] = useState<string | null>(null)
   const [report, setReport] = useState<{ format: ReportFormat; view: BatchView } | null>(null)
@@ -65,7 +65,7 @@ export default function BatchResults({
     setReport(null); setSelected(null)
   }, [selectionKey])
   useEffect(() => { if (removing) setSelected(null) }, [removing])
-  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit, grouping, diameterAllowanceMm), [entries, visible, sort, material, requirements, weightUnit, lengthUnit, grouping, diameterAllowanceMm])
+  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit, grouping, diameterAllowanceMm, showMeasurementDistances), [entries, visible, sort, material, requirements, weightUnit, lengthUnit, grouping, diameterAllowanceMm, showMeasurementDistances])
   const { areaRef, layout } = useColumnLayout(view, removing ? 48 : 0)
   const selection = useRowSelection(view.rows, removing, areaRef)
   const selectedEntry = entries.find(entry => entry.id === selected)
@@ -78,7 +78,8 @@ export default function BatchResults({
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
       <BatchToolbar diameterAllowanceMm={diameterAllowanceMm} onDiameterAllowanceChange={next => { selection.cancel(); onDiameterAllowanceChange(next) }} visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0}
         grouping={grouping} onGroupingChange={next => { selection.cancel(); applyGrouping(next) }}
-        onVisibleChange={columns => { selection.cancel(); onDisplayChange({ visible: columns }) }} onSortChange={next => { selection.cancel(); onSortChange(next) }} onUnitChange={selectMode}
+        showMeasurementDistances={showMeasurementDistances} onMeasurementDistancesChange={show => { selection.cancel(); onDisplayChange({ ...display, showMeasurementDistances: show }) }}
+        onVisibleChange={columns => { selection.cancel(); onDisplayChange({ ...display, visible: columns }) }} onSortChange={next => { selection.cancel(); onSortChange(next) }} onUnitChange={selectMode}
         onMaterialOpen={() => { selection.cancel(); onMaterialOpen() }} onExport={format => { selection.cancel(); setReport({ format, view }) }} />
     </div>
 
@@ -101,7 +102,7 @@ export default function BatchResults({
               ? <button type="button" className="requirement-trigger" disabled={row.pending || removing} aria-label={`${text.selectBat} ${displayFileLabel(row.name, row.sourceLabel)}`}><span>{row.cells[column.id].display}</span>{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}</button>
               : column.splitUnits && row.cells[column.id].secondary
                 ? <div className="dual-unit-value"><span>{row.cells[column.id].display}</span><span>{row.cells[column.id].secondary}</span></div>
-                : <>{row.cells[column.id].display}{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}{row.cells[column.id].caption && <small className="weight-caption">{row.cells[column.id].caption}</small>}</>}
+                : <>{row.cells[column.id].display}{row.cells[column.id].secondary && <small className="weight-secondary">{row.cells[column.id].secondary}</small>}{row.cells[column.id].caption && <small className="weight-caption">{row.cells[column.id].caption}</small>}{row.cells[column.id].measurement && <small className="measurement-caption">{row.cells[column.id].measurement}</small>}</>}
           </td>)}
           {removing && <td className="remove-cell"><RemoveFileButton name={row.name} sourceLabel={row.sourceLabel} onRemove={() => onRemove(row.id)} /></td>}
         </tr>)}</tbody>
