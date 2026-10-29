@@ -48,11 +48,12 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--ui-inputO
 .volume-unit { font-size: 17px; color: var(--ui-volumeUnit); }
 .dimensions-summary { margin: 0 0 18px; padding-top: 9px; border-top: 1px solid var(--ui-detailLine); }
 .dimensions-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-height: 44px; padding: 9px 0; }
-.dimensions-summary dt { color: var(--ui-detailText); font-size: 13px; line-height: 1.7; }
-.dimensions-summary dd { display: flex; align-items: baseline; gap: 7px; margin: 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; row-gap: 5px; color: var(--ui-dimensionText); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dimensions-summary dt { flex: none; color: var(--ui-detailText); font-size: 13px; line-height: 1.7; }
+.dimensions-summary dd { display: flex; align-items: baseline; gap: 7px; margin: 0; min-width: 0; justify-content: flex-end; color: var(--ui-dimensionText); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dimension-unit { font-size: 12px; font-weight: 400; color: var(--ui-unitText); }
 .dimension-unavailable { font-size: 13px; font-weight: 400; color: var(--ui-unavailableText); }
-.dimensions-summary .dimension-value { display: inline-flex; align-items: baseline; gap: 7px; }
+.dimensions-summary .dimension-value { display: inline-flex; flex: none; align-items: baseline; gap: 7px; }
+.dimensions-summary .measurement-distance { min-width: 0; }
 .measurement-distance { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 6px 7px; border-radius: 7px; background: var(--ui-allowanceBackground); color: var(--ui-noteText); font-size: 12px; font-weight: 400; white-space: normal; }
 .measurement-distance svg { flex: none; }
 .measurement-distance > span { overflow-wrap: anywhere; }

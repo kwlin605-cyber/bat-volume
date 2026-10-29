@@ -19,8 +19,8 @@ export function DimensionsSummary({ dimensions, diameterAllowanceMm = defaultDia
       return <div key={measurement.key}>
         <dt>{measurement.label}</dt>
         <dd data-testid={measurement.key}>
-          {measurement.distance ? <span className="dimension-value">{value}</span> : value}
           {measurement.distance && <MeasurementDistance caption={measurement.distance} />}
+          {measurement.distance ? <span className="dimension-value">{value}</span> : value}
         </dd>
       </div>
     })}

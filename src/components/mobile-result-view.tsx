@@ -367,13 +367,13 @@ export function MobileResultView({
                   <dd>
                     {lengthFormatted ? (
                       <>
+                        {lengthFormatted.secondary && (
+                          <small className="text-[color:var(--ui-controlMuted)] font-normal text-xs">{lengthFormatted.secondary}</small>
+                        )}
                         <span>{lengthFormatted.display}</span>
                         <span className="mobile-dim-unit">
                           {lengthUnit === 'in' ? text.inchUnit : text.centimetreUnit}
                         </span>
-                        {lengthFormatted.secondary && (
-                          <small className="text-[color:var(--ui-controlMuted)] font-normal text-xs">{lengthFormatted.secondary}</small>
-                        )}
                       </>
                     ) : (
                       <span className="text-[color:var(--ui-controlHint)]">{text.missingValue}</span>
