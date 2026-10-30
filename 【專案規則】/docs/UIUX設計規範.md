@@ -15,6 +15,7 @@
 | 共用灰階及報告色票 | [config/theme.ts](../../src/config/theme.ts) 的 `palette`，報告直接引用，畫面透過 CSS 變數使用 |
 | 畫面文字、背景、邊界、陰影及控制狀態 | 同檔的 `screenColors`，包含現有灰階、透明色及控制項色值 |
 | 表格選取、編輯框與 3D 色票 | 同檔的 `selectionColors`、`previewColors`；3D 直接引用材質與標記顏色 |
+| 3D 旋轉靈敏度與阻尼 | [config/preview.ts](../../src/config/preview.ts)，兩端沿用 [共用控制器](../../src/components/preview-controls.tsx) |
 | 全域布局、手機、資料卡與預覽樣式 | [styles.css](../../src/styles.css) |
 | 桌面批次、選單、編輯與報告彈窗樣式 | [batch.css](../../src/features/batch/batch.css) |
 | 表格字體與量測限制 | [config/batch.ts](../../src/config/batch.ts) |
@@ -48,7 +49,7 @@
 
 本網站原有 Esc、點外部及返回行為照功能契約處理，不套用 Mumiopad PC 的「所有彈窗禁止 Esc／遮罩關閉」產品規則。一般設定取消不得偷偷保存草稿；處理中避免重複送出，關閉應取消尚未完成的報告或釋放適用資源。
 
-3D 共用同一個 `BatPreview` 與幾何建立入口，手機只改容器與載入時機。計算使用的完整輪廓不能為顯示效能而被有損刪點；若需效能處理，先量測並保留數據與外形契約。
+3D 共用同一個 `BatPreview`、模式切換與幾何建立入口，各預覽視窗持有自己的當次模式，依版面把控制放在標題列。手機／電腦的資訊布局及操作提示由各自用途決定，不另寫一套旋轉或尺寸計算。計算使用的完整輪廓不能為顯示效能而被有損刪點；若需效能處理，先量測並保留數據與外形契約。
 
 ## 擴充與驗證
 
