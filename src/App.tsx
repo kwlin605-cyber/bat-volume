@@ -15,6 +15,7 @@ import { PresetLibraryDialog } from './components/preset-library-dialog'
 import { MobilePresetDrawer } from './components/mobile-preset-drawer'
 import { MobileResultView } from './components/mobile-result-view'
 import { text } from './i18n/zh-TW'
+import { useMassPropertyUnits } from './hooks/use-mass-property-units'
 
 export default function App() {
   const input = useRef<HTMLInputElement>(null)
@@ -37,6 +38,7 @@ export default function App() {
 
   const diameter = useDiameterAllowance()
   const desktop = useDesktop()
+  const massUnits = useMassPropertyUnits()
 
   const { material, applyMaterial, storageUnavailable: materialStorageUnavailable } = useMaterialSettings()
   const { mode: weightUnit, selectMode: selectWeightUnit, storageUnavailable: weightUnitStorageUnavailable } = useWeightUnit()
@@ -132,6 +134,8 @@ export default function App() {
           </section>
         ) : desktop ? (
           <BatchResults
+            massUnits={massUnits.units}
+            onMassUnitsChange={massUnits.applyUnits}
             diameterAllowanceMm={diameter.allowanceMm}
             onDiameterAllowanceChange={diameter.applyAllowance}
             material={material}
@@ -152,6 +156,7 @@ export default function App() {
           />
         ) : activeEntry ? (
           <MobileResultView
+            massUnits={massUnits.units}
             entry={activeEntry}
             diameterAllowanceMm={diameter.allowanceMm}
             material={material}
@@ -171,7 +176,7 @@ export default function App() {
       {storageUnavailable && <p className="session-storage-error" role="alert">{text.sessionStorageUnavailable}</p>}
       {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {blade.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
-      {(materialStorageUnavailable || weightUnitStorageUnavailable || lengthUnitStorageUnavailable) && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
+      {(materialStorageUnavailable || weightUnitStorageUnavailable || lengthUnitStorageUnavailable || massUnits.storageUnavailable) && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
 
       {/* Floating Action Buttons: Desktop gets batch FileActions */}
       {hasFile && desktop && (
@@ -218,10 +223,12 @@ export default function App() {
           value={material}
           weightUnit={weightUnit}
           lengthUnit={lengthUnit}
-          onWeightUnitChange={selectWeightUnit}
-          onLengthUnitChange={selectLengthUnit}
-          diameterAllowanceMm={diameter.allowanceMm}
-          onDiameterAllowanceChange={diameter.applyAllowance}
+          onWeightUnitChange={desktop ? undefined : selectWeightUnit}
+          onLengthUnitChange={desktop ? undefined : selectLengthUnit}
+          massUnits={desktop ? undefined : massUnits.units}
+          onMassUnitsChange={desktop ? undefined : massUnits.applyUnits}
+          diameterAllowanceMm={desktop ? undefined : diameter.allowanceMm}
+          onDiameterAllowanceChange={desktop ? undefined : diameter.applyAllowance}
           bladeWidthMm={blade.widthMm}
           onBladeWidthChange={blade.applyBladeWidth}
           onApply={applyMaterial}

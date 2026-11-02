@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { BufferGeometry, Line, LineBasicMaterial, Vector3 } from 'three'
 import type { ProfilePoint } from '../domain/types'
 
-export function SectionMarker({ point, center, kind }: { point: ProfilePoint; center: number; kind: 'maximum' | 'grip' }) {
+export function SectionMarker({ point, center, kind }: { point: ProfilePoint; center: number; kind: 'maximum' | 'grip' | 'balance' }) {
   const color = previewColors[kind]
   const y = point.y - center
   const ring = useMemo(() => {

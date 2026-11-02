@@ -32,9 +32,9 @@ describe('length display units', () => {
     expect(lengthDisplay(mm, 'cm')).toEqual({ display })
     expect(lengthDisplay(mm, 'both').display).toBe(display)
   })
-  it('uses the same cm conversion in cards while keeping diameters in mm', () => {
+  it('uses the same quarter-inch conversion in desktop cards while keeping diameters in mm', () => {
     const markup = renderToStaticMarkup(createElement(DimensionsSummary, { dimensions: { ...base.dimensions, lengthMm: 870.449 } }))
-    expect(markup).toContain('data-testid="retained-length"><span>87.0</span><span class="dimension-unit">cm</span>')
+    expect(markup).toContain('data-testid="retained-length"><span>34.25</span><span class="dimension-unit">in</span>')
     expect(markup.match(/class="dimension-unit">mm/g)).toHaveLength(2)
   })
   it('sorts distinct raw lengths even when their cm displays are identical', () => {

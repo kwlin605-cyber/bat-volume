@@ -45,6 +45,7 @@ export default function BatPreview({ result, mode: requestedMode, interactionHel
   const cuts = calculated ? result.cuts : result.partial
   const showCuts = mode === 'whole' && (cuts?.low !== undefined || cuts?.high !== undefined)
   const revision = `${result.source.name}:${mode}`
+  const mass = calculated ? result.massProperties : null
   return <section className="preview-panel" aria-label={text.previewDescription}>
     <div className="canvas-wrap" data-testid="desktop-preview">
       <Canvas orthographic camera={{ position: [0, 80, 1200], zoom: 1, near: 0.1, far: 20000 }} dpr={[1, 2]} frameloop="demand" aria-label={text.previewDescription}>
@@ -58,6 +59,7 @@ export default function BatPreview({ result, mode: requestedMode, interactionHel
             {showCuts && cuts?.high !== undefined && <CutRing y={cuts.high - center} />}
             {calculated && <SectionMarker point={result.dimensions.maximum} center={center} kind="maximum" />}
             {calculated && result.dimensions.grip.status === 'detected' && <SectionMarker point={result.dimensions.grip.minimum} center={center} kind="grip" />}
+            {mass && <SectionMarker point={mass.center} center={center} kind="balance" />}
           </group>
           <FitView revision={revision} />
         </Bounds>

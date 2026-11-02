@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultBatchDisplay, createDefaultBatchSort, metricIds, normalizeBatchDisplay } from '../src/domain/batch-display'
+import { createDefaultBatchDisplay, createDefaultBatchSort, metricIds, normalizeBatchDisplay, defaultMetricIds } from '../src/domain/batch-display'
 import { allMetricIds } from '../src/features/batch/columns'
 
 describe('batch display preferences', () => {
   it('uses the current table catalog and gives each new session independent defaults', () => {
     expect(metricIds).toEqual(allMetricIds)
     const defaults = createDefaultBatchDisplay()
-    expect(defaults).toEqual({ visible: [...metricIds], showMeasurementDistances: false })
+    expect(defaults).toEqual({ visible: [...defaultMetricIds], showMeasurementDistances: false })
+    expect(defaults.visible).not.toContain('balancePoint')
+    expect(defaults.visible).not.toContain('moi')
     defaults.visible.pop()
     expect(createDefaultBatchDisplay().visible).toHaveLength(6)
     const sort = createDefaultBatchSort()

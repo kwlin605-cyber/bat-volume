@@ -1,6 +1,6 @@
 export type DiagnosticCode =
   | 'emptyProgram' | 'unsupportedInstruction' | 'invalidCoordinate'
-  | 'noProfile' | 'nonMonotoneProfile' | 'nonAxisymmetricProfile'
+  | 'noProfile' | 'nonAxisymmetricProfile'
   | 'invalidRadius' | 'missingLowEnd' | 'missingHighEnd' | 'missingBothEnds'
   | 'invalidCuts' | 'strategiesDisagree' | 'noApplicableStrategy'
   | 'wrongFileType' | 'fileTooLarge' | 'readFailed' | 'processingFailed'
@@ -9,6 +9,11 @@ export interface RawPoint { y: number; z: number; x: number; line: number; hasY:
 export interface FeedSweep { points: RawPoint[]; span: number }
 export interface Program { sweeps: FeedSweep[]; lineCount: number }
 export interface ProfilePoint { y: number; radius: number; line: number }
+export interface MassProperties {
+  center: ProfilePoint
+  balancePointMm: number | null
+  inertiaPerMassMm2: number | null
+}
 export interface Profile {
   /** Ordered geometry boundary. Equal Y values preserve the two sides of a vertical step. */
   points: ProfilePoint[]
@@ -82,7 +87,7 @@ export interface BatDimensions {
 }
 export type AnalysisResult =
   | { status: 'calculated'; source: SourceInfo; profile: Profile; retained: ProfilePoint[];
-      cuts: Cuts; volumeMm3: number; volumeCm3: number; dimensions: BatDimensions; estimated: boolean;
+      cuts: Cuts; volumeMm3: number; volumeCm3: number; dimensions: BatDimensions; massProperties: MassProperties; estimated: boolean;
       rule: RuleTrace; calibration: { id: string; version: string } }
   | { status: 'undetermined'; source: SourceInfo; code: DiagnosticCode;
       profile?: Profile; partial?: Partial<Cuts>; detail?: string }

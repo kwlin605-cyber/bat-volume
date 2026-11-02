@@ -1,10 +1,14 @@
 import { Check, ChevronDown, CircleAlert, LoaderCircle } from 'lucide-react'
 import type { UploadState } from '../services/analysis-state'
 import { diagnosticText, text } from '../i18n/zh-TW'
-import { formatCoordinate, formatVolume } from '../lib/format'
+import { formatCoordinate } from '../lib/format'
 import { DimensionsSummary } from './dimensions-summary'
+import type { BatProperties } from '../domain/bat-properties'
+import type { MassPropertyUnits } from '../domain/mass-property-units'
+import { defaultMassPropertyUnits } from '../config/mass-properties'
+import { BatPropertiesSummary } from './bat-properties-summary'
 
-export function ResultCard({ state, diameterAllowanceMm }: { state: Exclude<UploadState, { status: 'empty' }>; diameterAllowanceMm?: number }) {
+export function ResultCard({ state, diameterAllowanceMm, properties, massUnits = defaultMassPropertyUnits }: { state: Exclude<UploadState, { status: 'empty' }>; diameterAllowanceMm?: number; properties?: BatProperties; massUnits?: MassPropertyUnits }) {
   const result = state.status === 'result' ? state.result : null
   const calculated = result?.status === 'calculated'
   const status = state.status === 'loading' ? text.loading : calculated ? (result.estimated ? text.estimated : text.calculated) : text.failed
@@ -14,11 +18,8 @@ export function ResultCard({ state, diameterAllowanceMm }: { state: Exclude<Uplo
       <span>{status}</span>
     </div>
     {state.status === 'loading' ? <div className="volume-block"><p className="volume-label">{text.loadingDescription}</p><div className="volume-skeleton" /></div> : calculated ? <>
-      <div className="volume-block">
-        <h1 className="volume-label">{text.retainedVolume}</h1>
-        <div className="volume-value"><span data-testid="volume-value">{formatVolume(result.volumeCm3)}</span><span className="volume-unit">{text.volumeUnit}</span></div>
-      </div>
       <DimensionsSummary diameterAllowanceMm={diameterAllowanceMm} dimensions={result.dimensions} />
+      {properties && <BatPropertiesSummary properties={properties} units={massUnits} />}
       <details className="cut-details">
         <summary><span>{text.cuts}</span><ChevronDown size={15} aria-hidden="true" /></summary>
         <dl className="cut-values">

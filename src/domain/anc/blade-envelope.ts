@@ -1,5 +1,6 @@
 import { AnalysisError } from '../types'
 import type { GeometryCalibration, Profile, ProfilePoint, Program } from '../types'
+import { profilePointAt } from '../geometry/profile'
 
 interface BladeSpan {
   low: number
@@ -67,6 +68,7 @@ function lowerEnvelope(spans: BladeSpan[], low = 0, high = spans.length): Envelo
 export function extractBladeEnvelope(program: Program, calibration: GeometryCalibration, widthMm: number): Profile {
   const half = widthMm / 2
   const spans: BladeSpan[] = []
+  const plunges = new Map<number, ProfilePoint>()
   for (const sweep of program.sweeps) {
     for (let i = 1; i < sweep.points.length; i++) {
       let a = sweep.points[i - 1], b = sweep.points[i]
@@ -75,6 +77,10 @@ export function extractBladeEnvelope(program: Program, calibration: GeometryCali
       const r1 = b.z * calibration.radiusScale + calibration.radiusOffsetMm
       if (!Number.isFinite(r0) || r0 < 0 || !Number.isFinite(r1) || r1 < 0) throw new AnalysisError('invalidRadius')
       const line = sweep.points[i].line
+      if (widthMm === 0 && a.y === b.y) {
+        const radius = Math.min(r0, r1)
+        if (radius < (plunges.get(a.y)?.radius ?? Infinity)) plunges.set(a.y, { y: a.y, radius, line })
+      }
       const add = (low: number, high: number, lowRadius: number, highRadius: number) => {
         if (high > low) spans.push({ low, high, lowRadius, highRadius, line })
       }
@@ -101,6 +107,19 @@ export function extractBladeEnvelope(program: Program, calibration: GeometryCali
     points.push({ y: piece.high, radius: radiusAt(piece.source, piece.high), line: piece.source.line })
   }
   if (points.length < 2) throw new AnalysisError('noProfile')
+  // A zero-width plunge removes no volume, but its exact boundary still exists.
+  for (const plunge of [...plunges.values()].sort((a, b) => a.y - b.y)) {
+    const surface = profilePointAt(points, plunge.y)
+    if (plunge.radius >= surface.radius) continue
+    const index = points.findIndex(point => point.y >= plunge.y)
+    let end = index
+    while (end < points.length && points[end].y === plunge.y) end++
+    if (end === index) points.splice(index, 0, surface, plunge, surface)
+    else {
+      const boundary = points.slice(index, end)
+      points.splice(index, end - index, boundary[0], plunge, ...boundary.slice(1), ...(boundary.length === 1 ? [boundary[0]] : []))
+    }
+  }
   return {
     points,
     range: { low: points[0].y, high: points.at(-1)!.y },

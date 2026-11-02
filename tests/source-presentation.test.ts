@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { AnalysisEntry } from '../src/services/analysis-state'
 import { buildBatchView } from '../src/features/batch/view-model'
-import { allMetricIds } from '../src/features/batch/columns'
+import { allMetricIds, defaultMetricIds } from '../src/features/batch/columns'
 import { textUnits } from '../src/features/batch/column-layout'
 import { buildPdfLayout } from '../src/reports/pdf-layout'
 import { createExcelReport } from '../src/reports/excel-report'
@@ -24,12 +24,13 @@ const entries = [
   makeEntry('nested', { kind: 'preset', id: '/src/assets/anc/甲/資料夾/未命名.anc', label: '甲／資料夾' }),
   makeEntry('upload', { kind: 'upload' }), makeEntry('legacy'), makeEntry('unique', undefined, '另一支.anc'),
 ]
-const viewFor = (items: AnalysisEntry[]) => buildBatchView(items, allMetricIds, { key: 'name', direction: 'asc' }, { material, requirements: { first: { min: 800, max: 850 } } })
+const viewFor = (items: AnalysisEntry[]) => buildBatchView(items, defaultMetricIds, { key: 'name', direction: 'asc' }, { material, requirements: { first: { min: 800, max: 850 } } })
 const measure = (value: string, size: number) => textUnits(value) * size * 0.5
 
 describe('source labels explain duplicate names without changing diagnostics or calculations', () => {
   it('distinguishes duplicate rows, weight controls, previews and removal controls by accessible name', () => {
     const markup = renderToStaticMarkup(createElement(BatchResults, {
+      massUnits: { balance: 'cm', inertia: 'kg-cm2' }, onMassUnitsChange() {},
       diameterAllowanceMm: 0, material, weightUnit: 'g', lengthUnit: 'cm', entries: entries.slice(0, 2), requirements: {},
       display: { visible: allMetricIds, showMeasurementDistances: false }, sort: { key: 'name', direction: 'asc' }, removing: true,
       onDiameterAllowanceChange() {}, onWeightUnitChange() {}, onLengthUnitChange() {}, onMaterialOpen() {},

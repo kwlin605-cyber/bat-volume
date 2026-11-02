@@ -10,7 +10,7 @@ function view(name: string, display = '1,130', detail = ''): BatchView {
   return { columns: [...metricColumns], sort: { key: 'name', direction: 'asc' }, sortLabel: '',
     summary: { total: 1, calculated: 1, failed: 0, pending: 0 },
     rows: [{ id: '1', name, pending: false, status: { label: '', detail, kind: 'complete' },
-      cells: { batWeight: { value: null, display: '—' }, materialWeight: { value: null, display: '—' }, volume: { value: 1129.9491175359196, display }, length: { value: 870.16, display: '870.2' },
+      cells: { balancePoint: { value: null, display: '—' }, moi: { value: null, display: '—' }, batWeight: { value: null, display: '—' }, materialWeight: { value: null, display: '—' }, volume: { value: 1129.9491175359196, display }, length: { value: 870.16, display: '870.2' },
         maximumDiameter: { value: 57.48, display: '57.5' }, gripDiameter: { value: 21.26, display: '21.3' } } }] }
 }
 

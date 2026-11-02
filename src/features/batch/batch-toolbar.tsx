@@ -13,8 +13,11 @@ import { reportFormats, type ReportFormat } from '../../reports/formats'
 import type { BatGroupingSettings } from '../../domain/bat-grouping'
 import { GroupingControls } from './grouping-controls'
 import { DiameterAllowanceControl } from './diameter-allowance-control'
+import type { MassPropertyUnits } from '../../domain/mass-property-units'
+import { MassPropertyUnitSelectors } from '../../components/mass-property-unit-selectors'
 
 interface Props {
+  massUnits: MassPropertyUnits; onMassUnitsChange: (value: MassPropertyUnits) => void
   diameterAllowanceMm: number; onDiameterAllowanceChange: (value: number) => void
   visible: readonly MetricId[]; sort: BatchSort; sortLabel: string; weightUnit: WeightDisplayMode
   showMeasurementDistances: boolean; onMeasurementDistancesChange: (show: boolean) => void
@@ -27,7 +30,7 @@ interface Props {
 }
 
 /** Display controls own their menus; calculations and report generation stay with the results. */
-export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending,
+export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit, pending, massUnits, onMassUnitsChange,
   onVisibleChange, onSortChange, onUnitChange, onLengthUnitChange, onMaterialOpen, onExport, grouping, onGroupingChange, diameterAllowanceMm, onDiameterAllowanceChange, showMeasurementDistances, onMeasurementDistancesChange }: Props) {
   const toolbar = useRef<HTMLDivElement>(null)
   const sortMenu = useRef<HTMLDetailsElement>(null)
@@ -42,6 +45,7 @@ export function BatchToolbar({ visible, sort, sortLabel, weightUnit, lengthUnit,
     <button type="button" className="material-settings-button" onClick={onMaterialOpen}><Settings2 size={15} />{text.materialSettings}</button>
     <details className="column-menu"><summary><SlidersHorizontal size={15} />{text.visibleInformation}<ChevronDown size={13} /></summary><div className="column-popover">
       <WeightUnitSelector value={weightUnit} onChange={onUnitChange} />
+      <MassPropertyUnitSelectors value={massUnits} onChange={onMassUnitsChange} />
       <UnitSelector label={text.lengthDisplayUnit} modes={lengthDisplayModes} value={lengthUnit} modeLabel={lengthModeLabel} onChange={onLengthUnitChange} />
       <DiameterAllowanceControl value={diameterAllowanceMm} onChange={onDiameterAllowanceChange} />
       <button type="button" onClick={() => onVisibleChange([...allMetricIds])}>{text.selectAllInformation}</button>

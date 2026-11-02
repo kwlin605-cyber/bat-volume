@@ -103,7 +103,7 @@ describe('grouping preference storage', () => {
     saveMaterialSettings(storage, { referenceDensity: 0.7, volumeCm3: 3000, weightG: 2100, weightErrorPercent: -3 })
     saveLengthUnit(storage, 'in'); saveWeightUnit(storage, 'both')
     const nextFiles = createDefaultBatchDisplay()
-    expect(nextFiles.visible).toEqual(metricIds)
+    expect(nextFiles.visible).toEqual(metricIds.filter(id => id !== 'balancePoint' && id !== 'moi'))
     expect(readBatGrouping(storage).settings).toEqual(settings)
     expect(readMaterialSettings(storage).settings.referenceDensity).toBe(0.7)
     expect(readLengthUnit(storage).mode).toBe('in')

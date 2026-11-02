@@ -43,7 +43,7 @@ describe('blade width validation and parsing', () => {
     expect(validBladeWidth({})).toBe(false)
   })
 
-  it('parses numeric string drafts; empty/whitespace returns default; negatives/non-numbers return null', () => {
+  it('parses numeric drafts; empty/whitespace returns zero; negatives/non-numbers return null', () => {
     expect(parseBladeWidth('5')).toBe(5)
     expect(parseBladeWidth('0')).toBe(0)
     expect(parseBladeWidth('3.5')).toBe(3.5)
@@ -131,7 +131,7 @@ const twoPassProgram = [
 ].join('\n')
 
 describe('blade envelope profile extraction', () => {
-  it('produces a valid profile in raw mode (bladeWidthMm = 0) with all sweeps counted', () => {
+  it('produces a valid zero-width cumulative profile with all sweeps counted', () => {
     const parsed = parseAnc(twoPassProgram)
     expect(parsed.sweeps).toHaveLength(2)
 
@@ -160,12 +160,12 @@ describe('blade envelope profile extraction', () => {
     expect(profilePointAt(blade.points, 72.5).radius).toBe(20)
   })
 
-  it('blade envelope has radius ≤ raw profile radius at corresponding positions', () => {
+  it('positive-width cutting has radius ≤ zero-width cutting at corresponding positions', () => {
     const parsed = parseAnc(twoPassProgram)
     const raw = extractProfile(parsed, calibration, 0)
     const blade = extractProfile(parsed, calibration, 5.0)
 
-    // For each blade point within the raw profile range, blade radius ≤ raw radius
+    // Widening a blade cannot restore material at an already covered position.
     const rawRange = { low: raw.points[0].y, high: raw.points.at(-1)!.y }
     for (const bp of blade.points) {
       if (bp.y < rawRange.low || bp.y > rawRange.high) continue
@@ -188,7 +188,7 @@ describe('analysis with blade width on a real ANC fixture', () => {
   const raw = readFileSync(new URL('./fixtures/case-001.anc', import.meta.url), 'utf8')
   const source = { name: 'case-001.anc', size: raw.length }
 
-  it('analyses successfully with bladeWidthMm = 0 (raw mode)', () => {
+  it('analyses successfully with bladeWidthMm = 0 (cumulative cutting)', () => {
     const result = analyzeAnc(raw, source, defaultContext, defaultGripContext, 0)
     expect(result.status).toBe('calculated')
   })

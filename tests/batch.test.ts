@@ -35,11 +35,11 @@ describe('batch data shared by table and report', () => {
     expect(view.rows[1].cells.batWeight.display).toBe('679')
     expect(view.rows[1].cells.materialWeight.value).toBe(2100)
   })
-  it('defaults to all metrics and material-weight order, with targets isolated by entry ID', () => {
+  it('defaults to the original metrics and material-weight order, with targets isolated by entry ID', () => {
     const view = buildBatchView([entry('a', 'same.anc', 1000), entry('b', 'same.anc', 2000)], defaultMetricIds, defaultSort, {
       material: { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }, requirements: { a: { min: 600, max: 650 } }, weightUnit: 'g',
     })
-    expect(view.columns.map(column => column.id)).toEqual(allMetricIds)
+    expect(view.columns.map(column => column.id)).toEqual(defaultMetricIds)
     expect(view.rows[0].cells.materialWeight).toEqual({ value: 1800, maximum: 1950, display: '1,800 – 1,950' })
     expect(view.rows[1].cells.batWeight.value).toBe(1400)
     expect(view.rows[1].cells.materialWeight).toEqual({ value: 2100, display: '2,100' })

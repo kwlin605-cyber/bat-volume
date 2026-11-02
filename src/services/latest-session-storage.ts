@@ -1,7 +1,7 @@
 import { sessionStorage } from '../config/session'
 import { restoreBatchSession, type BatchSession, type StoredDisplay, type StoredFiles, type StoredRequirements } from './batch-session'
 import type { WeightRange } from '../domain/weight'
-import type { BatchDisplaySettings } from '../domain/batch-display'
+import { persistentBatchDisplay, type BatchDisplaySettings } from '../domain/batch-display'
 
 export interface SessionRepository {
   read(): Promise<BatchSession | null>
@@ -65,7 +65,7 @@ class IndexedDbSessionRepository implements SessionRepository {
       const requirements: StoredRequirements = { sessionId: session.id, values: session.requirements }
       store.put(files, sessionStorage.filesKey)
       store.put(requirements, sessionStorage.requirementsKey)
-      store.put({ version: sessionStorage.formatVersion, sessionId: session.id, value: session.display } satisfies StoredDisplay, sessionStorage.displayKey)
+      store.put({ version: sessionStorage.formatVersion, sessionId: session.id, value: persistentBatchDisplay(session.display) } satisfies StoredDisplay, sessionStorage.displayKey)
     })
   }
 
@@ -74,7 +74,7 @@ class IndexedDbSessionRepository implements SessionRepository {
   }
 
   updateDisplay(id: string, value: BatchDisplaySettings) {
-    return this.updateForSession(id, sessionStorage.displayKey, { version: sessionStorage.formatVersion, sessionId: id, value } satisfies StoredDisplay)
+    return this.updateForSession(id, sessionStorage.displayKey, { version: sessionStorage.formatVersion, sessionId: id, value: persistentBatchDisplay(value) } satisfies StoredDisplay)
   }
 
   private updateForSession(id: string, key: string, value: StoredRequirements | StoredDisplay) {

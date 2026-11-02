@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Box, ChevronDown, CircleAlert, FileCode2, LoaderCircle, Plus, Settings2, X } from 'lucide-react'
 import type { AnalysisEntry } from '../services/analysis-state'
 import type { MaterialSettings, WeightRange } from '../domain/weight'
-import { estimateBatWeight, calculateMaterialWeight } from '../domain/weight'
+import { calculateMaterialWeight } from '../domain/weight'
 import type { WeightDisplayMode } from '../domain/weight-unit'
 import type { LengthDisplayMode } from '../domain/length-unit'
 import { weightDisplay, weightHeaderUnit, weightUnitLabel } from '../lib/weight-display'
@@ -13,8 +13,13 @@ import { displayFileName } from '../lib/file-name'
 import { diagnosticText, gripDiagnosticText, text } from '../i18n/zh-TW'
 import { parseRequirement } from '../features/batch/weight-input'
 import { MobilePreviewDialog } from './mobile-preview-dialog'
+import { calculateBatProperties } from '../domain/bat-properties'
+import { BatPropertiesSummary } from './bat-properties-summary'
+import type { MassPropertyUnits } from '../domain/mass-property-units'
+import { defaultMassPropertyUnits } from '../config/mass-properties'
 
 interface Props {
+  massUnits?: MassPropertyUnits
   entry: AnalysisEntry
   diameterAllowanceMm?: number
   material: MaterialSettings
@@ -40,6 +45,7 @@ export function MobileResultView({
   onMaterialOpen,
   onOpenLibrary,
   onClose,
+  massUnits = defaultMassPropertyUnits,
 }: Props) {
   const [show3d, setShow3d] = useState(false)
   const [specifying, setSpecifying] = useState(false)
@@ -54,6 +60,7 @@ export function MobileResultView({
   const source = entry.source
   const result = state.status === 'result' ? state.result : null
   const calculated = result?.status === 'calculated'
+  const properties = calculateBatProperties(result, material, requirement)
 
   // Has material been configured?
   const hasMaterial = material.referenceDensity !== null || (material.volumeCm3 !== null && material.weightG !== null)
@@ -63,16 +70,9 @@ export function MobileResultView({
     ? calculateMaterialWeight(material, result.volumeCm3, requirement)
     : null
 
-  const estimatedBatWeight = calculated && result
-    ? estimateBatWeight(material, result.volumeCm3)
+  const batWeightFormatted = properties.weightG
+    ? weightDisplay(properties.weightG.min, properties.weightG.max, 'g')
     : null
-
-  // Bat weight display: Either specified requirement, or density-estimated (always canonical grams)
-  const batWeightFormatted = requirement
-    ? weightDisplay(requirement.min, requirement.max === requirement.min ? undefined : requirement.max, 'g')
-    : estimatedBatWeight !== null
-      ? weightDisplay(estimatedBatWeight, undefined, 'g')
-      : null
 
   // Required material weight display
   const matWeightFormatted = materialCalc && materialCalc.kind === 'recommended'
@@ -420,6 +420,7 @@ export function MobileResultView({
                 </div>
               </dl>
 
+              <BatPropertiesSummary properties={properties} units={massUnits} showWeight={false} className="mobile-property-list" />
               {diameterAllowanceMm > 0 && (
                 <div className="mobile-allowance-hint">
                   <span>{text.diameterAllowance}：{formatCoordinate(diameterAllowanceMm)} {text.millimetreUnit}</span>
@@ -479,7 +480,7 @@ export function MobileResultView({
 
       {/* 3D Fullscreen Modal */}
       {show3d && calculated && result?.profile && (
-        <MobilePreviewDialog result={result} diameterAllowanceMm={diameterAllowanceMm} onClose={() => setShow3d(false)} />
+        <MobilePreviewDialog properties={properties} massUnits={massUnits} result={result} diameterAllowanceMm={diameterAllowanceMm} onClose={() => setShow3d(false)} />
       )}
     </div>
   )

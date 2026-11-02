@@ -6,9 +6,13 @@ import { text } from '../../i18n/zh-TW'
 import { formatCoordinate } from '../../lib/format'
 import type { WeightDisplayMode } from '../../domain/weight-unit'
 import type { LengthDisplayMode } from '../../domain/length-unit'
+import type { MassPropertyUnits } from '../../domain/mass-property-units'
+import { MassPropertyUnitSelectors } from '../../components/mass-property-unit-selectors'
 
 export function MaterialDialog({
   value,
+  massUnits,
+  onMassUnitsChange,
   weightUnit,
   lengthUnit,
   onWeightUnitChange,
@@ -21,6 +25,8 @@ export function MaterialDialog({
   onDismiss,
 }: {
   value: MaterialSettings
+  massUnits?: MassPropertyUnits
+  onMassUnitsChange?: (value: MassPropertyUnits) => void
   weightUnit?: WeightDisplayMode
   lengthUnit?: LengthDisplayMode
   onWeightUnitChange?: (unit: WeightDisplayMode) => void
@@ -43,6 +49,7 @@ export function MaterialDialog({
   const [draftWeightUnit, setDraftWeightUnit] = useState(weightUnit ?? 'oz')
   const [draftLengthUnit, setDraftLengthUnit] = useState(lengthUnit ?? 'in')
   const [error, setError] = useState('')
+  const [draftMassUnits, setDraftMassUnits] = useState(massUnits)
 
   const weightG = weight.trim() ? Number(weight) : null
 
@@ -87,6 +94,7 @@ export function MaterialDialog({
     if (draftWeightUnit !== weightUnit) onWeightUnitChange?.(draftWeightUnit)
     if (draftLengthUnit !== lengthUnit) onLengthUnitChange?.(draftLengthUnit)
 
+    if (draftMassUnits && onMassUnitsChange) onMassUnitsChange(draftMassUnits)
     onApply(settings)
     onDismiss()
   }
@@ -283,6 +291,7 @@ export function MaterialDialog({
           </div>
         )}
 
+        {draftMassUnits && onMassUnitsChange && <div className="material-unit-preferences"><MassPropertyUnitSelectors value={draftMassUnits} onChange={setDraftMassUnits} /></div>}
         {error && <p className="weight-input-error" role="alert">{error}</p>}
         <div className="material-actions">
           <button type="button" onClick={onDismiss}>{text.cancel}</button>

@@ -1,7 +1,7 @@
 /**
  * Blade width (in millimetres) for flat circular saw blade simulation.
  * When > 0, cutting passes are swept with a flat blade of this width (centered at Y).
- * When 0, raw G-code points are used without blade width compensation.
+ * At 0, all cutting passes still accumulate, with no lateral expansion.
  */
 export const defaultBladeWidthMm = 5.0
 

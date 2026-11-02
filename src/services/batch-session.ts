@@ -1,6 +1,6 @@
 import { validWeightRange, type WeightRange } from '../domain/weight'
 import { sessionStorage } from '../config/session'
-import { createDefaultBatchDisplay, normalizeBatchDisplay, type BatchDisplaySettings } from '../domain/batch-display'
+import { createDefaultBatchDisplay, normalizeBatchDisplay, persistentBatchDisplay, type BatchDisplaySettings } from '../domain/batch-display'
 import type { FileOrigin, PresetOrigin } from './file-origin'
 
 export type SessionFile = { id: string; name: string } & (
@@ -75,5 +75,5 @@ export function restoreBatchSession(files: unknown, requirements: unknown, displ
   const presentation = display as Partial<StoredDisplay> | null
   const settings = supportedVersion(presentation?.version) && presentation?.sessionId === stored.id
     ? normalizeBatchDisplay(presentation.value) : createDefaultBatchDisplay()
-  return { id: stored.id, files: stored.files, requirements: values, display: settings }
+  return { id: stored.id, files: stored.files, requirements: values, display: persistentBatchDisplay(settings) }
 }

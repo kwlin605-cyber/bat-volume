@@ -6,6 +6,7 @@ import { extractProfile } from './anc/profile'
 import { detectCuts } from './cuts/registry'
 import { clipProfile, integrateVolumeMm3 } from './geometry/volume'
 import { measureDimensions } from './geometry/dimensions'
+import { calculateMassProperties } from './geometry/mass-properties'
 
 export function analyzeAnc(
   text: string,
@@ -23,9 +24,11 @@ export function analyzeAnc(
     }
     const retained = clipProfile(profile.points, decision.cuts)
     const volumeMm3 = integrateVolumeMm3(retained)
+    const dimensions = measureDimensions(retained, gripContext)
+    const massProperties = calculateMassProperties(retained, dimensions.grip.status === 'detected' ? dimensions.grip.end : null)
     return {
       status: 'calculated', source, profile, retained, cuts: decision.cuts,
-      volumeMm3, volumeCm3: volumeMm3 / 1000, dimensions: measureDimensions(retained, gripContext),
+      volumeMm3, volumeCm3: volumeMm3 / 1000, dimensions, massProperties,
       estimated: !context.calibration.validated,
       rule: trace,
       calibration: { id: context.calibration.id, version: context.calibration.version },

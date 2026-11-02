@@ -5,8 +5,15 @@ import type { AnalysisEntry } from '../../services/analysis-state'
 import { ResultView } from '../../components/result-view'
 import { text } from '../../i18n/zh-TW'
 import { PreviewModeSwitch, usePreviewMode } from '../../components/preview-mode'
+import type { MaterialSettings, WeightRange } from '../../domain/weight'
+import type { MassPropertyUnits } from '../../domain/mass-property-units'
+import { defaultMassPropertyUnits } from '../../config/mass-properties'
+import { initialMaterialSettings } from '../../config/weight'
+import { calculateBatProperties } from '../../domain/bat-properties'
 
-export function ResultDialog({ entry, onDismiss, diameterAllowanceMm }: { diameterAllowanceMm: number; entry: AnalysisEntry; onDismiss: () => void }) {
+export function ResultDialog({ entry, onDismiss, diameterAllowanceMm, material = initialMaterialSettings, requirement = null, massUnits = defaultMassPropertyUnits }: {
+  diameterAllowanceMm: number; entry: AnalysisEntry; onDismiss: () => void; material?: MaterialSettings; requirement?: WeightRange | null; massUnits?: MassPropertyUnits
+}) {
   const dialog = useRef<HTMLDialogElement>(null)
   const result = entry.state.status === 'result' ? entry.state.result : null
   const hasPreview = Boolean(result?.profile)
@@ -20,6 +27,6 @@ export function ResultDialog({ entry, onDismiss, diameterAllowanceMm }: { diamet
         <button type="button" className="icon-button" aria-label={text.closePreview} onClick={() => dialog.current?.close()}><X size={20} /></button>
       </div>
     </div>
-    <ResultView diameterAllowanceMm={diameterAllowanceMm} state={entry.state} preview previewMode={preview.mode} />
+    <ResultView properties={calculateBatProperties(result, material, requirement)} massUnits={massUnits} diameterAllowanceMm={diameterAllowanceMm} state={entry.state} preview previewMode={preview.mode} />
   </dialog>
 }

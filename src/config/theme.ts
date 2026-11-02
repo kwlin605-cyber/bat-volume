@@ -140,7 +140,7 @@ export const screenColors = {
 
 export const selectionColors = { background: '#edf6ef', accent: '#39754b', border: '#b8d7bf' } as const
 
-export const previewColors = { wood: '#c5a479', cut: '#71857b', maximum: '#567c9a', grip: '#4f8974' } as const
+export const previewColors = { wood: '#c5a479', cut: '#71857b', maximum: '#567c9a', grip: '#4f8974', balance: palette.ink } as const
 
 /** The portal editor and table inherit the same selection roles from the document root. */
 export const themeCssVariables: Readonly<Record<string, string>> = Object.fromEntries([

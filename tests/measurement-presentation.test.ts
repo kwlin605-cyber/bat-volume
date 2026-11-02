@@ -77,6 +77,7 @@ describe('one optional measurement line in each existing diameter column', () =>
   })
   it('uses renamed labels everywhere and one checkbox in the existing information menu', () => {
     const markup = renderToStaticMarkup(createElement(BatchResults, {
+      massUnits: { balance: 'cm', inertia: 'kg-cm2' }, onMassUnitsChange() {},
       diameterAllowanceMm: 0, material, weightUnit: 'g', lengthUnit: 'cm', entries: [entry], requirements: {},
       display: { ...createDefaultBatchDisplay(), showMeasurementDistances: true }, sort: { key: 'name', direction: 'asc' }, removing: false,
       onDiameterAllowanceChange() {}, onWeightUnitChange() {}, onLengthUnitChange() {}, onMaterialOpen() {},

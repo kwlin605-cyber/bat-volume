@@ -9,7 +9,7 @@ import { MeasurementDistance } from './measurement-distance'
 export function DimensionsSummary({ dimensions, diameterAllowanceMm = defaultDiameterAllowanceMm }: { dimensions: BatDimensions; diameterAllowanceMm?: number }) {
   const grip = dimensions.grip
   const measurements = [
-    { key: 'retained-length', label: text.retainedLength, value: dimensions.lengthMm, unit: text.centimetreUnit, format: (mm: number) => lengthDisplay(mm, 'cm').display },
+    { key: 'retained-length', label: text.retainedLength, value: dimensions.lengthMm, unit: text.inchUnit, format: (mm: number) => lengthDisplay(mm, 'in').display },
     { key: 'maximum-diameter', label: text.maximumDiameter, value: finishedDiameter(dimensions.maximumDiameterMm, diameterAllowanceMm), unit: text.millimetreUnit, format: formatDimension, distance: measurementCaption(dimensions.distances?.head, 'head') },
     { key: 'minimum-grip-diameter', label: text.minimumGripDiameter, value: finishedDiameter(grip.status === 'detected' ? grip.diameterMm : null, diameterAllowanceMm), unit: text.millimetreUnit, format: formatDimension, distance: measurementCaption(dimensions.distances?.grip, 'grip') },
   ]

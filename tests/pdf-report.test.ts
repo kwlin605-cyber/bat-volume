@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { analyzeAnc } from '../src/domain/analyze'
 import { buildBatchView } from '../src/features/batch/view-model'
-import { allMetricIds } from '../src/features/batch/columns'
+import { defaultMetricIds } from '../src/features/batch/columns'
 import { textUnits } from '../src/features/batch/column-layout'
 import { buildPdfLayout } from '../src/reports/pdf-layout'
 import { reportStyle, scaledReportStyle } from '../src/config/report'
@@ -16,7 +16,7 @@ const entries: AnalysisEntry[] = Array.from({ length: 43 }, (_, index) => {
   return { id: String(index), source, state: { status: 'result', result: analyzeAnc(raw, source) } }
 })
 const material = { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: -3 }
-const view = buildBatchView(entries, allMetricIds, { key: 'name', direction: 'desc' },
+const view = buildBatchView(entries, defaultMetricIds, { key: 'name', direction: 'desc' },
   { material, requirements: { '0': { min: 600, max: 650 } }, weightUnit: 'both' }, 'both')
 const measure = (value: string, size: number) => textUnits(value) * size * 0.5
 
@@ -33,7 +33,7 @@ describe('A4 PDF pagination', () => {
     for (const page of result.pages) {
       expect(page.tableY).toBeGreaterThanOrEqual(reportStyle.padding)
       expect(page.tableY).toBeCloseTo(result.height - (page.rows.at(-1)!.y + page.rows.at(-1)!.height))
-      expect(page.columns.map(item => item.column.id)).toEqual(allMetricIds)
+      expect(page.columns.map(item => item.column.id)).toEqual(defaultMetricIds)
       expect(page.rows[0].y).toBeCloseTo(page.tableY + style.headingHeight)
       expect(page.rows.at(-1)!.y + page.rows.at(-1)!.height).toBeLessThanOrEqual(result.height - reportStyle.padding + 0.01)
       expect(page.rows.every(row => row.height / 2 >= style.fonts.value.size + style.rowPadding)).toBe(true)

@@ -1,7 +1,7 @@
 import type { AnalysisEntry } from '../../services/analysis-state'
 import { diagnosticText, gripDiagnosticText, text } from '../../i18n/zh-TW'
 import { metricColumns, geometryColumns, columnsForUnits, type MetricId, type MetricColumn } from './columns'
-import { calculateMaterialWeight, estimateBatWeight, type MaterialSettings, type WeightRange } from '../../domain/weight'
+import { calculateMaterialWeight, type MaterialSettings, type WeightRange } from '../../domain/weight'
 import { initialMaterialSettings } from '../../config/weight'
 import { weightDisplay } from '../../lib/weight-display'
 import { fromGrams, type WeightDisplayMode } from '../../domain/weight-unit'
@@ -15,6 +15,10 @@ import { defaultDiameterAllowanceMm, finishedDiameter } from '../../domain/diame
 import { displayFileName } from '../../lib/file-name'
 import { sourceLabel } from '../../lib/source-label'
 import { measurementCaption } from '../../lib/measurement-display'
+import { calculateBatProperties } from '../../domain/bat-properties'
+import { defaultMassPropertyUnits } from '../../config/mass-properties'
+import { inertiaFromKgM2, type MassPropertyUnits } from '../../domain/mass-property-units'
+import { formatBalancePoint, inertiaDisplay } from '../../lib/mass-property-display'
 export { defaultSort, type BatchSort } from '../../domain/batch-display'
 
 export interface BatchCell { value: number | null; display: string; maximum?: number; caption?: string; secondary?: string; measurement?: string }
@@ -31,7 +35,7 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm, showMeasurementDistances = false): BatchView {
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm, showMeasurementDistances = false, massUnits: MassPropertyUnits = defaultMassPropertyUnits): BatchView {
   const weightUnit = weights.weightUnit ?? 'oz'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
@@ -58,10 +62,10 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
       cells.gripDiameter.measurement = measurementCaption(calculated.dimensions.distances?.grip, 'grip')
     }
     const required = weights.requirements[entry.id] ?? null
-    const estimatedWeight = estimateBatWeight(weights.material, calculated?.volumeCm3 ?? null)
-    cells.batWeight = required
-      ? weightCell(required.min, required.max)
-      : weightCell(estimatedWeight)
+    const properties = calculateBatProperties(result, weights.material, required)
+    cells.batWeight = properties.weightG ? weightCell(properties.weightG.min, properties.weightG.max) : weightCell(null)
+    cells.balancePoint = { value: properties.balancePointMm, display: properties.balancePointMm === null ? text.missingValue : formatBalancePoint(properties.balancePointMm, massUnits.balance) }
+    cells.moi = { value: properties.moiKgM2?.min ?? null, ...(properties.moiKgM2 ? { maximum: properties.moiKgM2.max } : {}), display: inertiaDisplay(properties.moiKgM2, massUnits.inertia) }
     const materialWeight = calculateMaterialWeight(weights.material, calculated?.volumeCm3 ?? null, required)
     cells.materialWeight = entry.state.status === 'unavailable' ? { value: null, display: text.missingValue } : materialWeight.kind === 'reference'
       ? weightCell(materialWeight.weightG, undefined, weightUnit)
@@ -79,7 +83,7 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
     const rawMaximumDiameterMm = calculated?.dimensions.maximumDiameterMm ?? null
     return { id: entry.id, name: entry.source.name, ...(nameCounts.get(displayFileName(entry.source.name))! > 1 ? { sourceLabel: sourceLabel(entry.origin) } : {}), pending, cells, status, rawMaximumDiameterMm, group: classifyBat(rawMaximumDiameterMm, grouping) }
   })
-  return { rows: orderBatchRows(rows, sort, grouping), summary, columns: columnsForUnits(weightUnit, lengthUnit).filter(column => visible.includes(column.id)), sort,
+  return { rows: orderBatchRows(rows, sort, grouping), summary, columns: columnsForUnits(weightUnit, lengthUnit, massUnits).filter(column => visible.includes(column.id)), sort,
     sortLabel: sort.key === 'name' ? text.fileName : metricColumns.find(column => column.id === sort.key)!.label }
 }
 
@@ -87,6 +91,8 @@ export function reportCellValue(cell: BatchCell, column?: MetricColumn): string 
   if (cell.caption) return `${cell.display}\n${cell.caption}`
   if (cell.secondary) return `${cell.display}\n${cell.secondary}`
   if (cell.maximum !== undefined && cell.maximum !== cell.value) return cell.display
+  if (cell.value !== null && column?.balanceUnit) return fromMillimetres(cell.value, column.balanceUnit)
+  if (cell.value !== null && column?.inertiaUnit) return inertiaFromKgM2(cell.value, column.inertiaUnit)
   return cell.value === null ? text.missingValue : column?.weightMode === 'oz' ? fromGrams(cell.value, 'oz') : column?.lengthMode === 'in' ? quarterInchValue(cell.value) : column?.lengthMode === 'cm' ? fromMillimetres(cell.value, 'cm') : cell.value
 }
 
