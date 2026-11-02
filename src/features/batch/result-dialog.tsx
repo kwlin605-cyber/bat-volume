@@ -11,8 +11,8 @@ import { defaultMassPropertyUnits } from '../../config/mass-properties'
 import { initialMaterialSettings } from '../../config/weight'
 import { calculateBatProperties } from '../../domain/bat-properties'
 
-export function ResultDialog({ entry, onDismiss, diameterAllowanceMm, material = initialMaterialSettings, requirement = null, massUnits = defaultMassPropertyUnits }: {
-  diameterAllowanceMm: number; entry: AnalysisEntry; onDismiss: () => void; material?: MaterialSettings; requirement?: WeightRange | null; massUnits?: MassPropertyUnits
+export function ResultDialog({ entry, onDismiss, material = initialMaterialSettings, requirement = null, massUnits = defaultMassPropertyUnits }: {
+  entry: AnalysisEntry; onDismiss: () => void; material?: MaterialSettings; requirement?: WeightRange | null; massUnits?: MassPropertyUnits
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const result = entry.state.status === 'result' ? entry.state.result : null
@@ -27,6 +27,6 @@ export function ResultDialog({ entry, onDismiss, diameterAllowanceMm, material =
         <button type="button" className="icon-button" aria-label={text.closePreview} onClick={() => dialog.current?.close()}><X size={20} /></button>
       </div>
     </div>
-    <ResultView properties={calculateBatProperties(result, material, requirement)} massUnits={massUnits} diameterAllowanceMm={diameterAllowanceMm} state={entry.state} preview previewMode={preview.mode} />
+    <ResultView properties={calculateBatProperties(result, material, requirement)} massUnits={massUnits} state={entry.state} preview previewMode={preview.mode} />
   </dialog>
 }

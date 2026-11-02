@@ -8,7 +8,6 @@ import type { LengthDisplayMode } from '../domain/length-unit'
 import { weightDisplay, weightHeaderUnit, weightUnitLabel } from '../lib/weight-display'
 import { lengthDisplay } from '../lib/length-display'
 import { formatCoordinate, formatDimension, formatVolume } from '../lib/format'
-import { defaultDiameterAllowanceMm, finishedDiameter } from '../domain/diameter-allowance'
 import { displayFileName } from '../lib/file-name'
 import { diagnosticText, gripDiagnosticText, text } from '../i18n/zh-TW'
 import { parseRequirement } from '../features/batch/weight-input'
@@ -21,7 +20,6 @@ import { defaultMassPropertyUnits } from '../config/mass-properties'
 interface Props {
   massUnits?: MassPropertyUnits
   entry: AnalysisEntry
-  diameterAllowanceMm?: number
   material: MaterialSettings
   weightUnit: WeightDisplayMode
   lengthUnit: LengthDisplayMode
@@ -36,7 +34,6 @@ interface Props {
 
 export function MobileResultView({
   entry,
-  diameterAllowanceMm = defaultDiameterAllowanceMm,
   material,
   weightUnit,
   lengthUnit,
@@ -85,9 +82,8 @@ export function MobileResultView({
   const grip = dimensions?.grip
   const lengthFormatted = dimensions ? lengthDisplay(dimensions.lengthMm, lengthUnit) : null
 
-  const maxDia = dimensions ? finishedDiameter(dimensions.maximumDiameterMm, diameterAllowanceMm) : null
-  const gripRaw = grip && grip.status === 'detected' ? grip.diameterMm : null
-  const gripDia = finishedDiameter(gripRaw, diameterAllowanceMm)
+  const maxDia = dimensions?.maximumDiameterMm ?? null
+  const gripDia = grip?.status === 'detected' ? grip.diameterMm : null
 
   function handleApplySpecifiedWeight() {
     setInputError(null)
@@ -421,20 +417,6 @@ export function MobileResultView({
               </dl>
 
               <BatPropertiesSummary properties={properties} units={massUnits} showWeight={false} className="mobile-property-list" />
-              {diameterAllowanceMm > 0 && (
-                <div className="mobile-allowance-hint">
-                  <span>{text.diameterAllowance}：{formatCoordinate(diameterAllowanceMm)} {text.millimetreUnit}</span>
-                  <button
-                    type="button"
-                    className="mobile-allowance-edit-btn"
-                    onClick={onMaterialOpen}
-                    title={`${text.materialSettings} / ${text.diameterAllowance}`}
-                  >
-                    <Settings2 size={12} aria-hidden="true" />
-                    <span>{text.adjust}</span>
-                  </button>
-                </div>
-              )}
 
               {/* Collapsible Cuts */}
               <details className="mobile-cut-details">
@@ -480,7 +462,7 @@ export function MobileResultView({
 
       {/* 3D Fullscreen Modal */}
       {show3d && calculated && result?.profile && (
-        <MobilePreviewDialog properties={properties} massUnits={massUnits} result={result} diameterAllowanceMm={diameterAllowanceMm} onClose={() => setShow3d(false)} />
+        <MobilePreviewDialog properties={properties} massUnits={massUnits} result={result} onClose={() => setShow3d(false)} />
       )}
     </div>
   )

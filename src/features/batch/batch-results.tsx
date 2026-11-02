@@ -21,8 +21,6 @@ import type { MassPropertyUnits } from '../../domain/mass-property-units'
 const ReportPreviewDialog = lazy(() => import('./report-preview-dialog'))
 
 export default function BatchResults({
-  diameterAllowanceMm,
-  onDiameterAllowanceChange,
   material,
   weightUnit,
   lengthUnit,
@@ -43,8 +41,6 @@ export default function BatchResults({
 }: {
   massUnits: MassPropertyUnits
   onMassUnitsChange: (value: MassPropertyUnits) => void
-  diameterAllowanceMm: number
-  onDiameterAllowanceChange: (value: number) => void
   material: MaterialSettings
   weightUnit: WeightDisplayMode
   lengthUnit: LengthDisplayMode
@@ -70,7 +66,7 @@ export default function BatchResults({
     setReport(null); setSelected(null)
   }, [selectionKey])
   useEffect(() => { if (removing) setSelected(null) }, [removing])
-  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit, grouping, diameterAllowanceMm, showMeasurementDistances, massUnits), [entries, visible, sort, material, requirements, weightUnit, lengthUnit, grouping, diameterAllowanceMm, showMeasurementDistances, massUnits])
+  const view = useMemo(() => buildBatchView(entries, visible, sort, { material, requirements, weightUnit }, lengthUnit, grouping, showMeasurementDistances, massUnits), [entries, visible, sort, material, requirements, weightUnit, lengthUnit, grouping, showMeasurementDistances, massUnits])
   const { areaRef, layout } = useColumnLayout(view, removing ? 48 : 0)
   const selection = useRowSelection(view.rows, removing, areaRef)
   const selectedEntry = entries.find(entry => entry.id === selected)
@@ -81,7 +77,7 @@ export default function BatchResults({
   const { summary } = view
   return <section className="batch-results" aria-labelledby="batch-title">
     <div className="batch-heading"><div><h1 id="batch-title">{text.resultsTitle}</h1><p className="batch-summary" aria-live="polite"><strong>{summary.total}</strong> {text.filesUnit}<span>·</span>{text.completedCount} {summary.calculated}{summary.failed > 0 && <><span>·</span><em>{text.failedCount} {summary.failed}</em></>}{summary.pending > 0 && <><span>·</span>{text.processingCount} {summary.pending}</>}</p></div>
-      <BatchToolbar diameterAllowanceMm={diameterAllowanceMm} onDiameterAllowanceChange={next => { selection.cancel(); onDiameterAllowanceChange(next) }} visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0}
+      <BatchToolbar visible={visible} sort={sort} sortLabel={view.sortLabel} weightUnit={weightUnit} lengthUnit={lengthUnit} onLengthUnitChange={selectLengthUnit} pending={summary.pending > 0}
         massUnits={massUnits} onMassUnitsChange={next => { selection.cancel(); onMassUnitsChange(next) }} grouping={grouping} onGroupingChange={next => { selection.cancel(); applyGrouping(next) }}
         showMeasurementDistances={showMeasurementDistances} onMeasurementDistancesChange={show => { selection.cancel(); onDisplayChange({ ...display, showMeasurementDistances: show }) }}
         onVisibleChange={columns => { selection.cancel(); onDisplayChange({ ...display, visible: columns }) }} onSortChange={next => { selection.cancel(); onSortChange(next) }} onUnitChange={selectMode}
@@ -118,7 +114,7 @@ export default function BatchResults({
     {selection.editing && <RequirementPopover key={selection.editing.ids.join('|')} selection={selection.editing} hidden={selection.dragging}
       value={selection.editing.ids.length === 1 ? requirements[selection.editing.ids[0]] ?? null : null}
       onCommit={commitRequirement} onCancel={selection.cancel} />}
-    {selectedEntry && <ResultDialog material={material} requirement={requirements[selectedEntry.id] ?? null} massUnits={massUnits} diameterAllowanceMm={diameterAllowanceMm} key={selectedEntry.id} entry={selectedEntry} onDismiss={() => setSelected(null)} />}
+    {selectedEntry && <ResultDialog material={material} requirement={requirements[selectedEntry.id] ?? null} massUnits={massUnits} key={selectedEntry.id} entry={selectedEntry} onDismiss={() => setSelected(null)} />}
     {report && <Suspense fallback={<p role="status">{text.preparingReport}</p>}><ReportPreviewDialog view={report.view} format={report.format} onDismiss={() => setReport(null)} /></Suspense>}
   </section>
 }

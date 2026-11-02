@@ -8,7 +8,7 @@ import type { MassPropertyUnits } from '../domain/mass-property-units'
 import { defaultMassPropertyUnits } from '../config/mass-properties'
 import { BatPropertiesSummary } from './bat-properties-summary'
 
-export function ResultCard({ state, diameterAllowanceMm, properties, massUnits = defaultMassPropertyUnits }: { state: Exclude<UploadState, { status: 'empty' }>; diameterAllowanceMm?: number; properties?: BatProperties; massUnits?: MassPropertyUnits }) {
+export function ResultCard({ state, properties, massUnits = defaultMassPropertyUnits }: { state: Exclude<UploadState, { status: 'empty' }>; properties?: BatProperties; massUnits?: MassPropertyUnits }) {
   const result = state.status === 'result' ? state.result : null
   const calculated = result?.status === 'calculated'
   const status = state.status === 'loading' ? text.loading : calculated ? (result.estimated ? text.estimated : text.calculated) : text.failed
@@ -18,7 +18,7 @@ export function ResultCard({ state, diameterAllowanceMm, properties, massUnits =
       <span>{status}</span>
     </div>
     {state.status === 'loading' ? <div className="volume-block"><p className="volume-label">{text.loadingDescription}</p><div className="volume-skeleton" /></div> : calculated ? <>
-      <DimensionsSummary diameterAllowanceMm={diameterAllowanceMm} dimensions={result.dimensions} />
+      <DimensionsSummary dimensions={result.dimensions} />
       {properties && <BatPropertiesSummary properties={properties} units={massUnits} />}
       <details className="cut-details">
         <summary><span>{text.cuts}</span><ChevronDown size={15} aria-hidden="true" /></summary>

@@ -11,6 +11,7 @@ import { allMetricIds } from '../src/features/batch/columns'
 import { formatBalancePoint, formatInertia, inertiaDisplay } from '../src/lib/mass-property-display'
 import { inertiaFromKgM2 } from '../src/domain/mass-property-units'
 import { initialMaterialSettings } from '../src/config/weight'
+import { defaultMassPropertyUnits } from '../src/config/mass-properties'
 import { ResultDialog } from '../src/features/batch/result-dialog'
 import { MobilePreviewDialog } from '../src/components/mobile-preview-dialog'
 import { MobileResultView } from '../src/components/mobile-result-view'
@@ -28,17 +29,18 @@ const properties = calculateBatProperties(result, initialMaterialSettings, targe
 const measure = (value: string, size: number) => textUnits(value) * size * 0.5
 
 describe('mass property presentation contract', () => {
-  it('uses one target range in table, desktop detail, mobile card and mobile 3D', () => {
-    const view = buildBatchView([entry], allMetricIds, { key: 'name', direction: 'asc' }, { material: initialMaterialSettings, requirements: { bat: target } })
+  it.each([units, defaultMassPropertyUnits])('uses one target range in table, desktop detail, mobile card and mobile 3D with %j', chosen => {
+    const view = buildBatchView([entry], allMetricIds, { key: 'name', direction: 'asc' }, { material: initialMaterialSettings, requirements: { bat: target } }, undefined, undefined, false, chosen)
     expect(view.rows[0].cells.moi.value).toBe(properties.moiKgM2!.min)
+    expect(view.rows[0].cells.moi.display).toBe(inertiaDisplay(properties.moiKgM2, chosen.inertia))
     const markup = [
-      renderToStaticMarkup(createElement(ResultDialog, { entry, material: initialMaterialSettings, requirement: target, massUnits: units, diameterAllowanceMm: 0, onDismiss() {} })),
-      renderToStaticMarkup(createElement(MobilePreviewDialog, { result, properties, massUnits: units, diameterAllowanceMm: 0, onClose() {} })),
-      renderToStaticMarkup(createElement(MobileResultView, { entry, material: initialMaterialSettings, requirement: target, massUnits: units, weightUnit: 'g', lengthUnit: 'cm', onMaterialOpen() {}, onOpenLibrary() {} })),
+      renderToStaticMarkup(createElement(ResultDialog, { entry, material: initialMaterialSettings, requirement: target, massUnits: chosen, onDismiss() {} })),
+      renderToStaticMarkup(createElement(MobilePreviewDialog, { result, properties, massUnits: chosen, onClose() {} })),
+      renderToStaticMarkup(createElement(MobileResultView, { entry, material: initialMaterialSettings, requirement: target, massUnits: chosen, weightUnit: 'g', lengthUnit: 'cm', onMaterialOpen() {}, onOpenLibrary() {} })),
     ]
     for (const rendered of markup) {
-      expect(rendered).toContain(inertiaDisplay(properties.moiKgM2, units.inertia))
-      expect(rendered).toContain(formatBalancePoint(properties.balancePointMm!, units.balance))
+      expect(rendered).toContain(inertiaDisplay(properties.moiKgM2, chosen.inertia))
+      expect(rendered).toContain(formatBalancePoint(properties.balancePointMm!, chosen.balance))
     }
     expect(markup[0]).not.toContain('data-testid="volume-value"')
     expect(markup[0]).toContain('data-testid="retained-length"')
@@ -46,7 +48,7 @@ describe('mass property presentation contract', () => {
   })
   it('shows balance without weight, with missing MOI and no invented mass', () => {
     const empty = calculateBatProperties(result, initialMaterialSettings, null)
-    const markup = renderToStaticMarkup(createElement(MobilePreviewDialog, { result, properties: empty, massUnits: units, diameterAllowanceMm: 0, onClose() {} }))
+    const markup = renderToStaticMarkup(createElement(MobilePreviewDialog, { result, properties: empty, massUnits: units, onClose() {} }))
     expect(markup).toContain('data-testid="property-weight"><span>—</span>')
     expect(markup).toContain('data-testid="property-moi"><span>—</span>')
     expect(markup).toContain(formatBalancePoint(empty.balancePointMm!, 'cm'))
@@ -59,7 +61,7 @@ describe('mass property presentation contract', () => {
   })
   it('exports unrounded numeric values in either unit system and formats them separately', () => {
     for (const chosen of [units, { balance: 'in', inertia: 'oz-in2' } as const]) {
-      const view = buildBatchView([entry], ['balancePoint', 'moi'], { key: 'name', direction: 'asc' }, { material: initialMaterialSettings, requirements: { bat: { min: 800.01, max: 800.01 } } }, undefined, undefined, 0, false, chosen)
+      const view = buildBatchView([entry], ['balancePoint', 'moi'], { key: 'name', direction: 'asc' }, { material: initialMaterialSettings, requirements: { bat: { min: 800.01, max: 800.01 } } }, undefined, undefined, false, chosen)
       const row = view.rows[0], [balance, moi] = view.columns
       expect(reportCellValue(row.cells.balancePoint, balance)).toBe(properties.balancePointMm! / (chosen.balance === 'cm' ? 10 : 25.4))
       expect(reportCellValue(row.cells.moi, moi)).toBe(inertiaFromKgM2(row.cells.moi.value!, chosen.inertia))

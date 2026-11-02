@@ -24,7 +24,7 @@ function makeView(softball = 20, baseball = 3, grouping: BatGroupingSettings = {
     id: String(index), source: { ...source, name: `bat-${index}.anc` },
     state: { status: 'result', result: { ...base, dimensions: { ...base.dimensions, maximumDiameterMm: index < softball ? 59.999 : 60 } } },
   }))
-  return buildBatchView(entries, ['length', 'maximumDiameter'], { key: 'name', direction: 'asc' }, undefined, 'cm', grouping, 1)
+  return buildBatchView(entries, ['length', 'maximumDiameter'], { key: 'name', direction: 'asc' }, undefined, 'cm', grouping)
 }
 
 describe('report grouping and one page sizing', () => {
@@ -67,8 +67,8 @@ describe('report grouping and one page sizing', () => {
   it('uses the saved boundary, exact raw diameter and existing group order', () => {
     const reversed = makeView(1, 1, { diameterThresholdMm: 60, firstGroup: 'baseball' })
     expect(reversed.rows.map(row => row.group)).toEqual(['baseball', 'softball'])
-    // Both displayed finished diameters are below 60; they must still separate at raw 60.
-    expect(reversed.rows.every(row => row.cells.maximumDiameter.value! < 60)).toBe(true)
+    expect(reversed.rows.map(row => row.cells.maximumDiameter.value)).toEqual([60, 59.999])
+    expect(reversed.rows.map(row => row.cells.maximumDiameter.display)).toEqual(['60.0', '60.0'])
     expect(createPrintPreview(reversed, 'portrait', measure).baselinePages).toBe(2)
     const changed = makeView(1, 1, { diameterThresholdMm: 60.1, firstGroup: 'baseball' })
     expect(createPrintPreview(changed, 'portrait', measure).baselinePages).toBe(1)

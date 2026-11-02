@@ -23,7 +23,7 @@
 | 拖曳與浮動框互動參數 | [config/selection.ts](../../src/config/selection.ts)，只管理行為與位置參數 |
 | 列印字體、間距、紙張與 renderer 設定 | [config/report.ts](../../src/config/report.ts)、[pdf.ts](../../src/config/pdf.ts)、[excel.ts](../../src/config/excel.ts) |
 | 一般按鈕 | [components/ui/button.tsx](../../src/components/ui/button.tsx) |
-| 長度／重量單位選擇呈現 | [unit-selector.tsx](../../src/features/batch/unit-selector.tsx) 與其呼叫端 |
+| 長度、重量、重心與 MOI 單位選擇呈現 | [unit-selector.tsx](../../src/features/batch/unit-selector.tsx) 與其呼叫端 |
 
 `themeCssVariables` 組合既有色票與來源標籤尺寸，於 [main.tsx](../../src/main.tsx) 掛到文件根節點。CSS 與按鈕、狀態文字的 utility class 引用對應變數；選取列與掛在 body 的浮動編輯框同樣繼承根節點的選取色，不在元件另設顏色副本。
 

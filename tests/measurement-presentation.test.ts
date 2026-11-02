@@ -24,7 +24,7 @@ const result = analyzeAnc(raw, { name: 'measurement.anc', size: raw.length })
 if (result.status !== 'calculated' || !result.dimensions.distances) throw new Error('Expected directional measurements')
 const entry: AnalysisEntry = { id: 'measurement', source: result.source, state: { status: 'result', result } }
 const material = { referenceDensity: 0.7, volumeCm3: 3000, weightG: null, weightErrorPercent: 0 }
-const view = (show = false, allowance = 0) => buildBatchView([entry], allMetricIds, { key: 'maximumDiameter', direction: 'asc' }, { material, requirements: {} }, 'cm', undefined, allowance, show)
+const view = (show = false) => buildBatchView([entry], allMetricIds, { key: 'maximumDiameter', direction: 'asc' }, { material, requirements: {} }, 'cm', undefined, show)
 const measure = (value: string, size: number) => textUnits(value) * size / 2
 
 describe('centimetre measurement display', () => {
@@ -56,7 +56,6 @@ describe('one optional measurement line in each existing diameter column', () =>
       expect(on.rows[0].cells[key].display).toBe(off.rows[0].cells[key].display)
     }
     expect(on.rows[0].cells.maximumDiameter.measurement).toBe(measurementCaption(result.dimensions.distances!.head, 'head'))
-    expect(view(true, 0.35).rows[0].cells.maximumDiameter.measurement).toBe(on.rows[0].cells.maximumDiameter.measurement)
     expect(JSON.stringify(result)).toBe(original)
     const sizing = buildColumnLayout(on, batchTableStyle, (value, font) => measure(value, font.size))
     const maximum = sizing.columns.find(column => column.column.id === 'maximumDiameter')!
@@ -68,19 +67,19 @@ describe('one optional measurement line in each existing diameter column', () =>
       { ...entry, id: 'missing', state: { status: 'unavailable', source: entry.source, reason: 'presetRemoved' } },
       { ...entry, id: 'failed', state: { status: 'result', result: { status: 'undetermined', source: entry.source, code: 'invalidCuts' } } },
     ]
-    const output = buildBatchView(entries, allMetricIds, { key: 'name', direction: 'asc' }, undefined, undefined, undefined, 0, true)
+    const output = buildBatchView(entries, allMetricIds, { key: 'name', direction: 'asc' }, undefined, undefined, undefined, true)
     expect(output.rows.every(row => row.cells.maximumDiameter.measurement === undefined && row.cells.gripDiameter.measurement === undefined)).toBe(true)
     const noDirection: AnalysisEntry = { ...entry, state: { status: 'result', result: { ...result, dimensions: { ...result.dimensions, distances: null, grip: { status: 'undetermined', code: 'ambiguousGripEnd' } } } } }
-    const partial = buildBatchView([noDirection], allMetricIds, { key: 'name', direction: 'asc' }, undefined, undefined, undefined, 0, true).rows[0]
+    const partial = buildBatchView([noDirection], allMetricIds, { key: 'name', direction: 'asc' }, undefined, undefined, undefined, true).rows[0]
     expect(partial.cells.maximumDiameter.value).toBe(result.dimensions.maximumDiameterMm)
     expect(partial.cells.maximumDiameter.measurement).toBe('距棒頭 —')
   })
   it('uses renamed labels everywhere and one checkbox in the existing information menu', () => {
     const markup = renderToStaticMarkup(createElement(BatchResults, {
       massUnits: { balance: 'cm', inertia: 'kg-cm2' }, onMassUnitsChange() {},
-      diameterAllowanceMm: 0, material, weightUnit: 'g', lengthUnit: 'cm', entries: [entry], requirements: {},
+      material, weightUnit: 'g', lengthUnit: 'cm', entries: [entry], requirements: {},
       display: { ...createDefaultBatchDisplay(), showMeasurementDistances: true }, sort: { key: 'name', direction: 'asc' }, removing: false,
-      onDiameterAllowanceChange() {}, onWeightUnitChange() {}, onLengthUnitChange() {}, onMaterialOpen() {},
+      onWeightUnitChange() {}, onLengthUnitChange() {}, onMaterialOpen() {},
       onDisplayChange() {}, onSortChange() {}, onRemove() {}, onRequirementChange() {},
     }))
     expect(markup).toContain(text.visibleInformation)

@@ -31,9 +31,9 @@ describe('source labels explain duplicate names without changing diagnostics or 
   it('distinguishes duplicate rows, weight controls, previews and removal controls by accessible name', () => {
     const markup = renderToStaticMarkup(createElement(BatchResults, {
       massUnits: { balance: 'cm', inertia: 'kg-cm2' }, onMassUnitsChange() {},
-      diameterAllowanceMm: 0, material, weightUnit: 'g', lengthUnit: 'cm', entries: entries.slice(0, 2), requirements: {},
+      material, weightUnit: 'g', lengthUnit: 'cm', entries: entries.slice(0, 2), requirements: {},
       display: { visible: allMetricIds, showMeasurementDistances: false }, sort: { key: 'name', direction: 'asc' }, removing: true,
-      onDiameterAllowanceChange() {}, onWeightUnitChange() {}, onLengthUnitChange() {}, onMaterialOpen() {},
+      onWeightUnitChange() {}, onLengthUnitChange() {}, onMaterialOpen() {},
       onDisplayChange() {}, onSortChange() {}, onRemove() {}, onRequirementChange() {},
     }))
     for (const label of ['甲', '甲／資料夾']) {

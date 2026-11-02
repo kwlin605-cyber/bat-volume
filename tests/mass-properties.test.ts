@@ -73,14 +73,26 @@ describe('mass property units and display precision', () => {
     expect(formatBalancePoint(523.46, 'in')).toBe('20.6')
     expect(formatInertia(0.200055, 'kg-cm2')).toBe('2,001')
   })
-  it('defaults to metric, saves units independently of batches, and handles blocked storage', () => {
+  it('defaults only MOI to oz-in2, saves either unit independently of batches, and handles blocked storage', () => {
     const values = new Map<string, string>()
     const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }
-    expect(readMassPropertyUnits(storage).units).toEqual({ balance: 'cm', inertia: 'kg-cm2' })
+    expect(readMassPropertyUnits(storage).units).toEqual({ balance: 'cm', inertia: 'oz-in2' })
     expect(saveMassPropertyUnits(storage, { balance: 'in', inertia: 'oz-in2' })).toBe(true)
     expect(readMassPropertyUnits(storage).units).toEqual({ balance: 'in', inertia: 'oz-in2' })
+    for (const balance of ['cm', 'in'] as const) {
+      for (const inertia of ['kg-cm2', 'oz-in2'] as const) {
+        expect(saveMassPropertyUnits(storage, { balance, inertia })).toBe(true)
+        expect(readMassPropertyUnits(storage).units).toEqual({ balance, inertia })
+      }
+    }
     const blocked = { getItem: (): never => { throw new Error('blocked') }, setItem: (): never => { throw new Error('blocked') } }
-    expect(readMassPropertyUnits(blocked).unavailable).toBe(true)
+    expect(readMassPropertyUnits(blocked)).toEqual({ units: { balance: 'cm', inertia: 'oz-in2' }, unavailable: true })
     expect(saveMassPropertyUnits(blocked, { balance: 'cm', inertia: 'kg-cm2' })).toBe(false)
+    for (const saved of ['bad json', 'null', '{"balance":"bad","inertia":"bad"}']) {
+      const invalid = { ...storage, getItem: () => saved }
+      expect(readMassPropertyUnits(invalid).units).toEqual({ balance: 'cm', inertia: 'oz-in2' })
+    }
+    const partial = { ...storage, getItem: () => '{"inertia":"kg-cm2"}' }
+    expect(readMassPropertyUnits(partial).units).toEqual({ balance: 'cm', inertia: 'kg-cm2' })
   })
 })

@@ -2,16 +2,15 @@ import type { BatDimensions } from '../domain/types'
 import { gripDiagnosticText, text } from '../i18n/zh-TW'
 import { lengthDisplay } from '../lib/length-display'
 import { formatDimension } from '../lib/format'
-import { defaultDiameterAllowanceMm, finishedDiameter } from '../domain/diameter-allowance'
 import { measurementCaption } from '../lib/measurement-display'
 import { MeasurementDistance } from './measurement-distance'
 
-export function DimensionsSummary({ dimensions, diameterAllowanceMm = defaultDiameterAllowanceMm }: { dimensions: BatDimensions; diameterAllowanceMm?: number }) {
+export function DimensionsSummary({ dimensions }: { dimensions: BatDimensions }) {
   const grip = dimensions.grip
   const measurements = [
     { key: 'retained-length', label: text.retainedLength, value: dimensions.lengthMm, unit: text.inchUnit, format: (mm: number) => lengthDisplay(mm, 'in').display },
-    { key: 'maximum-diameter', label: text.maximumDiameter, value: finishedDiameter(dimensions.maximumDiameterMm, diameterAllowanceMm), unit: text.millimetreUnit, format: formatDimension, distance: measurementCaption(dimensions.distances?.head, 'head') },
-    { key: 'minimum-grip-diameter', label: text.minimumGripDiameter, value: finishedDiameter(grip.status === 'detected' ? grip.diameterMm : null, diameterAllowanceMm), unit: text.millimetreUnit, format: formatDimension, distance: measurementCaption(dimensions.distances?.grip, 'grip') },
+    { key: 'maximum-diameter', label: text.maximumDiameter, value: dimensions.maximumDiameterMm, unit: text.millimetreUnit, format: formatDimension, distance: measurementCaption(dimensions.distances?.head, 'head') },
+    { key: 'minimum-grip-diameter', label: text.minimumGripDiameter, value: grip.status === 'detected' ? grip.diameterMm : null, unit: text.millimetreUnit, format: formatDimension, distance: measurementCaption(dimensions.distances?.grip, 'grip') },
   ]
   return <dl className="dimensions-summary" aria-label={text.dimensions}>
     {measurements.map(measurement => {

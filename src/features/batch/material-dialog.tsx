@@ -1,11 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { materialDensity, positiveFinite, validWeightError, type MaterialSettings } from '../../domain/weight'
-import { parseDiameterAllowance } from '../../domain/diameter-allowance'
 import { parseBladeWidth } from '../../domain/blade-width'
 import { text } from '../../i18n/zh-TW'
 import { formatCoordinate } from '../../lib/format'
 import type { WeightDisplayMode } from '../../domain/weight-unit'
-import type { LengthDisplayMode } from '../../domain/length-unit'
+import { lengthDisplayModes, type LengthDisplayMode } from '../../domain/length-unit'
+import { lengthModeLabel } from '../../lib/length-display'
+import { UnitSelector } from './unit-selector'
+import { WeightUnitSelector } from './weight-unit-selector'
 import type { MassPropertyUnits } from '../../domain/mass-property-units'
 import { MassPropertyUnitSelectors } from '../../components/mass-property-unit-selectors'
 
@@ -17,8 +19,6 @@ export function MaterialDialog({
   lengthUnit,
   onWeightUnitChange,
   onLengthUnitChange,
-  diameterAllowanceMm,
-  onDiameterAllowanceChange,
   bladeWidthMm,
   onBladeWidthChange,
   onApply,
@@ -31,8 +31,6 @@ export function MaterialDialog({
   lengthUnit?: LengthDisplayMode
   onWeightUnitChange?: (unit: WeightDisplayMode) => void
   onLengthUnitChange?: (unit: LengthDisplayMode) => void
-  diameterAllowanceMm?: number
-  onDiameterAllowanceChange?: (value: number) => void
   bladeWidthMm?: number
   onBladeWidthChange?: (value: number) => void
   onApply: (value: MaterialSettings) => void
@@ -44,7 +42,6 @@ export function MaterialDialog({
   const [volume, setVolume] = useState(value.volumeCm3?.toString() ?? '')
   const [weight, setWeight] = useState(value.weightG?.toString() ?? '')
   const [weightError, setWeightError] = useState(value.weightErrorPercent ? String(value.weightErrorPercent) : '')
-  const [allowance, setAllowance] = useState(diameterAllowanceMm ? String(diameterAllowanceMm) : '')
   const [bladeWidth, setBladeWidth] = useState(bladeWidthMm ? String(bladeWidthMm) : '')
   const [draftWeightUnit, setDraftWeightUnit] = useState(weightUnit ?? 'oz')
   const [draftLengthUnit, setDraftLengthUnit] = useState(lengthUnit ?? 'in')
@@ -77,17 +74,12 @@ export function MaterialDialog({
       return
     }
 
-    const nextAllowance = parseDiameterAllowance(allowance)
     const nextBladeWidth = parseBladeWidth(bladeWidth)
-    if ((diameterAllowanceMm !== undefined && onDiameterAllowanceChange && nextAllowance === null)
-      || (bladeWidthMm !== undefined && onBladeWidthChange && nextBladeWidth === null)) {
+    if (bladeWidthMm !== undefined && onBladeWidthChange && nextBladeWidth === null) {
       setError(text.invalidPositiveNumber)
       return
     }
 
-    if (diameterAllowanceMm !== undefined && nextAllowance !== null && nextAllowance !== diameterAllowanceMm) {
-      onDiameterAllowanceChange?.(nextAllowance)
-    }
     if (bladeWidthMm !== undefined && nextBladeWidth !== null && nextBladeWidth !== bladeWidthMm) {
       onBladeWidthChange?.(nextBladeWidth)
     }
@@ -187,24 +179,6 @@ export function MaterialDialog({
             <small>{text.percentUnit}</small>
           </div>
         </label>
-        {diameterAllowanceMm !== undefined && onDiameterAllowanceChange && (
-          <label className="material-field">
-            <span>{text.diameterAllowance}</span>
-            <div>
-              <input
-                type="number"
-                aria-label={text.diameterAllowance}
-                inputMode="decimal"
-                min="0"
-                step="any"
-                placeholder={text.optionalField}
-                value={allowance}
-                onChange={event => { setAllowance(event.target.value); setError('') }}
-              />
-              <small>{text.millimetreUnit}</small>
-            </div>
-          </label>
-        )}
         {bladeWidthMm !== undefined && onBladeWidthChange && (
           <label className="material-field">
             <span>{text.bladeWidth}</span>
@@ -224,74 +198,13 @@ export function MaterialDialog({
           </label>
         )}
 
-        {(onLengthUnitChange || onWeightUnitChange) && (
+        {(onLengthUnitChange || onWeightUnitChange || (draftMassUnits && onMassUnitsChange)) && (
           <div className="material-unit-preferences">
-            {onLengthUnitChange && (
-              <div className="material-unit-row">
-                <span className="material-unit-label">{text.lengthDisplayUnit}</span>
-                <div className="material-segmented-group" role="group" aria-label={text.lengthDisplayUnit}>
-                  <button
-                    type="button"
-                    className={`material-segmented-btn ${draftLengthUnit === 'cm' ? 'is-active' : ''}`}
-                    aria-pressed={draftLengthUnit === 'cm'}
-                    onClick={() => setDraftLengthUnit('cm')}
-                  >
-                    {text.centimetreToggleLabel}
-                  </button>
-                  <button
-                    type="button"
-                    className={`material-segmented-btn ${draftLengthUnit === 'in' ? 'is-active' : ''}`}
-                    aria-pressed={draftLengthUnit === 'in'}
-                    onClick={() => setDraftLengthUnit('in')}
-                  >
-                    {text.inchToggleLabel}
-                  </button>
-                  <button
-                    type="button"
-                    className={`material-segmented-btn ${draftLengthUnit === 'both' ? 'is-active' : ''}`}
-                    aria-pressed={draftLengthUnit === 'both'}
-                    onClick={() => setDraftLengthUnit('both')}
-                  >
-                    {text.bothUnits}
-                  </button>
-                </div>
-              </div>
-            )}
-            {onWeightUnitChange && (
-              <div className="material-unit-row">
-                <span className="material-unit-label">{text.weightDisplayUnit}</span>
-                <div className="material-segmented-group" role="group" aria-label={text.weightDisplayUnit}>
-                  <button
-                    type="button"
-                    className={`material-segmented-btn ${draftWeightUnit === 'g' ? 'is-active' : ''}`}
-                    aria-pressed={draftWeightUnit === 'g'}
-                    onClick={() => setDraftWeightUnit('g')}
-                  >
-                    {text.gramToggleLabel}
-                  </button>
-                  <button
-                    type="button"
-                    className={`material-segmented-btn ${draftWeightUnit === 'oz' ? 'is-active' : ''}`}
-                    aria-pressed={draftWeightUnit === 'oz'}
-                    onClick={() => setDraftWeightUnit('oz')}
-                  >
-                    {text.ounceToggleLabel}
-                  </button>
-                  <button
-                    type="button"
-                    className={`material-segmented-btn ${draftWeightUnit === 'both' ? 'is-active' : ''}`}
-                    aria-pressed={draftWeightUnit === 'both'}
-                    onClick={() => setDraftWeightUnit('both')}
-                  >
-                    {text.bothWeightUnits}
-                  </button>
-                </div>
-              </div>
-            )}
+            {onLengthUnitChange && <UnitSelector label={text.lengthDisplayUnit} modes={lengthDisplayModes} value={draftLengthUnit} modeLabel={lengthModeLabel} onChange={setDraftLengthUnit} />}
+            {onWeightUnitChange && <WeightUnitSelector value={draftWeightUnit} onChange={setDraftWeightUnit} />}
+            {draftMassUnits && onMassUnitsChange && <MassPropertyUnitSelectors value={draftMassUnits} onChange={setDraftMassUnits} />}
           </div>
         )}
-
-        {draftMassUnits && onMassUnitsChange && <div className="material-unit-preferences"><MassPropertyUnitSelectors value={draftMassUnits} onChange={setDraftMassUnits} /></div>}
         {error && <p className="weight-input-error" role="alert">{error}</p>}
         <div className="material-actions">
           <button type="button" onClick={onDismiss}>{text.cancel}</button>

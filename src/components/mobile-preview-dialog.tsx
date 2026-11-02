@@ -13,8 +13,8 @@ import { BatPropertiesSummary } from './bat-properties-summary'
 
 const BatPreview = lazy(() => import('./bat-preview'))
 
-export function MobilePreviewDialog({ result, diameterAllowanceMm, onClose, properties, massUnits = defaultMassPropertyUnits }: {
-  result: Extract<AnalysisResult, { status: 'calculated' }>; diameterAllowanceMm: number; onClose: () => void; properties?: BatProperties; massUnits?: MassPropertyUnits
+export function MobilePreviewDialog({ result, onClose, properties, massUnits = defaultMassPropertyUnits }: {
+  result: Extract<AnalysisResult, { status: 'calculated' }>; onClose: () => void; properties?: BatProperties; massUnits?: MassPropertyUnits
 }) {
   const preview = usePreviewMode(true)
   return <div className="mobile-3d-overlay" role="dialog" aria-modal="true" aria-label={text.view3dModel}>
@@ -29,7 +29,7 @@ export function MobilePreviewDialog({ result, diameterAllowanceMm, onClose, prop
           <BatPreview result={result} mode={preview.mode} interactionHelp={text.orbitTouchHelp} />
         </Suspense>
       </PreviewBoundary>
-      <PreviewMeasurements dimensions={result.dimensions} diameterAllowanceMm={diameterAllowanceMm} />
+      <PreviewMeasurements dimensions={result.dimensions} />
       {properties && <BatPropertiesSummary properties={properties} units={massUnits} className="preview-properties" />}
     </div>
   </div>

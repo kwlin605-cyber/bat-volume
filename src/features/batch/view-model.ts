@@ -11,7 +11,6 @@ import { quarterInchValue, lengthDisplay, lengthNumberFormat } from '../../lib/l
 import { defaultBatGrouping } from '../../config/grouping'
 import { classifyBat, type BatGroup, type BatGroupingSettings } from '../../domain/bat-grouping'
 import { orderBatchRows } from './row-order'
-import { defaultDiameterAllowanceMm, finishedDiameter } from '../../domain/diameter-allowance'
 import { displayFileName } from '../../lib/file-name'
 import { sourceLabel } from '../../lib/source-label'
 import { measurementCaption } from '../../lib/measurement-display'
@@ -35,7 +34,7 @@ export interface BatchView {
   rows: BatchRow[]; columns: MetricColumn[]; sort: BatchSort; sortLabel: string
   summary: { total: number; calculated: number; failed: number; pending: number }
 }
-export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, diameterAllowanceMm = defaultDiameterAllowanceMm, showMeasurementDistances = false, massUnits: MassPropertyUnits = defaultMassPropertyUnits): BatchView {
+export function buildBatchView(entries: readonly AnalysisEntry[], visible: readonly MetricId[], sort: BatchSort, weights: WeightContext = emptyWeightContext, lengthUnit: LengthDisplayMode = 'in', grouping: BatGroupingSettings = defaultBatGrouping, showMeasurementDistances = false, massUnits: MassPropertyUnits = defaultMassPropertyUnits): BatchView {
   const weightUnit = weights.weightUnit ?? 'oz'
   const weightCell = (value: number | null, maximum?: number, mode: WeightDisplayMode = 'g'): BatchCell => ({ value, ...(maximum === undefined ? {} : { maximum }),
     ...(value === null ? { display: text.missingValue } : weightDisplay(value, maximum, mode)) })
@@ -53,8 +52,7 @@ export function buildBatchView(entries: readonly AnalysisEntry[], visible: reado
     else if (calculated) summary.calculated++
     else summary.failed++
     const cells = Object.fromEntries(geometryColumns.map(column => {
-      const rawValue = calculated ? column.value(calculated) : null
-      const value = column.id === 'maximumDiameter' || column.id === 'gripDiameter' ? finishedDiameter(rawValue, diameterAllowanceMm) : rawValue
+      const value = calculated ? column.value(calculated) : null
       return [column.id, { value, ...(value === null ? { display: text.missingValue } : column.id === 'length' ? lengthDisplay(value, lengthUnit) : { display: column.format(value) }) }]
     })) as Record<MetricId, BatchCell>
     if (showMeasurementDistances && calculated) {

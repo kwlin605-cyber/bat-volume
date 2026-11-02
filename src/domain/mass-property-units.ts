@@ -10,7 +10,7 @@ export const normalizeMassPropertyUnits = (value: unknown): MassPropertyUnits =>
   const candidate = value as Partial<MassPropertyUnits> | null
   return {
     balance: candidate?.balance === 'in' ? 'in' : defaultMassPropertyUnits.balance,
-    inertia: candidate?.inertia === 'oz-in2' ? 'oz-in2' : defaultMassPropertyUnits.inertia,
+    inertia: inertiaUnits.find(unit => unit === candidate?.inertia) ?? defaultMassPropertyUnits.inertia,
   }
 }
 export const inertiaFromKgM2 = (value: number, unit: InertiaUnit) => unit === 'kg-cm2'

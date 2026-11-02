@@ -116,7 +116,6 @@ export const screenColors = {
   materialInputOutline: '#939393',
   densityText: '#828282',
   materialDivider: '#ededed',
-  segmentedShadow: 'rgba(0, 0, 0, 0.08)',
   cancelText: '#676767',
   disabledText: '#a1a1a1',
   loadingText: '#747474',

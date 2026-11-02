@@ -4,7 +4,6 @@ import { Button } from './components/ui/button'
 import BatchResults from './features/batch/batch-results'
 import { useBatchSession } from './hooks/use-batch-session'
 import { FileActions } from './components/file-actions'
-import { useDiameterAllowance } from './hooks/use-diameter-allowance'
 import { useBladeWidth } from './hooks/use-blade-width'
 import { useDesktop } from './hooks/use-desktop'
 import { useMaterialSettings } from './features/batch/use-material-settings'
@@ -36,7 +35,6 @@ export default function App() {
     updateSort,
   } = useBatchSession(blade.widthMm)
 
-  const diameter = useDiameterAllowance()
   const desktop = useDesktop()
   const massUnits = useMassPropertyUnits()
 
@@ -136,8 +134,6 @@ export default function App() {
           <BatchResults
             massUnits={massUnits.units}
             onMassUnitsChange={massUnits.applyUnits}
-            diameterAllowanceMm={diameter.allowanceMm}
-            onDiameterAllowanceChange={diameter.applyAllowance}
             material={material}
             weightUnit={weightUnit}
             lengthUnit={lengthUnit}
@@ -158,7 +154,6 @@ export default function App() {
           <MobileResultView
             massUnits={massUnits.units}
             entry={activeEntry}
-            diameterAllowanceMm={diameter.allowanceMm}
             material={material}
             weightUnit={weightUnit}
             lengthUnit={lengthUnit}
@@ -174,7 +169,6 @@ export default function App() {
       </main>
 
       {storageUnavailable && <p className="session-storage-error" role="alert">{text.sessionStorageUnavailable}</p>}
-      {diameter.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {blade.storageUnavailable && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
       {(materialStorageUnavailable || weightUnitStorageUnavailable || lengthUnitStorageUnavailable || massUnits.storageUnavailable) && <p className="session-storage-error" role="alert">{text.storageUnavailable}</p>}
 
@@ -227,8 +221,6 @@ export default function App() {
           onLengthUnitChange={desktop ? undefined : selectLengthUnit}
           massUnits={desktop ? undefined : massUnits.units}
           onMassUnitsChange={desktop ? undefined : massUnits.applyUnits}
-          diameterAllowanceMm={desktop ? undefined : diameter.allowanceMm}
-          onDiameterAllowanceChange={desktop ? undefined : diameter.applyAllowance}
           bladeWidthMm={blade.widthMm}
           onBladeWidthChange={blade.applyBladeWidth}
           onApply={applyMaterial}

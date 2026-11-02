@@ -24,8 +24,8 @@ describe('shared 3D preview controls', () => {
     const original = JSON.stringify(result)
     const entry = { id: 'preview', source: result.source, state: { status: 'result' as const, result } }
     for (const markup of [
-      renderToStaticMarkup(createElement(ResultDialog, { entry, diameterAllowanceMm: 0, onDismiss() {} })),
-      renderToStaticMarkup(createElement(MobilePreviewDialog, { result, diameterAllowanceMm: 0, onClose() {} })),
+      renderToStaticMarkup(createElement(ResultDialog, { entry, onDismiss() {} })),
+      renderToStaticMarkup(createElement(MobilePreviewDialog, { result, onClose() {} })),
     ]) {
       expect(buttons(markup).filter(button => button.label === text.trimmed || button.label === text.whole)).toEqual([
         { label: text.trimmed, pressed: true, disabled: false },
@@ -47,7 +47,7 @@ describe('shared 3D preview controls', () => {
   it('disables trimmed for partial geometry while preserving the whole option', () => {
     const partial: AnalysisResult = { status: 'undetermined', source: result.source, code: 'invalidCuts', profile: result.profile, partial: { low: result.cuts.low } }
     const markup = renderToStaticMarkup(createElement(ResultDialog, {
-      entry: { id: 'partial', source: partial.source, state: { status: 'result', result: partial } }, diameterAllowanceMm: 0, onDismiss() {},
+      entry: { id: 'partial', source: partial.source, state: { status: 'result', result: partial } }, onDismiss() {},
     }))
     expect(buttons(markup).filter(button => button.label === text.trimmed || button.label === text.whole)).toEqual([
       { label: text.trimmed, pressed: false, disabled: true },

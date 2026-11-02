@@ -233,9 +233,6 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--ui-inputO
 .mobile-dim-row dt { font-size: 13px; color: var(--color-muted); margin: 0; }
 .mobile-dim-row dd { margin: 0; font-size: 18px; font-weight: 600; color: var(--color-ink); font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 6px; }
 .mobile-dim-unit { font-size: 12px; font-weight: 400; color: var(--ui-secondaryText); }
-.mobile-allowance-hint { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 7px 11px; background: var(--ui-allowanceBackground); border-radius: 8px; font-size: 11px; color: var(--ui-noteText); }
-.mobile-allowance-edit-btn { min-height: 44px; background: none; border: 0; color: var(--color-ink); font-weight: 500; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 0 6px; border-radius: 4px; }
-.mobile-allowance-edit-btn:active { background: var(--ui-modelBorder); }
 
 /* Collapsible Cuts on Mobile */
 .mobile-cut-details { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ui-sectionLine); }
@@ -289,6 +286,12 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--ui-inputO
 .preview-properties > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 10px 0; }
 .preview-properties dt { flex: none; color: var(--ui-detailText); font-size: 13px; }
 .preview-properties dd { display: flex; align-items: baseline; justify-content: flex-end; gap: 7px; margin: 0; color: var(--ui-dimensionText); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.material-unit-preferences > .unit-selector { margin: 12px 0; }
-.material-unit-preferences > .unit-selector button { min-height: 44px; }
 
+.unit-selector { min-width: 0; border: 0; padding: 5px 4px 13px; margin: 0 0 5px; border-bottom: 1px solid var(--color-line); }
+.unit-selector legend { padding: 0; color: var(--color-muted); font-size: 11px; }
+.unit-selector > div { display: flex; gap: 3px; padding: 3px; margin-top: 6px; border-radius: 8px; background: var(--color-header); }
+.unit-selector > div > button { width: auto; flex: 1; padding: 8px 6px; text-align: center; border: 0; border-radius: 6px; color: var(--color-text); background: none; font: inherit; font-size: 12px; cursor: pointer; min-width: 0; }
+.unit-selector > div > button:hover { background: var(--color-emphasisAlt); }
+.unit-selector > div > button[aria-pressed=true] { background: var(--color-accent); color: var(--color-white); }
+.material-unit-preferences > .unit-selector { margin: 0; }
+.material-unit-preferences > .unit-selector button { min-height: 44px; }
