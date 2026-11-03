@@ -23,6 +23,7 @@ export const text = {
   switchBat: '切換型號',
   view3dModel: '3D 外形',
   close3dModel: '關閉 3D',
+  previewResetSize: '重置大小',
   searchPresetPlaceholder: '搜尋型號或關鍵字...',
   allVendors: '全部廠商',
   backToVendor: '返回',

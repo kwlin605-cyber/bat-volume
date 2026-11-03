@@ -113,6 +113,7 @@ export function attachPointerRotation(controls: OrbitControls, center: Vector3) 
   document.defaultView?.addEventListener('blur', cancel)
   return {
     update,
+    cancel,
     dispose() {
       cancel()
       surface.removeEventListener('pointerdown', down)

@@ -4,6 +4,7 @@ import { OrbitControls } from 'three-stdlib'
 import { attachPointerRotation } from '../src/components/pointer-rotation'
 import { previewInteraction } from '../src/config/preview'
 import { attachCenteredOrbit } from '../src/components/centered-orbit'
+import { createPreviewView } from '../src/components/preview-view'
 
 // Only the browser event surface is substituted; both production controllers and camera math run.
 class InputSurface extends EventTarget {
@@ -269,6 +270,130 @@ function zoom(surface: InputSurface, input: 'mouse' | 'touch') {
   surface.ownerDocument.dispatchEvent(pointer('pointerup', input, 80, 150, 0, 1))
   surface.ownerDocument.dispatchEvent(pointer('pointerup', input, 220, 150, 0, 2))
 }
+
+describe('shared preview framing and mode transitions', () => {
+  it.each(['mouse', 'touch'] as const)('preserves the whole screen through mode switches after %s pan, rotation and zoom', input => {
+    const anchor = new Vector3(-30, 0, 0)
+    const { surface, controls, camera, rotation, dispose } = setup(390, anchor)
+    const detach = attachCenteredOrbit(controls, anchor, 390, 390)
+    const view = createPreviewView(controls, anchor, rotation.cancel)
+    const area = { width: 390, height: 390, hintTop: 348 }
+    const trimmed = { center: new Vector3(-30, 0, 0), radius: 350 }
+    const whole = { center: new Vector3(20, 0, 0), radius: 500 }
+    try {
+      expect(view.update(trimmed, 500, area, 0)).toBe(true)
+      pan(surface, input, 40, 30)
+      settle(controls)
+      drag(surface, input, 75, -20)
+      settle(controls)
+      zoom(surface, input)
+      settle(controls)
+      const landmarks = [new Vector3(-100, 0, 0), new Vector3(150, 20, 10)]
+      const before = landmarks.map(point => projected(camera, point))
+      const angle = camera.quaternion.clone()
+      const beforeZoom = camera.zoom
+      for (const mode of [whole, trimmed, whole]) {
+        expect(view.update(mode, 500, area, 0)).toBe(false)
+        settle(controls)
+        expect(camera.zoom).toBe(beforeZoom)
+        expect(camera.quaternion.angleTo(angle)).toBeLessThan(1e-7)
+        landmarks.forEach((point, index) => {
+          const after = projected(camera, point)
+          expect(Math.hypot(after.x - before[index].x, after.y - before[index].y)).toBeLessThan(1e-7)
+        })
+      }
+      const pivot = projected(camera, whole.center)
+      drag(surface, input, 50, 30)
+      settle(controls)
+      expect(projected(camera, whole.center).distanceTo(pivot)).toBeLessThan(1e-7)
+      const resetAngle = camera.quaternion.clone()
+      expect(view.update(whole, 500, area, 1)).toBe(true)
+      settle(controls)
+      expect(camera.quaternion.angleTo(resetAngle)).toBeLessThan(1e-7)
+      expect((projected(camera, whole.center).x + 1) * 195).toBeCloseTo(195, 7)
+      expect((1 - projected(camera, whole.center).y) * 195).toBeCloseTo(174, 7)
+      expect(camera.zoom).toBeCloseTo(348 * 0.96 / 1000, 8)
+    } finally { detach(); dispose() }
+  })
+
+  it.each(['pan', 'rotate'] as const)('resets immediately during pending %s motion and stays put afterward', action => {
+    const anchor = new Vector3()
+    const { surface, controls, camera, rotation, dispose } = setup(390, anchor)
+    const detach = attachCenteredOrbit(controls, anchor, 390, 390)
+    const view = createPreviewView(controls, anchor, rotation.cancel)
+    const frame = { center: new Vector3(), radius: 450 }
+    const area = { width: 390, height: 390, hintTop: 348 }
+    try {
+      view.update(frame, 450, area, 0)
+      if (action === 'pan') pan(surface, 'mouse', 60, 30)
+      else drag(surface, 'touch', 80, 30)
+      const angle = camera.quaternion.clone()
+      view.update(frame, 450, area, 1)
+      const reset = projected(camera, anchor)
+      settle(controls)
+      expect(camera.quaternion.angleTo(angle)).toBeLessThan(1e-7)
+      expect(projected(camera, anchor).distanceTo(reset)).toBeLessThan(1e-7)
+      expect((1 - reset.y) * 195).toBeCloseTo(174, 7)
+      const beforeDrag = camera.quaternion.clone()
+      drag(surface, 'mouse', 50, -10)
+      settle(controls)
+      expect(camera.quaternion.angleTo(beforeDrag)).toBeGreaterThan(0.1)
+      expect(projected(camera, anchor).distanceTo(reset)).toBeLessThan(1e-7)
+    } finally { detach(); dispose() }
+  })
+
+  it('refits a changed canvas or wrapped hint while preserving the current angle', () => {
+    const anchor = new Vector3()
+    const { surface, controls, camera, rotation, dispose } = setup(390, anchor)
+    let detach = attachCenteredOrbit(controls, anchor, 390, 390)
+    const view = createPreviewView(controls, anchor, rotation.cancel)
+    const frame = { center: new Vector3(), radius: 450 }
+    try {
+      view.update(frame, 450, { width: 390, height: 390, hintTop: 348 }, 0)
+      drag(surface, 'mouse', 80, 40)
+      settle(controls)
+      pan(surface, 'mouse', 40, 30)
+      settle(controls)
+      const angle = camera.quaternion.clone()
+      detach()
+      surface.clientWidth = 800
+      surface.clientHeight = 450
+      camera.left = -400
+      camera.right = 400
+      camera.top = 225
+      camera.bottom = -225
+      camera.updateProjectionMatrix()
+      detach = attachCenteredOrbit(controls, anchor, 800, 450)
+      expect(view.update(frame, 450, { width: 800, height: 450, hintTop: 410 }, 0)).toBe(true)
+      settle(controls)
+      expect(camera.quaternion.angleTo(angle)).toBeLessThan(1e-7)
+      expect(camera.zoom).toBeCloseTo(410 * 0.96 / 900, 8)
+      expect((1 - projected(camera, anchor).y) * 225).toBeCloseTo(205, 7)
+      expect(view.update(frame, 450, { width: 800, height: 450, hintTop: 380 }, 0)).toBe(true)
+      expect(camera.zoom).toBeCloseTo(380 * 0.96 / 900, 8)
+      expect((1 - projected(camera, anchor).y) * 225).toBeCloseTo(190, 7)
+    } finally { detach(); dispose() }
+  })
+
+  it('restores fitted centering after a subpixel camera-size update recreates the pan adapter', () => {
+    const anchor = new Vector3()
+    const { controls, camera, rotation, dispose } = setup(390, anchor)
+    let detach = attachCenteredOrbit(controls, anchor, 390, 390)
+    const view = createPreviewView(controls, anchor, rotation.cancel)
+    const frame = { center: new Vector3(), radius: 450 }
+    try {
+      view.update(frame, 450, { width: 390, height: 390, hintTop: 348 }, 0)
+      detach()
+      const cameraWidth = 390.00001
+      camera.left = -cameraWidth / 2
+      camera.right = cameraWidth / 2
+      camera.updateProjectionMatrix()
+      detach = attachCenteredOrbit(controls, anchor, cameraWidth, 390)
+      expect(view.update(frame, 450, { width: cameraWidth, height: 390, hintTop: 348 }, 0)).toBe(true)
+      expect((1 - projected(camera, anchor).y) * 195).toBeCloseTo(174, 7)
+    } finally { detach(); dispose() }
+  })
+})
 
 describe('rotation around the displayed bat after panning', () => {
   it.each(['mouse', 'touch'] as const)('keeps the panned screen position through %s rotation and zoom', input => {

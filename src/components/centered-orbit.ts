@@ -5,10 +5,8 @@ export function attachCenteredOrbit(controls: OrbitControls, center: Vector3, wi
   const object = controls.object
   if (!(object instanceof OrthographicCamera)) throw new Error('Centered preview requires an orthographic camera')
   const camera = object
-  // Let automatic framing finish before treating target changes as user panning.
+  // Ignore setup changes until an input or the view controller establishes the pivot.
   let active = false
-  let offsetX = 0
-  let offsetY = 0
   const delta = new Vector3()
   const right = new Vector3()
   const up = new Vector3()
@@ -21,8 +19,8 @@ export function attachCenteredOrbit(controls: OrbitControls, center: Vector3, wi
     right.setFromMatrixColumn(camera.matrixWorld, 0)
     up.setFromMatrixColumn(camera.matrixWorld, 1)
     // Keep panning in screen pixels while the orbit target stays on the bat.
-    offsetX += delta.dot(right) * camera.zoom * width / (camera.right - camera.left)
-    offsetY -= delta.dot(up) * camera.zoom * height / (camera.top - camera.bottom)
+    const offsetX = (camera.view?.enabled ? camera.view.offsetX : 0) + delta.dot(right) * camera.zoom * width / (camera.right - camera.left)
+    const offsetY = (camera.view?.enabled ? camera.view.offsetY : 0) - delta.dot(up) * camera.zoom * height / (camera.top - camera.bottom)
     camera.position.sub(delta)
     controls.target.copy(center)
     camera.setViewOffset(width, height, offsetX, offsetY, width, height)

@@ -1,4 +1,5 @@
 import { previewColors } from '../config/theme'
+import { previewGeometry } from '../config/preview'
 import { useEffect, useMemo } from 'react'
 import { BufferGeometry, Line, LineBasicMaterial, Vector3 } from 'three'
 import type { ProfilePoint } from '../domain/types'
@@ -7,7 +8,7 @@ export function SectionMarker({ point, center, kind }: { point: ProfilePoint; ce
   const color = previewColors[kind]
   const y = point.y - center
   const ring = useMemo(() => {
-    const radius = point.radius + 0.8
+    const radius = point.radius + previewGeometry.markerOffset
     const geometry = new BufferGeometry().setFromPoints(Array.from({ length: 97 }, (_, index) => {
       const angle = index / 96 * Math.PI * 2
       return new Vector3(Math.cos(angle) * radius, y, Math.sin(angle) * radius)

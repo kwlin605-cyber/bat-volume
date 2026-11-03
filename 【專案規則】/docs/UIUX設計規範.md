@@ -15,7 +15,7 @@
 | 共用灰階及報告色票 | [config/theme.ts](../../src/config/theme.ts) 的 `palette`，報告直接引用，畫面透過 CSS 變數使用 |
 | 畫面文字、背景、邊界、陰影及控制狀態 | 同檔的 `screenColors`，包含現有灰階、透明色及控制項色值 |
 | 表格選取、編輯框與 3D 色票 | 同檔的 `selectionColors`、`previewColors`；3D 直接引用材質與標記顏色 |
-| 3D 旋轉靈敏度與阻尼 | [config/preview.ts](../../src/config/preview.ts)，兩端沿用 [共用控制器](../../src/components/preview-controls.tsx) |
+| 3D 旋轉靈敏度、阻尼、配適比例及標記幾何參數 | [config/preview.ts](../../src/config/preview.ts)，兩端沿用 [共用控制器](../../src/components/preview-controls.tsx)，行為見 [3D 操作](手機與電腦操作.md#3d-與失敗狀態) |
 | 全域布局、手機、資料卡與預覽樣式 | [styles.css](../../src/styles.css) |
 | 桌面批次、選單、編輯與報告彈窗樣式 | [batch.css](../../src/features/batch/batch.css) |
 | 表格字體與量測限制 | [config/batch.ts](../../src/config/batch.ts) |

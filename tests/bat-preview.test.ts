@@ -22,6 +22,12 @@ const buttons = (markup: string) => [...markup.matchAll(/<button\b([^>]*)>([^<]*
 }))
 
 describe('shared 3D preview controls', () => {
+  it('offers one accessible reset action, disabled until the first view is fitted', () => {
+    const markup = render(result)
+    expect(markup.match(new RegExp(`aria-label="${text.previewResetSize}"`, 'g'))).toHaveLength(1)
+    expect(markup).toMatch(new RegExp(`<button[^>]*disabled=""[^>]*aria-label="${text.previewResetSize}"`))
+    expect(markup).toContain(text.previewLoading)
+  })
   it('reads mobile measurements first, then balance and MOI, with weight last while the model loads', () => {
     const properties = calculateBatProperties(result, initialMaterialSettings, { min: 840, max: 860 })
     const markup = renderToStaticMarkup(createElement(MobilePreviewDialog, { result, properties, onClose() {} }))

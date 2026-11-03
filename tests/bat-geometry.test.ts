@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { analyzeAnc } from '../src/domain/analyze'
 import { createBatGeometry } from '../src/components/bat-geometry'
+import { previewFrame } from '../src/components/preview-framing'
+import { Vector3 } from 'three'
 
 describe('3D geometry generated from the shared full profile', () => {
   it.each(['劉/WT320.33.anc', '拿/318-V2.anc', '劉/X-56-860.anc'])('keeps every source radius, exact turn and vertical step in both views of %s', file => {
@@ -18,6 +20,15 @@ describe('3D geometry generated from the shared full profile', () => {
         expect(path[0].x).toBe(0)
         expect(path.at(-1)!.x).toBe(0)
         const positions = geometry.getAttribute('position')
+        const frame = previewFrame(points, center)
+        const vertex = new Vector3()
+        let furthest = 0
+        for (let index = 0; index < positions.count; index++) {
+          vertex.fromBufferAttribute(positions, index)
+          vertex.set(-vertex.y, vertex.x, vertex.z)
+          furthest = Math.max(furthest, vertex.distanceTo(frame.center))
+        }
+        expect(furthest).toBeCloseTo(frame.radius, 3)
         expect(positions.count).toBe((geometry.parameters.segments + 1) * path.length)
         for (let i = 0; i < points.length; i++) {
           expect(path[i + 1].x).toBe(points[i].radius)
