@@ -9,6 +9,8 @@ import { text } from '../src/i18n/zh-TW'
 import { ResultDialog } from '../src/features/batch/result-dialog'
 import { MobilePreviewDialog } from '../src/components/mobile-preview-dialog'
 import { PreviewModeSwitch, type PreviewMode } from '../src/components/preview-mode'
+import { calculateBatProperties } from '../src/domain/bat-properties'
+import { initialMaterialSettings } from '../src/config/weight'
 
 const raw = readFileSync(new URL('./fixtures/case-001.anc', import.meta.url), 'utf8')
 const result = analyzeAnc(raw, { name: 'preview.anc', size: raw.length })
@@ -20,6 +22,17 @@ const buttons = (markup: string) => [...markup.matchAll(/<button\b([^>]*)>([^<]*
 }))
 
 describe('shared 3D preview controls', () => {
+  it('reads mobile measurements first, then balance and MOI, with weight last while the model loads', () => {
+    const properties = calculateBatProperties(result, initialMaterialSettings, { min: 840, max: 860 })
+    const markup = renderToStaticMarkup(createElement(MobilePreviewDialog, { result, properties, onClose() {} }))
+    const positions = [text.maximumDiameter, text.minimumGripDiameter, 'data-testid="property-balancePoint"', 'data-testid="property-moi"', 'data-testid="property-weight"'].map(value => markup.indexOf(value))
+    expect(positions.every(position => position >= 0)).toBe(true)
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
+    for (const id of ['balancePoint', 'moi', 'weight']) expect(markup.match(new RegExp(`data-testid="property-${id}"`, 'g'))).toHaveLength(1)
+    expect(markup).toContain('840 – 860')
+    expect(markup).toContain(text.previewLoading)
+  })
+
   it('opens desktop and mobile dialogs with one shared switch defaulting to trimmed on the left', () => {
     const original = JSON.stringify(result)
     const entry = { id: 'preview', source: result.source, state: { status: 'result' as const, result } }
