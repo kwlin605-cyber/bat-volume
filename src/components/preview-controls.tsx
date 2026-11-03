@@ -8,8 +8,8 @@ import { attachPointerRotation } from './pointer-rotation'
 import type { PreviewArea, PreviewFrame } from './preview-framing'
 import { createPreviewView } from './preview-view'
 
-export function PreviewControls({ frame, sceneRadius, area, resetRevision, onReady }: {
-  frame: PreviewFrame; sceneRadius: number; area: PreviewArea | null; resetRevision: number; onReady: () => void
+export function PreviewControls({ frame, scaleRadius, sceneRadius, area, resetRevision, onReady }: {
+  frame: PreviewFrame; scaleRadius: number; sceneRadius: number; area: PreviewArea | null; resetRevision: number; onReady: () => void
 }) {
   const { width, height } = useThree(state => state.size)
   const controls = useRef<OrbitControlsImpl>(null)
@@ -27,8 +27,8 @@ export function PreviewControls({ frame, sceneRadius, area, resetRevision, onRea
   useLayoutEffect(() => {
     if (!area || Math.abs(width - area.width) >= 1 || Math.abs(height - area.height) >= 1) return
     // A camera-size update also recreates the pan adapter, even at subpixel differences.
-    if (view.current?.update(frame, sceneRadius, { width, height, hintTop: area.hintTop }, resetRevision)) onReady()
-  }, [frame, sceneRadius, area, resetRevision, width, height, onReady])
+    if (view.current?.update(frame, sceneRadius, { width, height, hintTop: area.hintTop }, resetRevision, scaleRadius)) onReady()
+  }, [frame, scaleRadius, sceneRadius, area, resetRevision, width, height, onReady])
   useEffect(() => {
     if (!controls.current) return
     const controller = attachPointerRotation(controls.current, anchor)

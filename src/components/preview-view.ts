@@ -10,7 +10,7 @@ export function createPreviewView(control: OrbitControls, anchor: Vector3, cance
   let previousFit: (PreviewArea & { revision: number }) | null = null
 
   return {
-    update(frame: PreviewFrame, sceneRadius: number, area: PreviewArea, revision: number) {
+    update(frame: PreviewFrame, sceneRadius: number, area: PreviewArea, revision: number, scaleRadius = frame.radius) {
       if (previousFrame !== frame) {
         cancelRotation()
         // Rebasing the pivot preserves the projection of every existing model point.
@@ -27,7 +27,7 @@ export function createPreviewView(control: OrbitControls, anchor: Vector3, cance
       control.enableDamping = damping
       control.target.copy(anchor)
       control.maxDistance = sceneRadius * previewFraming.cameraRadiusMultiplier * 2
-      if (!fitPreview(camera, frame, area, sceneRadius)) return false
+      if (!fitPreview(camera, frame, area, sceneRadius, scaleRadius)) return false
       previousFit = { ...area, revision }
       control.dispatchEvent({ type: 'change', target: control })
       return true

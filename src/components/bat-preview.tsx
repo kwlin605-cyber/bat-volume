@@ -3,7 +3,7 @@ import { previewGeometry } from '../config/preview'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { BufferGeometry, Line, LineDashedMaterial, Vector3 } from 'three'
-import { LoaderCircle, Scan } from 'lucide-react'
+import { LoaderCircle, RotateCcw } from 'lucide-react'
 import type { AnalysisResult, ProfilePoint } from '../domain/types'
 import { text } from '../i18n/zh-TW'
 import { SectionMarker } from './section-marker'
@@ -90,13 +90,13 @@ export default function BatPreview({ result, mode: requestedMode, interactionHel
           {calculated && result.dimensions.grip.status === 'detected' && <SectionMarker point={result.dimensions.grip.minimum} center={center} kind="grip" />}
           {mass && <SectionMarker point={mass.center} center={center} kind="balance" />}
         </group>
-        <PreviewControls frame={frames[mode]} sceneRadius={frames.sceneRadius} area={area} resetRevision={resetRevision} onReady={markReady} />
+        <PreviewControls frame={frames[mode]} scaleRadius={frames.trimmed.radius} sceneRadius={frames.sceneRadius} area={area} resetRevision={resetRevision} onReady={markReady} />
       </Canvas>
     </div>
     {!ready && <div className="preview-fallback preview-loading"><LoaderCircle className="spin" size={18} />{text.previewLoading}</div>}
     <div className="preview-footer">
       <span ref={hint}>{interactionHelp}</span>
-      <Button className="preview-reset" variant="outline" size="icon" disabled={!ready} title={text.previewResetSize} aria-label={text.previewResetSize} onClick={() => setResetRevision(value => value + 1)}><Scan /></Button>
+      <Button className="preview-reset" variant="outline" size="icon" disabled={!ready} title={text.previewResetSize} aria-label={text.previewResetSize} onClick={() => setResetRevision(value => value + 1)}><RotateCcw /></Button>
     </div>
   </section>
 }

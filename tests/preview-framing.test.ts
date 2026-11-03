@@ -40,6 +40,24 @@ describe('preview rotation envelope and available circle', () => {
 })
 
 describe('96 percent camera framing', () => {
+  it('uses a shared trimmed scale while centering the currently displayed whole shape', () => {
+    const camera = new OrthographicCamera(-195, 195, 195, -195, 0.1, 20000)
+    camera.position.set(0, 80, 1200)
+    camera.lookAt(0, 0, 0)
+    const area = { width: 390, height: 390, hintTop: 350 }
+    const trimmed = { center: new Vector3(-30, 0, 0), radius: 350 }
+    const whole = { center: new Vector3(20, 0, 0), radius: 500 }
+    fitPreview(camera, trimmed, area, whole.radius, trimmed.radius)
+    const zoom = camera.zoom
+    const angle = camera.quaternion.clone()
+    fitPreview(camera, whole, area, whole.radius, trimmed.radius)
+    expect(camera.zoom).toBeCloseTo(zoom, 10)
+    expect(camera.quaternion.angleTo(angle)).toBeLessThan(1e-7)
+    const center = screen(camera, whole.center, 390, 390)
+    expect(center.x).toBeCloseTo(195, 8)
+    expect(center.y).toBeCloseTo(175, 8)
+    expect(camera.zoom).toBeCloseTo(350 * 0.96 / 700, 10)
+  })
   it.each([
     { width: 390, height: 390, hintTop: 350 },
     { width: 800, height: 450, hintTop: 410 },

@@ -272,6 +272,31 @@ function zoom(surface: InputSurface, input: 'mouse' | 'touch') {
 }
 
 describe('shared preview framing and mode transitions', () => {
+  it.each([390, 700])('keeps one trimmed reset scale across modes and viewport changes at height %s', height => {
+    const anchor = new Vector3(-30, 0, 0)
+    const { controls, camera, rotation, dispose } = setup(height, anchor)
+    const detach = attachCenteredOrbit(controls, anchor, 390, height)
+    const view = createPreviewView(controls, anchor, rotation.cancel)
+    const area = { width: 390, height, hintTop: height - 42 }
+    const trimmed = { center: new Vector3(-30, 0, 0), radius: 350 }
+    const whole = { center: new Vector3(20, 0, 0), radius: 500 }
+    try {
+      view.update(trimmed, 500, area, 0, trimmed.radius)
+      const zoom = camera.zoom
+      const angle = camera.quaternion.clone()
+      expect(view.update(whole, 500, area, 0, trimmed.radius)).toBe(false)
+      expect(view.update(whole, 500, area, 1, trimmed.radius)).toBe(true)
+      settle(controls)
+      expect(camera.zoom).toBeCloseTo(zoom, 10)
+      expect(camera.quaternion.angleTo(angle)).toBeLessThan(1e-7)
+      expect((projected(camera, whole.center).x + 1) * 195).toBeCloseTo(195, 7)
+      expect((1 - projected(camera, whole.center).y) * height / 2).toBeCloseTo(area.hintTop / 2, 7)
+      view.update(whole, 500, { ...area, hintTop: area.hintTop - 20 }, 1, trimmed.radius)
+      const resizedZoom = camera.zoom
+      view.update(trimmed, 500, { ...area, hintTop: area.hintTop - 20 }, 2, trimmed.radius)
+      expect(camera.zoom).toBeCloseTo(resizedZoom, 10)
+    } finally { detach(); dispose() }
+  })
   it.each(['mouse', 'touch'] as const)('preserves the whole screen through mode switches after %s pan, rotation and zoom', input => {
     const anchor = new Vector3(-30, 0, 0)
     const { surface, controls, camera, rotation, dispose } = setup(390, anchor)

@@ -24,14 +24,14 @@ export function previewCircle(area: PreviewArea) {
   return { x: width / 2, y: usableHeight / 2, diameter: Math.min(width, usableHeight) }
 }
 
-export function fitPreview(camera: OrthographicCamera, frame: PreviewFrame, area: PreviewArea, sceneRadius: number) {
+export function fitPreview(camera: OrthographicCamera, frame: PreviewFrame, area: PreviewArea, sceneRadius: number, scaleRadius = frame.radius) {
   const circle = previewCircle(area)
   if (!circle) return false
   const pixelsPerUnit = Math.min(area.width / (camera.right - camera.left), area.height / (camera.top - camera.bottom))
   const distance = sceneRadius * previewFraming.cameraRadiusMultiplier
   const direction = camera.getWorldDirection(new Vector3())
   camera.position.copy(frame.center).addScaledVector(direction, -distance)
-  camera.zoom = circle.diameter * previewFraming.fillRatio / (2 * frame.radius * pixelsPerUnit)
+  camera.zoom = circle.diameter * previewFraming.fillRatio / (2 * scaleRadius * pixelsPerUnit)
   camera.near = Math.max(0.01, distance / 10000)
   camera.far = distance + sceneRadius * previewFraming.cameraRadiusMultiplier
   camera.setViewOffset(area.width, area.height, area.width / 2 - circle.x, area.height / 2 - circle.y, area.width, area.height)
