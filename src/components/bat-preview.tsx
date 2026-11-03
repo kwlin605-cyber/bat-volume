@@ -32,7 +32,7 @@ function BatMesh({ points, center }: { points: ProfilePoint[]; center: number })
 
 function FitView({ revision }: { revision: string }) {
   const bounds = useBounds()
-  useEffect(() => { bounds.refresh().clip().fit() }, [bounds, revision])
+  useEffect(() => { bounds.refresh().reset().clip().fit() }, [bounds, revision])
   return null
 }
 
@@ -42,6 +42,7 @@ export default function BatPreview({ result, mode: requestedMode, interactionHel
   const profile = result.profile!
   const points = calculated && mode === 'trimmed' ? result.retained : profile.points
   const center = (profile.range.low + profile.range.high) / 2
+  const orbitCenter = useMemo(() => new Vector3(center - (points[0].y + points.at(-1)!.y) / 2, 0, 0), [center, points])
   const cuts = calculated ? result.cuts : result.partial
   const showCuts = mode === 'whole' && (cuts?.low !== undefined || cuts?.high !== undefined)
   const revision = `${result.source.name}:${mode}`
@@ -63,7 +64,7 @@ export default function BatPreview({ result, mode: requestedMode, interactionHel
           </group>
           <FitView revision={revision} />
         </Bounds>
-        <PreviewControls />
+        <PreviewControls center={orbitCenter} />
       </Canvas>
     </div>
     <div className="preview-footer"><span>{interactionHelp}</span></div>
