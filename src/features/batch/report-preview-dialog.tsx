@@ -9,11 +9,13 @@ import { reportFormats, type ReportFormat } from '../../reports/formats'
 import { downloadReport } from '../../reports/download'
 import { text } from '../../i18n/zh-TW'
 import { reportView } from '../../reports/report-view'
+import { useDialogBackdrop } from '../../hooks/use-dialog-backdrop'
 
 interface Props { view: BatchView; format: ReportFormat; onDismiss: () => void }
 export default function ReportPreviewDialog({ view, format, onDismiss }: Props) {
   const outputView = useMemo(() => reportView(view, format), [view, format])
   const dialog = useRef<HTMLDialogElement>(null)
+  const backdrop = useDialogBackdrop()
   const canvas = useRef<HTMLCanvasElement>(null)
   const exportController = useRef<AbortController | null>(null)
   const [measure, setMeasure] = useState<ReturnType<typeof createReportMeasure> | null>(null)
@@ -89,7 +91,7 @@ export default function ReportPreviewDialog({ view, format, onDismiss }: Props) 
       if (!controller.signal.aborted) setError(reason instanceof Error && reason.message === text.reportTooWide ? text.reportTooWide : text.reportFailed)
     } finally { if (!controller.signal.aborted) setExporting(false) }
   }
-  return <dialog ref={dialog} className="report-preview-dialog" aria-labelledby="report-preview-title" onClose={onDismiss} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close() }}>
+  return <dialog ref={dialog} className="report-preview-dialog" aria-labelledby="report-preview-title" onClose={onDismiss} {...backdrop}>
     <div className="dialog-heading"><div><h2 id="report-preview-title">{text.reportPreview}</h2><p className="report-preview-format">{reportFormats.find(item => item.id === format)!.label}</p></div><button type="button" className="icon-button" aria-label={text.closePreview} onClick={() => dialog.current?.close()}><X size={20} /></button></div>
     <div className="report-preview-controls">
       <button className="print-fit-button" type="button" aria-pressed={separateGroups} disabled={!session || exporting} onClick={toggleGroups}>{text.separateBatGroups}</button>

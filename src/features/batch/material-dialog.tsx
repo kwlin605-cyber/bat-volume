@@ -10,6 +10,7 @@ import { UnitSelector } from './unit-selector'
 import { WeightUnitSelector } from './weight-unit-selector'
 import type { MassPropertyUnits } from '../../domain/mass-property-units'
 import { MassPropertyUnitSelectors } from '../../components/mass-property-unit-selectors'
+import { useDialogBackdrop } from '../../hooks/use-dialog-backdrop'
 
 export function MaterialDialog({
   value,
@@ -37,6 +38,7 @@ export function MaterialDialog({
   onDismiss: () => void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const backdrop = useDialogBackdrop()
   const titleId = useId()
   const [density, setDensity] = useState(value.referenceDensity?.toString() ?? '')
   const [volume, setVolume] = useState(value.volumeCm3?.toString() ?? '')
@@ -105,9 +107,7 @@ export function MaterialDialog({
       className="material-dialog"
       aria-labelledby={titleId}
       onClose={onDismiss}
-      onClick={event => {
-        if (event.target === event.currentTarget) dialog.current?.close()
-      }}
+      {...backdrop}
     >
       <form onSubmit={event => { event.preventDefault(); apply() }}>
         <h2 id={titleId}>{text.materialSettings}</h2>

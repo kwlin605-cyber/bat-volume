@@ -3,6 +3,7 @@ import { Check, ChevronLeft, Folder, FolderArchive, Search, X } from 'lucide-rea
 import { getAncCatalog, type AncPresetItem } from '../services/anc-catalog'
 import { displayFileName } from '../lib/file-name'
 import { text } from '../i18n/zh-TW'
+import { useDialogBackdrop } from '../hooks/use-dialog-backdrop'
 
 interface Props {
   currentPresetIds?: ReadonlySet<string>
@@ -13,6 +14,7 @@ interface Props {
 
 export function PresetLibraryDialog({ currentPresetIds = new Set(), onSelect, onRemovePreset, onDismiss }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const backdrop = useDialogBackdrop()
   const [selectedVendor, setSelectedVendor] = useState<string>('all')
   const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -91,9 +93,7 @@ export function PresetLibraryDialog({ currentPresetIds = new Set(), onSelect, on
       className="preset-dialog"
       aria-labelledby="preset-dialog-title"
       onClose={onDismiss}
-      onClick={e => {
-        if (e.target === e.currentTarget) dialogRef.current?.close()
-      }}
+      {...backdrop}
     >
       <div className="preset-dialog-container">
         {/* Header */}

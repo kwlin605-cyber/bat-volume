@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { OrthographicCamera, Vector3 } from 'three'
 import { OrbitControls } from 'three-stdlib'
-import { rotationSpeedForHeight } from '../src/components/preview-controls'
+import { attachPointerRotation } from '../src/components/pointer-rotation'
 import { previewInteraction } from '../src/config/preview'
 import { attachCenteredOrbit } from '../src/components/centered-orbit'
 
-// Only the browser event surface is substituted; camera motion uses real OrbitControls.
+// Only the browser event surface is substituted; both production controllers and camera math run.
 class InputSurface extends EventTarget {
   ownerDocument = new EventTarget()
   style = { touchAction: '' }
   clientWidth = 390
+  left = 0
+  top = 0
   constructor(public clientHeight: number) { super() }
   releasePointerCapture() {}
+  getBoundingClientRect() { return { left: this.left, top: this.top, width: this.clientWidth, height: this.clientHeight } }
 }
+
+const rotations = new WeakMap<OrbitControls, ReturnType<typeof attachPointerRotation>>()
 
 function pointer(type: string, input: 'mouse' | 'touch', x: number, y: number, button = 0, pointerId = 1) {
   return Object.assign(new Event(type, { cancelable: true }), {
@@ -20,57 +25,211 @@ function pointer(type: string, input: 'mouse' | 'touch', x: number, y: number, b
   })
 }
 
-function setup(height: number) {
+function setup(height: number, center = new Vector3()) {
   const surface = new InputSurface(height)
   const camera = new OrthographicCamera(-195, 195, height / 2, -height / 2, 0.1, 20000)
   camera.position.set(0, 0, 1200)
   const controls = new OrbitControls(camera, surface as unknown as HTMLElement)
   controls.enableDamping = true
   controls.dampingFactor = previewInteraction.dampingFactor
-  controls.rotateSpeed = rotationSpeedForHeight(height)
-  return { surface, controls, camera }
+  controls.enableRotate = false
+  const rotation = attachPointerRotation(controls, center)
+  rotations.set(controls, rotation)
+  return { surface, controls, camera, rotation, dispose: () => { rotation.dispose(); controls.dispose() } }
 }
 
-function drag(surface: InputSurface, input: 'mouse' | 'touch', dx: number, dy: number) {
-  surface.dispatchEvent(pointer('pointerdown', input, 100, 100))
-  for (let step = 1; step <= 10; step++) surface.ownerDocument.dispatchEvent(pointer('pointermove', input, 100 + dx * step / 10, 100 + dy * step / 10))
-  surface.ownerDocument.dispatchEvent(pointer('pointerup', input, 100 + dx, 100 + dy))
+function drag(surface: InputSurface, input: 'mouse' | 'touch', dx: number, dy: number, x = 100, y = 100) {
+  surface.dispatchEvent(pointer('pointerdown', input, x, y))
+  for (let step = 1; step <= 10; step++) surface.ownerDocument.dispatchEvent(pointer('pointermove', input, x + dx * step / 10, y + dy * step / 10))
+  surface.ownerDocument.dispatchEvent(pointer('pointerup', input, x + dx, y + dy))
 }
+
+describe('rotation follows the grabbed end', () => {
+  it.each(['mouse', 'touch'] as const)('raises either grabbed end when dragging up with %s', input => {
+    for (const side of [-1, 1]) {
+      const { surface, controls, camera, dispose } = setup(390)
+      try {
+        const end = new Vector3(side * 120, 0, 0)
+        drag(surface, input, 0, -50, 195 + side * 120, 195)
+        settle(controls)
+        expect(projected(camera, end).y).toBeGreaterThan(0.05)
+        expect(projected(camera, end.clone().negate()).y).toBeLessThan(-0.05)
+      } finally { dispose() }
+    }
+  })
+
+  it.each(['mouse', 'touch'] as const)('uses the panned bat center rather than the canvas center with %s', input => {
+    const { surface, controls, camera, dispose } = setup(390)
+    const detach = attachCenteredOrbit(controls, new Vector3(), 390, 390)
+    try {
+      pan(surface, input, 150, 0)
+      settle(controls)
+      const centerX = (projected(camera, new Vector3()).x + 1) * 195
+      const grabX = centerX - 100
+      expect(grabX).toBeGreaterThan(195)
+      drag(surface, input, 0, -50, grabX, 195)
+      settle(controls)
+      expect(projected(camera, new Vector3(-120, 0, 0)).y).toBeGreaterThan(0.05)
+      expect((projected(camera, new Vector3()).x + 1) * 195).toBeCloseTo(centerX, 7)
+    } finally { detach(); dispose() }
+  })
+
+  it('crosses the center smoothly and can retrace a gesture', () => {
+    const { surface, controls, camera, dispose } = setup(390)
+    try {
+      const initial = camera.quaternion.clone()
+      surface.dispatchEvent(pointer('pointerdown', 'mouse', 75, 195))
+      let previous = initial.clone()
+      for (let x = 76; x <= 315; x++) {
+        surface.ownerDocument.dispatchEvent(pointer('pointermove', 'mouse', x, 175))
+        controls.update()
+        rotations.get(controls)!.update()
+        expect(camera.quaternion.angleTo(previous)).toBeLessThan(0.03)
+        previous.copy(camera.quaternion)
+      }
+      surface.ownerDocument.dispatchEvent(pointer('pointermove', 'mouse', 75, 195))
+      surface.ownerDocument.dispatchEvent(pointer('pointerup', 'mouse', 75, 195))
+      settle(controls)
+      expect(camera.quaternion.angleTo(initial)).toBeLessThan(1e-7)
+    } finally { dispose() }
+  })
+
+  it('uses viewport coordinates when the preview is offset within the page', () => {
+    const { surface, controls, camera, dispose } = setup(390)
+    try {
+      surface.left = 520
+      surface.top = 232
+      drag(surface, 'mouse', 0, -50, surface.left + 75, surface.top + 195)
+      settle(controls)
+      expect(projected(camera, new Vector3(-120, 0, 0)).y).toBeGreaterThan(0.05)
+    } finally { dispose() }
+  })
+
+  it('finishes damping and stops requesting frames', () => {
+    const { surface, controls, rotation, dispose } = setup(390)
+    try {
+      drag(surface, 'mouse', 0, -50, 75, 195)
+      settle(controls)
+      let changes = 0
+      const change = () => { changes++ }
+      controls.addEventListener('change', change)
+      for (let frame = 0; frame < 60; frame++) rotation.update()
+      expect(changes).toBe(0)
+      controls.removeEventListener('change', change)
+    } finally { dispose() }
+  })
+
+  it('still turns out of the screen plane in both directions near the center', () => {
+    for (const [dx, dy, component] of [[100, 0, 'x'], [0, 100, 'y']] as const) {
+      const { surface, controls, camera, dispose } = setup(390)
+      try {
+        drag(surface, 'mouse', dx, dy, 195, 195)
+        settle(controls)
+        expect(Math.abs(camera.position[component])).toBeGreaterThan(500)
+        expect(camera.position.length()).toBeCloseTo(1200, 7)
+      } finally { dispose() }
+    }
+  })
+
+  it('resumes single-finger rotation after two-finger panning without jumping', () => {
+    const { surface, controls, camera, dispose } = setup(390)
+    const detach = attachCenteredOrbit(controls, new Vector3(), 390, 390)
+    try {
+      surface.dispatchEvent(pointer('pointerdown', 'touch', 75, 195, 0, 1))
+      surface.dispatchEvent(pointer('pointerdown', 'touch', 315, 195, 0, 2))
+      surface.ownerDocument.dispatchEvent(pointer('pointermove', 'touch', 95, 195, 0, 1))
+      surface.ownerDocument.dispatchEvent(pointer('pointermove', 'touch', 335, 195, 0, 2))
+      settle(controls)
+      const before = camera.quaternion.clone()
+      const center = projected(camera, new Vector3())
+      surface.ownerDocument.dispatchEvent(pointer('pointerup', 'touch', 335, 195, 0, 2))
+      settle(controls)
+      expect(camera.quaternion.angleTo(before)).toBeLessThan(1e-7)
+      expect(projected(camera, new Vector3()).distanceTo(center)).toBeLessThan(1e-7)
+      surface.ownerDocument.dispatchEvent(pointer('pointermove', 'touch', 95, 145, 0, 1))
+      surface.ownerDocument.dispatchEvent(pointer('pointerup', 'touch', 95, 145, 0, 1))
+      settle(controls)
+      expect(projected(camera, new Vector3(-120, 0, 0)).y).toBeGreaterThan(0.05)
+      expect(projected(camera, new Vector3()).distanceTo(center)).toBeLessThan(1e-7)
+    } finally { detach(); dispose() }
+  })
+
+  it.each(['cancel', 'dispose', 'disable'] as const)('stops pending rotation on %s', action => {
+    const { surface, controls, camera, rotation, dispose } = setup(390)
+    try {
+      surface.dispatchEvent(pointer('pointerdown', 'touch', 75, 195))
+      surface.ownerDocument.dispatchEvent(pointer('pointermove', 'touch', 75, 145))
+      if (action === 'cancel') surface.ownerDocument.dispatchEvent(pointer('pointercancel', 'touch', 75, 145))
+      if (action === 'dispose') rotation.dispose()
+      if (action === 'disable') controls.enabled = false
+      const stopped = camera.quaternion.clone()
+      surface.ownerDocument.dispatchEvent(pointer('pointermove', 'touch', 75, 100))
+      settle(controls)
+      expect(camera.quaternion.angleTo(stopped)).toBeLessThan(1e-7)
+    } finally { dispose() }
+  })
+
+  it('ignores modifier-left, right and middle rotation input and zero-sized surfaces', () => {
+    for (const button of [0, 1, 2]) {
+      const { surface, controls, camera, dispose } = setup(390)
+      try {
+        const before = camera.quaternion.clone()
+        const event = pointer('pointerdown', 'mouse', 75, 195, button)
+        surface.dispatchEvent(Object.assign(event, { ctrlKey: button === 0 }))
+        surface.ownerDocument.dispatchEvent(pointer('pointermove', 'mouse', 75, 145, button))
+        surface.ownerDocument.dispatchEvent(pointer('pointerup', 'mouse', 75, 145, button))
+        settle(controls)
+        expect(camera.quaternion.angleTo(before)).toBeLessThan(1e-7)
+      } finally { dispose() }
+    }
+    const { surface, controls, camera, dispose } = setup(0)
+    try {
+      const before = camera.quaternion.clone()
+      drag(surface, 'mouse', 100, 0)
+      settle(controls)
+      expect(camera.quaternion.angleTo(before)).toBeLessThan(1e-7)
+    } finally { dispose() }
+  })
+})
 
 describe('rotation follows pixel distance independently of preview height', () => {
   it.each(['mouse', 'touch'] as const)('rotates 30 degrees per 100 pixels with %s in tall and short canvases', input => {
     for (const height of [290, 359, 420, 563, 720]) {
-      const { surface, controls } = setup(height)
+      const { surface, controls, camera, dispose } = setup(height)
       try {
+        const before = camera.quaternion.clone()
         drag(surface, input, 100, 0)
-        const released = Math.abs(controls.getAzimuthalAngle())
+        const released = camera.quaternion.angleTo(before)
         expect(released).toBeGreaterThan(0)
         expect(released).toBeLessThan(Math.PI / 6)
-        for (let frame = 0; frame < 240; frame++) controls.update()
-        expect(controls.getAzimuthalAngle()).toBeCloseTo(-Math.PI / 6, 8)
-        const settled = controls.getAzimuthalAngle()
-        for (let frame = 0; frame < 60; frame++) controls.update()
-        expect(controls.getAzimuthalAngle()).toBeCloseTo(settled, 8)
+        settle(controls)
+        expect(camera.quaternion.angleTo(before)).toBeCloseTo(Math.PI / 6, 8)
+        const settled = camera.quaternion.clone()
+        settle(controls)
+        expect(camera.quaternion.angleTo(settled)).toBeLessThan(1e-7)
         expect(controls.panSpeed).toBe(1)
         expect(controls.zoomSpeed).toBe(1)
-      } finally { controls.dispose() }
+      } finally { dispose() }
     }
   })
 
   it('keeps vertical sensitivity after resizing and preserves a short damped finish', () => {
-    const { surface, controls } = setup(320)
+    const { surface, controls, camera, rotation, dispose } = setup(320)
     try {
+      const before = camera.quaternion.clone()
       drag(surface, 'mouse', 0, 50)
-      for (let frame = 0; frame < 240; frame++) controls.update()
-      const first = controls.getPolarAngle()
-      expect(first).toBeCloseTo(Math.PI / 2 - Math.PI / 12, 8)
+      settle(controls)
+      const first = camera.quaternion.clone()
+      expect(first.angleTo(before)).toBeCloseTo(Math.PI / 12, 8)
+      rotation.dispose()
       surface.clientHeight = 700
-      controls.rotateSpeed = rotationSpeedForHeight(surface.clientHeight)
+      const resized = attachPointerRotation(controls, new Vector3())
+      rotations.set(controls, resized)
       drag(surface, 'touch', 0, 50)
-      for (let frame = 0; frame < 240; frame++) controls.update()
-      expect(controls.getPolarAngle()).toBeCloseTo(first - Math.PI / 12, 8)
-    } finally { controls.dispose() }
-    expect(rotationSpeedForHeight(0)).toBe(0)
+      settle(controls)
+      expect(camera.quaternion.angleTo(first)).toBeCloseTo(Math.PI / 12, 8)
+      resized.dispose()
+    } finally { dispose() }
   })
 })
 
@@ -90,7 +249,10 @@ function projected(camera: OrthographicCamera, point: Vector3) {
 }
 
 function settle(controls: OrbitControls) {
-  for (let frame = 0; frame < 300; frame++) controls.update()
+  for (let frame = 0; frame < 300; frame++) {
+    controls.update()
+    rotations.get(controls)?.update()
+  }
 }
 
 function zoom(surface: InputSurface, input: 'mouse' | 'touch') {
@@ -111,8 +273,8 @@ function zoom(surface: InputSurface, input: 'mouse' | 'touch') {
 describe('rotation around the displayed bat after panning', () => {
   it.each(['mouse', 'touch'] as const)('keeps the panned screen position through %s rotation and zoom', input => {
     for (const height of [320, 700]) {
-      const { surface, controls, camera } = setup(height)
       const center = new Vector3(15, 0, 0)
+      const { surface, controls, camera, dispose } = setup(height, center)
       camera.position.add(center)
       controls.target.copy(center)
       controls.update()
@@ -155,13 +317,13 @@ describe('rotation around the displayed bat after panning', () => {
         expect(projected(camera, center).x).toBeCloseTo(movedAgain.x, 7)
         expect(projected(camera, center).y).toBeCloseTo(movedAgain.y, 7)
         expect(controls.target.distanceTo(center)).toBeLessThan(1e-8)
-      } finally { detach(); controls.dispose() }
+      } finally { detach(); dispose() }
     }
   })
 
   it('does not jump when rotation starts with a target away from the displayed center', () => {
-    const { surface, controls, camera } = setup(390)
     const center = new Vector3(25, 10, 0)
+    const { surface, controls, camera, dispose } = setup(390, center)
     const end = center.clone().add(new Vector3(60, 5, 0))
     const beforeCenter = projected(camera, center)
     const beforeEnd = projected(camera, end)
@@ -172,11 +334,11 @@ describe('rotation around the displayed bat after panning', () => {
       expect(projected(camera, end).distanceTo(beforeEnd)).toBeLessThan(1e-8)
       expect(controls.target.distanceTo(center)).toBeLessThan(1e-8)
       surface.ownerDocument.dispatchEvent(pointer('pointerup', 'touch', 100, 100))
-    } finally { detach(); controls.dispose() }
+    } finally { detach(); dispose() }
   })
 
   it('clears screen panning and listeners before reframing a new center or canvas size', () => {
-    const { surface, controls, camera } = setup(390)
+    const { surface, controls, camera, rotation, dispose } = setup(390)
     const center = new Vector3()
     const detach = attachCenteredOrbit(controls, center, 390, 390)
     pan(surface, 'mouse', 40, 30)
@@ -188,6 +350,7 @@ describe('rotation around the displayed bat after panning', () => {
     settle(controls)
     expect(controls.target.distanceTo(center)).toBeGreaterThan(0)
     const nextCenter = new Vector3(-30, 0, 0)
+    rotation.dispose()
     surface.clientWidth = 700
     surface.clientHeight = 320
     camera.left = -350
@@ -199,6 +362,8 @@ describe('rotation around the displayed bat after panning', () => {
     controls.update()
     camera.updateProjectionMatrix()
     const detachNext = attachCenteredOrbit(controls, nextCenter, 700, 320)
+    const nextRotation = attachPointerRotation(controls, nextCenter)
+    rotations.set(controls, nextRotation)
     try {
       expect(projected(camera, nextCenter).x).toBeCloseTo(0, 8)
       expect(projected(camera, nextCenter).y).toBeCloseTo(0, 8)
@@ -209,6 +374,6 @@ describe('rotation around the displayed bat after panning', () => {
       settle(controls)
       expect(projected(camera, nextCenter).x).toBeCloseTo(moved.x, 7)
       expect(projected(camera, nextCenter).y).toBeCloseTo(moved.y, 7)
-    } finally { detachNext(); controls.dispose() }
+    } finally { nextRotation.dispose(); detachNext(); dispose() }
   })
 })
