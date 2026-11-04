@@ -37,7 +37,7 @@ export function attachPointerRotation(controls: OrbitControls, center: Vector3) 
     const bounds = surface.getBoundingClientRect()
     radius = Math.min(bounds.width, bounds.height) / 2
     if (!controls.enabled || radius <= 0) return
-    // Bounds and the panning adapter must finish rebasing before capturing the pose.
+    // The panning adapter must finish rebasing before capturing the pose.
     controls.dispatchEvent({ type: 'start', target: controls })
     camera.updateMatrixWorld()
     const projected = center.clone().project(camera)
