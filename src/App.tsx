@@ -10,6 +10,7 @@ import { useMaterialSettings } from './features/batch/use-material-settings'
 import { useWeightUnit } from './features/batch/use-weight-unit'
 import { useLengthUnit } from './features/batch/use-length-unit'
 import { MaterialDialog } from './features/batch/material-dialog'
+import { DisplayUnitSettings } from './features/batch/display-unit-settings'
 import { PresetLibraryDialog } from './components/preset-library-dialog'
 import { MobilePresetDrawer } from './components/mobile-preset-drawer'
 import { MobileResultView } from './components/mobile-result-view'
@@ -215,16 +216,20 @@ export default function App() {
       {materialOpen && (
         <MaterialDialog
           value={material}
-          weightUnit={weightUnit}
-          lengthUnit={lengthUnit}
-          onWeightUnitChange={desktop ? undefined : selectWeightUnit}
-          onLengthUnitChange={desktop ? undefined : selectLengthUnit}
-          massUnits={desktop ? undefined : massUnits.units}
-          onMassUnitsChange={desktop ? undefined : massUnits.applyUnits}
           bladeWidthMm={blade.widthMm}
           onBladeWidthChange={blade.applyBladeWidth}
           onApply={applyMaterial}
           onDismiss={() => setMaterialOpen(false)}
+          unitPreferences={!desktop ? (
+            <DisplayUnitSettings
+              weightUnit={weightUnit}
+              lengthUnit={lengthUnit}
+              onWeightUnitChange={selectWeightUnit}
+              onLengthUnitChange={selectLengthUnit}
+              massUnits={massUnits.units}
+              onMassUnitsChange={massUnits.applyUnits}
+            />
+          ) : undefined}
         />
       )}
 

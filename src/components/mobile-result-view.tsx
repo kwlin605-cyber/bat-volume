@@ -192,8 +192,8 @@ export function MobileResultView({
             type="button"
             className="mobile-header-btn"
             onClick={onMaterialOpen}
-            aria-label={text.materialSettings}
-            title={text.materialSettings}
+            aria-label={text.settings}
+            title={text.settings}
           >
             <Settings2 size={15} aria-hidden="true" />
           </button>

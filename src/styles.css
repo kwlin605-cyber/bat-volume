@@ -301,5 +301,3 @@ button:focus-visible, summary:focus-visible { outline: 2px solid var(--ui-inputO
 .unit-selector > div > button { width: auto; flex: 1; padding: 8px 6px; text-align: center; border: 0; border-radius: 6px; color: var(--color-text); background: none; font: inherit; font-size: 12px; cursor: pointer; min-width: 0; }
 .unit-selector > div > button:hover { background: var(--color-emphasisAlt); }
 .unit-selector > div > button[aria-pressed=true] { background: var(--color-accent); color: var(--color-white); }
-.material-unit-preferences > .unit-selector { margin: 0; }
-.material-unit-preferences > .unit-selector button { min-height: 44px; }

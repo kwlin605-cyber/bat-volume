@@ -75,22 +75,35 @@
 .clear-weight { display: flex; justify-content: center; align-items: center; flex-shrink: 0; width: 20px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ui-unitText); cursor: pointer; }
 .clear-weight:hover { background: var(--ui-tableLine); }
 .weight-input-error { display: block; margin-top: 7px; color: var(--ui-detailText); font-size: 11px; font-weight: 400; line-height: 1.5; }
-.material-dialog { width: min(360px, 92vw); padding: 26px; margin: auto; border: 1px solid var(--ui-tableBorder); border-radius: 16px; color: var(--ui-materialText); box-shadow: 0 18px 60px var(--ui-materialShadow); }
+.material-dialog { width: min(360px, 92vw); max-height: 90dvh; overflow-y: auto; padding: 26px; margin: auto; border: 1px solid var(--ui-tableBorder); border-radius: 16px; color: var(--ui-materialText); box-shadow: 0 18px 60px var(--ui-materialShadow); }
 .material-dialog::backdrop { background: var(--ui-materialBackdrop); backdrop-filter: blur(2px); }
-.material-dialog h2 { margin: 0 0 23px; font-size: 18px; font-weight: 600; }
+.settings-heading { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.settings-heading h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.settings-heading h2:focus { outline: none; }
+.settings-close { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--color-muted); cursor: pointer; }
+.settings-close:hover { background: var(--color-hover); }
+.settings-tabs { display: flex; flex-shrink: 0; border-bottom: 1px solid var(--ui-materialDivider); margin-bottom: 22px; }
+.settings-tabs > button { flex: 1; min-height: 44px; padding: 10px 6px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--color-subtle); font: inherit; font-size: 14px; cursor: pointer; }
+.settings-tabs > button[aria-selected=true] { border-bottom-color: var(--color-accent); color: var(--color-text); font-weight: 600; }
+.settings-unit-preferences { display: flex; flex-direction: column; gap: 18px; }
+.settings-unit-preferences > .unit-selector { margin: 0; }
+.settings-unit-preferences > .unit-selector button { min-height: 44px; }
+.mobile-settings-dialog { width: min(412px, 92vw); height: min(700px, 90dvh); }
+.mobile-settings-dialog[open] { display: flex; flex-direction: column; }
+.settings-panels { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .material-field { display: block; margin-bottom: 18px; font-size: 13px; }
 .material-field > span { display: block; margin-bottom: 8px; }
 .material-field > div { display: flex; gap: 12px; align-items: center; }
 .material-field input { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--ui-materialInputBorder); border-radius: 8px; font: inherit; color: var(--ui-materialInputText); outline-color: var(--ui-materialInputOutline); }
 .material-field small { min-width: 49px; color: var(--color-subtle); font-size: 12px; }
 .effective-density { margin: 0 0 18px; font-size: 12px; color: var(--ui-densityText); }
-.material-unit-preferences { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--ui-materialDivider); display: flex; flex-direction: column; gap: 12px; }
 .material-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 24px; }
 .material-actions button { padding: 9px 17px; border: 1px solid var(--ui-tableBorder); border-radius: 8px; background: var(--color-white); color: var(--ui-cancelText); font: inherit; font-size: 13px; cursor: pointer; }
 .material-actions button[type=submit] { background: var(--color-accent); color: var(--color-white); border-color: var(--color-accent); }
 @media (max-width: 1023px) {
   .material-dialog { max-height: 90dvh; overflow-y: auto; padding: 22px 20px; }
   .material-field input, .material-actions button { min-height: 44px; }
+  .settings-close { width: 44px; height: 44px; }
 }
 .filename-button { font: inherit; font-size: 17px; font-weight: 700; line-height: 1.7; text-align: left; color: var(--color-muted); background: none; border: 0; padding: 0; cursor: pointer; overflow-wrap: anywhere; }
 .filename-button:hover { color: var(--ui-tableHeading); text-decoration: underline; text-underline-offset: 4px; }
