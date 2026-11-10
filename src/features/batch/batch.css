@@ -18,7 +18,7 @@
 .column-popover label { display: flex; align-items: center; gap: 10px; padding: 11px 7px; cursor: pointer; }
 .column-popover input { accent-color: var(--ui-checkboxAccent); width: 14px; height: 14px; }
 .column-popover .measurement-display-toggle { border-top: 1px solid var(--ui-detailLine); }
-.measurement-caption { display: block; margin-top: 6px; color: var(--ui-noteText); font-size: 12px; font-weight: 400; white-space: normal; overflow-wrap: anywhere; }
+.measurement-caption { display: block; margin-top: 6px; color: var(--ui-noteText); font-size: var(--batch-detail-size); font-weight: var(--batch-detail-weight); white-space: normal; overflow-wrap: anywhere; }
 .column-popover button { width: 100%; padding: 9px 7px; text-align: left; color: var(--ui-toolbarMuted); background: none; border: 0; border-bottom: 1px solid var(--ui-detailLine); cursor: pointer; font: inherit; }
 .batch-sort { display: flex; align-items: center; position: relative; }
 .icon-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 34px; height: 34px; background: transparent; border: 0; border-radius: 8px; color: var(--ui-iconText); cursor: pointer; }
@@ -26,14 +26,14 @@
 .batch-table-area { width: 100%; position: relative; }
 .batch-table-wrap { max-width: 100%; margin: 0 auto; border: 1px solid var(--ui-tableBorder); border-radius: 15px; overflow-x: auto; }
 .batch-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.batch-table th { background: var(--color-header); color: var(--ui-tableHeading); font-size: 14px; font-weight: 500; height: 68px; padding: 14px 20px; text-align: left; white-space: nowrap; }
-.batch-table th small { display: inline-block; font-size: 11px; font-weight: 400; color: var(--ui-toolbarMuted); margin-left: 6px; }
-.batch-table td { padding: 22px 20px; font-size: 17px; font-weight: 500; color: var(--color-text); border-top: 1px solid var(--ui-tableLine); vertical-align: middle; }
+.batch-table th { background: var(--color-header); color: var(--ui-tableHeading); font-size: var(--batch-header-size); font-weight: var(--batch-header-weight); height: 68px; padding: 14px var(--batch-cell-padding); text-align: left; white-space: nowrap; }
+.batch-table th small { display: inline-block; font-size: var(--batch-unit-size); font-weight: var(--batch-unit-weight); color: var(--ui-toolbarMuted); margin-left: var(--batch-header-unit-gap); }
+.batch-table td { padding: 22px var(--batch-cell-padding); font-size: var(--batch-value-size); font-weight: var(--batch-value-weight); color: var(--color-text); border-top: 1px solid var(--ui-tableLine); vertical-align: middle; }
 .batch-table .numeric { text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .batch-table tbody tr:nth-child(even) { --row-surface: var(--ui-rowAlternate); background: var(--row-surface); }
-.batch-table th.metric-primary { font-size: 14px; font-weight: 600; color: var(--color-ink); }
+.batch-table th.metric-primary { font-size: var(--batch-primaryHeader-size); font-weight: var(--batch-primaryHeader-weight); color: var(--color-ink); }
 .batch-table .metric-primary { background: var(--color-emphasis); }
-.batch-table td.metric-primary { font-size: 20px; font-weight: 600; color: var(--color-ink); letter-spacing: -.4px; }
+.batch-table td.metric-primary { font-size: var(--batch-primaryValue-size); font-weight: var(--batch-primaryValue-weight); color: var(--color-ink); letter-spacing: var(--batch-primaryValue-letter-spacing); }
 .batch-table tbody tr:nth-child(even) .metric-primary { background: var(--color-emphasisAlt); }
 .batch-table tbody tr:hover { --row-surface: var(--ui-hoverSurface); background: var(--row-surface); }
 .batch-table tbody tr:hover .metric-primary { background: var(--color-emphasisHover); }
@@ -105,13 +105,13 @@
   .material-field input, .material-actions button { min-height: 44px; }
   .settings-close { width: 44px; height: 44px; }
 }
-.filename-button { font: inherit; font-size: 17px; font-weight: 700; line-height: 1.7; text-align: left; color: var(--color-muted); background: none; border: 0; padding: 0; cursor: pointer; overflow-wrap: anywhere; }
+.filename-button { font: inherit; font-size: var(--batch-filename-size); font-weight: var(--batch-filename-weight); line-height: 1.7; text-align: left; color: var(--color-muted); background: none; border: 0; padding: 0; cursor: pointer; overflow-wrap: anywhere; }
 .filename-button:hover { color: var(--ui-tableHeading); text-decoration: underline; text-underline-offset: 4px; }
 .filename-button:disabled { cursor: wait; color: var(--ui-disabledText); }
 .filename-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px var(--source-tag-gap); }
 .source-tag { display: inline-block; max-width: 100%; box-sizing: border-box; padding: var(--source-tag-paddingY) var(--source-tag-paddingX); border: var(--source-tag-borderWidth) solid var(--color-emphasisHover); border-radius: var(--source-tag-radius); background: var(--color-header); color: var(--color-muted); font-size: var(--source-tag-fontSize); font-weight: var(--source-tag-fontWeight); line-height: var(--source-tag-lineHeight); overflow-wrap: anywhere; }
-.row-diagnostic { display: block; color: var(--ui-detailText); font-size: 12px; font-weight: 400; line-height: 1.6; margin-top: 7px; overflow-wrap: anywhere; }
-.row-loading { display: flex; align-items: center; gap: 6px; color: var(--ui-loadingText); font-size: 12px; font-weight: 400; margin-top: 7px; }
+.row-diagnostic { display: block; color: var(--ui-detailText); font-size: var(--batch-detail-size); font-weight: var(--batch-detail-weight); line-height: 1.6; margin-top: 7px; overflow-wrap: anywhere; }
+.row-loading { display: flex; align-items: center; gap: 6px; color: var(--ui-loadingText); font-size: var(--batch-detail-size); font-weight: var(--batch-detail-weight); margin-top: 7px; }
 .report-error { color: var(--ui-noteText); font-size: 13px; margin: 0 0 15px; }
 .result-dialog { --result-columns: minmax(340px,.85fr) minmax(0,1.65fr); --result-column-gap: 28px; box-sizing: border-box; width: min(1180px, 94vw); max-height: 88dvh; margin: auto; padding: 24px; border: 1px solid var(--ui-cardBorder); border-radius: 20px; color: var(--ui-resultText); overflow: auto; overscroll-behavior: contain; }
 body:has(.result-dialog[open], .material-dialog[open], .mobile-3d-overlay) { overflow: hidden; }
@@ -148,10 +148,10 @@ body:has(.result-dialog[open], .material-dialog[open], .mobile-3d-overlay) { ove
 .grouping-threshold input { width: 65px; padding: 6px 7px; border: 1px solid var(--color-border); border-radius: 6px; color: var(--color-text); background: var(--color-white); font: inherit; text-align: right; outline-color: var(--color-muted); }
 .grouping-threshold small { font-size: 11px; }
 .grouping-error { margin: 8px 7px 0; color: var(--color-muted); font-size: 11px; line-height: 1.5; }
-.weight-secondary { display: block; margin-top: 6px; color: var(--color-muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.weight-secondary { display: block; margin-top: 6px; color: var(--color-muted); font-size: var(--batch-detail-size); font-weight: var(--batch-detail-weight); letter-spacing: 0; }
 .batch-table td.metric-dual-value { position: relative; padding: 0; height: 96px; }
 .dual-unit-value { position: absolute; inset: 0; display: grid; grid-template-rows: 1fr 1fr; }
-.dual-unit-value > span { display: flex; align-items: center; justify-content: center; padding: 8px 20px; font: inherit; }
+.dual-unit-value > span { display: flex; align-items: center; justify-content: center; padding: 8px var(--batch-cell-padding); font: inherit; }
 .dual-unit-value > span:first-child { background: var(--color-accent); color: var(--color-white); }
 .batch-table tbody tr:hover:not(.row-selected) .dual-unit-value > span:first-child { background: var(--color-accentHover); }
 @media (min-width: 1024px) and (max-width: 1190px) { .dual-unit-value > span { padding-left: 14px; padding-right: 14px; } }

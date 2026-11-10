@@ -1,4 +1,5 @@
 import { sourceTagStyle } from './source-tag'
+import { batchTableCssVariables } from './batch'
 
 /** Shared grayscale palette for the screen and printable reports. */
 export const palette = {
@@ -147,4 +148,5 @@ export const themeCssVariables: Readonly<Record<string, string>> = Object.fromEn
   ...Object.entries(screenColors).map(([name, value]) => [`--ui-${name}`, value]),
   ...Object.entries(selectionColors).map(([name, value]) => [`--selection-${name}`, value]),
   ...Object.entries(sourceTagStyle).map(([name, value]) => [`--source-tag-${name}`, name === 'fontWeight' ? String(value) : `${value}px`]),
+  ...Object.entries(batchTableCssVariables),
 ])

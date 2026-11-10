@@ -12,3 +12,13 @@ export const batchTableStyle = {
     primaryValue: { size: 20, weight: 600, letterSpacing: -0.4, tabular: true },
   },
 } as const
+
+export const batchTableCssVariables: Readonly<Record<string, string>> = Object.fromEntries([
+  ['--batch-cell-padding', `${batchTableStyle.cellPadding}px`],
+  ['--batch-header-unit-gap', `${batchTableStyle.headerUnitGap}px`],
+  ...Object.entries(batchTableStyle.fonts).flatMap(([role, font]) => [
+    [`--batch-${role}-size`, `${font.size}px`],
+    [`--batch-${role}-weight`, String(font.weight)],
+    ...('letterSpacing' in font ? [[`--batch-${role}-letter-spacing`, `${font.letterSpacing}px`]] : []),
+  ]),
+])

@@ -115,7 +115,7 @@ export default function ReportPreviewDialog({ view, format, onDismiss }: Props) 
     </div>
     <div className="report-preview-footer">
       <div className="report-page-navigation"><button className="icon-button" type="button" aria-label={text.previousPage} disabled={currentPage === 0} onClick={() => { setDraft(null); setPage(currentPage - 1) }}><ChevronLeft size={18} /></button>
-        <span aria-live="polite">{layout && !layout.widthOverflow ? text.reportPageCount.replace('{page}', String(currentPage + 1)).replace('{pages}', String(layout.pages.length)) : '—'}</span>
+        <span aria-live="polite">{layout && !layout.widthOverflow ? text.reportPageCount.replace('{page}', String(currentPage + 1)).replace('{pages}', String(layout.pages.length)) : text.missingValue}</span>
         <button className="icon-button" type="button" aria-label={text.nextPage} disabled={!layout || layout.widthOverflow || currentPage + 1 >= layout.pages.length} onClick={() => { setDraft(null); setPage(currentPage + 1) }}><ChevronRight size={18} /></button>
       </div>
       <button type="button" className="report-download-button" disabled={!layout || layout.widthOverflow || !validDraft || exporting} onClick={() => void download()}>{exporting ? <LoaderCircle className="spin" size={16} /> : <Download size={16} />}{exporting ? text.preparingReport : text.download}</button>

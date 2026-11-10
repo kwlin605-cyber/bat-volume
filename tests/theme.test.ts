@@ -11,11 +11,11 @@ function sources(directory: string): string[] {
 }
 
 describe('shared theme contract between styles and application startup', () => {
-  it('supplies every project color variable used by styles and utility classes, including portal selection colors', () => {
+  it('supplies every project theme and table variable used by styles and utility classes, including portal selection colors', () => {
     const referenced = new Set<string>()
     for (const file of sources(fileURLToPath(new URL('../src', import.meta.url)))) {
       const source = readFileSync(file, 'utf8')
-      for (const match of source.matchAll(/var\((--(?:color|ui|selection)-[\w-]+)\)/g)) referenced.add(match[1])
+      for (const match of source.matchAll(/var\((--(?:color|ui|selection|batch)-[\w-]+)\)/g)) referenced.add(match[1])
     }
     expect(referenced.size).toBeGreaterThan(0)
     for (const name of referenced) expect(themeCssVariables[name], name).toBeTruthy()

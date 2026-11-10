@@ -254,7 +254,7 @@ export function MobileResultView({
                         <small className="mobile-weight-sub">{text.weightUnit}</small>
                       </>
                     ) : (
-                      <span className="mobile-weight-val text-[color:var(--ui-controlHint)]">—</span>
+                      <span className="mobile-weight-val text-[color:var(--ui-controlHint)]">{text.missingValue}</span>
                     )}
                   </div>
                 </div>
@@ -273,7 +273,7 @@ export function MobileResultView({
                     ) : materialCalc?.kind === 'unavailable' && materialCalc.reason === 'materialTooSmall' ? (
                       <span className="mobile-weight-val text-[color:var(--ui-warningText)] text-sm">{text.materialTooSmall}</span>
                     ) : (
-                      <span className="mobile-weight-val text-[color:var(--ui-controlHint)]">—</span>
+                      <span className="mobile-weight-val text-[color:var(--ui-controlHint)]">{text.missingValue}</span>
                     )}
                     {matWeightFormatted?.secondary && (
                       <small className="mobile-weight-sub">/ {matWeightFormatted.secondary} {text.weightUnit}</small>
